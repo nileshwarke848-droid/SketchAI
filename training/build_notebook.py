@@ -183,7 +183,7 @@ smoke = colab_setup.smoke_test_conversion()
 assert smoke['ok'], 'Fix the TensorFlow.js exporter before training (see the message above).'
 """),
     code("""
-dataset_check = colab_setup.check_dataset(train_345.DATASET_BASE_URL)
+dataset_check = colab_setup.check_dataset(train_345.QUICKDRAW_SOURCE_DIR)
 if dataset_check['ok']:
     print(f"Quick Draw dataset reachable: {dataset_check['rows']} sample rows read")
     print(f"  {dataset_check['url']}")

@@ -45,8 +45,11 @@ PIPELINE_FILE = ("training", "train_345.py")
 # is first so that the notebook keeps working unchanged once the work is merged.
 CANDIDATE_REFS = ("main", "arena/40ecfce2-sketchai")
 
-DATASET_BASE_URL = "https://storage.googleapis.com/quickdraw_dataset/full/numpy_bitmap/"
-NPY_MAGIC = b"\x93NUMPY"
+# The drawings are read from the local Quick, Draw! NDJSON mirror described in
+# `quickdraw_ndjson.py` and downloaded by `fetch_quickdraw_data.py`. Google's own
+# bucket and Hugging Face are unreachable from many sandboxed networks, and are
+# deliberately not used.
+QUICKDRAW_SOURCE_DIR = Path(__file__).resolve().parent / "quickdraw-source" / "drawings"
 
 
 # --------------------------------------------------------------------------------------
@@ -403,41 +406,50 @@ def ensure_repository(repo_dir: str = REPO_DIR, refresh: bool = False) -> str:
 # --------------------------------------------------------------------------------------
 
 
-def check_dataset(base_url: str | None = None, category: str = "cat", rows: int = 8) -> dict:
-    """Prove Google's bucket is reachable before downloading 345 categories.
+def check_dataset(source_dir=None, category: str = "cat", rows: int = 8) -> dict:
+    """Prove the real Quick, Draw! drawings are present before training on them.
 
-    Reads the .npy header of one category and a few rows of pixel data. Nothing is
-    cached and nothing is written to disk.
+    Reads a few drawings from one category's NDJSON file and reports how many
+    categories are available. Nothing is written to disk.
 
-    Pass the exact base URL the training run will use, so the check tests the real
-    target rather than a default.
+    Pass the exact directory the training run will use, so the check tests the
+    real target rather than a default.
     """
-    import urllib.request
+    import gzip
 
-    base_url = base_url or DATASET_BASE_URL
-    url = base_url + category.replace(" ", "%20") + ".npy"
-    result = {"url": url, "ok": False}
+    directory = Path(source_dir) if source_dir else QUICKDRAW_SOURCE_DIR
+    path = directory / f"{category}.ndjson.gz"
+    result = {"path": str(path), "ok": False}
     try:
-        request = urllib.request.Request(url, headers={"Range": "bytes=0-4095"})
-        with urllib.request.urlopen(request, timeout=60) as response:
-            header = response.read(4096)
-        if not header.startswith(NPY_MAGIC):
-            result["error"] = "the response is not a .npy file"
+        if not path.exists():
+            result["error"] = (
+                f"{path} is missing. Run `python training/fetch_quickdraw_data.py` first."
+            )
             return result
-        result["header_ok"] = True
 
-        # The header length tells us where pixel data starts; fetch a few rows.
-        major = header[6]
-        header_len = int.from_bytes(header[8:10], "little") if major == 1 else int.from_bytes(header[8:12], "little")
-        start = (10 if major == 1 else 12) + header_len
-        request = urllib.request.Request(url, headers={"Range": f"bytes={start}-{start + rows * 784 - 1}"})
-        with urllib.request.urlopen(request, timeout=60) as response:
-            body = response.read()
-        if len(body) < rows * 784:
-            result["error"] = f"short read: {len(body)} of {rows * 784} bytes"
+        frames = []
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            for line in handle:
+                if line.strip():
+                    frames.append(json.loads(line))
+                if len(frames) >= rows:
+                    break
+        if not frames:
+            result["error"] = f"{path} contains no drawings"
             return result
-        array = np.frombuffer(body[: rows * 784], dtype=np.uint8).reshape(rows, 784)
-        result.update(ok=True, rows=rows, ink_mean=round(float(array.mean()), 2))
+
+        array = np.asarray(frames, dtype=np.float32)
+        if array.shape[1] != 784:
+            result["error"] = f"expected 784 values per drawing, got {array.shape[1]}"
+            return result
+
+        categories = len(list(directory.glob("*.ndjson.gz")))
+        result.update(
+            ok=True,
+            rows=len(frames),
+            categories=categories,
+            ink_mean=round(float(array.mean()), 4),
+        )
     except Exception as error:
         result["error"] = f"{type(error).__name__}: {error}"
     return result

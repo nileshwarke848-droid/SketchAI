@@ -13,3 +13,6 @@ training/work/
 training/export/
 training/__pycache__/
 *.pyc
+
+# Training environment + downloaded dataset (not committed)
+training/quickdraw-source/

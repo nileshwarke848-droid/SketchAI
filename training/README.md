@@ -229,14 +229,42 @@ places: the training script, the export verifier and the installer.
 
 ### Dataset
 
-Google's Quick, Draw! **28×28 numpy bitmaps**: one `.npy` per category, each row
-784 bytes of white ink on a black background, already centred on the drawing's
-bounding box. Perfect for a tiny browser model — no resizing, no artefacts.
+**Where the data comes from.** Google's Quick, Draw! dataset (CC BY 4.0,
+© Google, Inc.), downloaded by `fetch_quickdraw_data.py` from the
+[`quickdraw.js`](https://www.npmjs.com/package/quickdraw.js) npm package — a
+verbatim redistribution of the official data whose own licence file carries the
+CC BY 4.0 attribution to Google. The canonical Google Cloud Storage bucket and
+the Hugging Face mirror are both unreachable from many sandboxed networks (TLS
+connections are dropped), so this mirror is used instead.
 
-Each category file is 30–100 MB and holds every drawing ever collected, so the
-loader does not download whole files. It reads the small `.npy` header, works out
-where the pixel data starts, and issues an HTTP range request for only the first
-`SAMPLES_PER_CLASS` rows. Those slices are cached to disk.
+Download it once:
+
+```
+python training/fetch_quickdraw_data.py
+```
+
+This writes 345 `.ndjson.gz` files (13.7 MB) into `training/quickdraw-source/`
+and refuses to continue unless the category names match
+`src/data/quickdraw-categories.txt` exactly.
+
+**What the files contain.** One gzipped NDJSON file per category, each line a
+784-float array — a 28×28 greyscale bitmap, white ink on black, values 0–1.
+So the drawings are *already rasterised*; no vector rendering is needed.
+
+**The honest limit.** This mirror ships **100 drawings per category** — 34,500 in
+total, not the full 50 million. That is the ceiling for `SAMPLES_PER_CLASS` here,
+and the reason a model trained from this source is not state of the art. Do not
+substitute synthetic drawings to make the number look bigger.
+
+**The geometry fix.** The upstream package scales strokes by `28 / 256` with no
+padding, so every bitmap is stretched edge to edge (measured: 100% of samples
+touch the frame). SketchAI's browser pipeline does the opposite — it centres the
+ink with `CROP_PADDING = 1.186`, so a drawing occupies ~84% of the frame.
+`quickdraw_ndjson.to_app_geometry()` replays the browser's own steps (ink
+bounding box → centred square → area-average to 28×28 → lift the 97th-percentile
+ink to 1.0) over every training bitmap, so training and inference see the same
+geometry. It is documented here rather than done silently because it changes the
+pixels the network learns from.
 
 ### Memory
 
@@ -400,11 +428,40 @@ nothing fails because a file or folder already exists.
 `colab_setup.setup()` prints exactly what it did, and `colab_setup.diagnostics()`
 prints the environment block, so a problem can be diagnosed from the output alone.
 
-> **Testing note.** These paths were exercised in a sandboxed Linux environment
-> with TensorFlow 2.21, tf-keras 2.21 and TensorFlow.js 4.22: the dependency
-> hardening, the branch fallback, the exporter smoke test and the whole
-> train → export → zip flow were each run end to end. They were **not** run on
-> Google Colab itself — the sandbox has no GPU and no network access to Google
-> Cloud Storage, so the Colab-specific pieces (GPU detection, the real bucket)
-> could not be confirmed there. If the setup cell reports something unexpected,
-> its output is designed to say what to do next.
+> **Testing note.** The pipeline was run end to end in a sandboxed Linux
+> environment with TensorFlow 2.21, tf-keras 2.21 and TensorFlow.js 4.22, on a
+> **CPU with no GPU**: fetch → normalise → train (345 classes) → evaluate →
+> export → install → app checks. The full 345-class run took 12.5 minutes.
+>
+> The Colab-specific pieces of the notebook (GPU detection) were **not** run on
+> Google Colab itself — that runtime was not available for this work — and the
+> notebook's pre-flight check now validates the local dataset mirror rather than
+> Google's bucket, which is unreachable from the sandbox. If the setup cell
+> reports something unexpected, its output is designed to say what to do next.
+
+## Training locally (outside Colab)
+
+The pipeline runs as an ordinary script and does not need a GPU. On the machine
+used for the run documented in the main README (CPU-only, 4 vCPU) the full
+345-class training took about 12.5 minutes.
+
+```
+# 1. get the real drawings (13.7 MB, verified against the canonical 345)
+python training/fetch_quickdraw_data.py
+
+# 2. prove the pipeline on real data — 20 categories, then check the numbers move
+python training/_pilot.py
+
+# 3. the real run: 345 categories, 80/10/10, seed 42
+python training/_train_full.py
+
+# 4. install into the app and check it
+node scripts/install-model-345.mjs
+node scripts/manual-test-345.mjs
+node scripts/audit-app.mjs
+```
+
+A training environment needs TensorFlow 2.21, `tf_keras` 2.21, `tensorflowjs`
+4.22 (installed with `--no-deps`, or it will drag in a conflicting pinned
+TensorFlow), NumPy, SciPy and matplotlib. `training/setup_env.sh` builds exactly
+that in a virtual environment.

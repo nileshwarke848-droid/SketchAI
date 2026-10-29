@@ -63,6 +63,9 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
 import numpy as np  # noqa: E402  (after the env vars above)
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import quickdraw_ndjson  # noqa: E402  (local real Quick, Draw! NDJSON source)
+
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
@@ -70,7 +73,10 @@ CATEGORY_FILE = REPO_ROOT / "src" / "data" / "quickdraw-categories.txt"
 WORK_DIR = HERE / "work"
 EXPORT_DIR = HERE / "export" / "model-345"
 
-DATASET_BASE_URL = "https://storage.googleapis.com/quickdraw_dataset/full/numpy_bitmap/"
+# The dataset is read from the local Quick, Draw! NDJSON mirror described in
+# `quickdraw_ndjson.py`. The Google Cloud Storage bucket that used to be the
+# source is unreachable from this environment and is deliberately not used.
+QUICKDRAW_SOURCE_DIR = Path(__file__).resolve().parent / "quickdraw-source" / "drawings"
 IMAGE_SIZE = 28
 PIXELS_PER_IMAGE = IMAGE_SIZE * IMAGE_SIZE
 
@@ -119,10 +125,16 @@ class Config:
     augment_translation: float = 0.05   # +/-5% of the image = +/-1.4 px
     augment_rotation: float = 0.05      # +/- ~2.9 degrees
 
-    # Dataset source: "quickdraw" hits Google Cloud Storage. "synthetic" draws
-    # procedural shapes offline and exists only to self-test the pipeline where
-    # the dataset is unreachable; it is never a real training run.
-    dataset: str = "quickdraw"
+    # Pen-width invariance. Quick, Draw! strokes are ~1.5 px wide on the 28x28
+    # grid; a browser pen ends up at ~0.3-0.6 px. Without this the model is right
+    # on the test split and wrong on real hand-drawn doodles.
+    thickness_augment: bool = True
+
+    # Dataset source. "quickdraw-js" is the real thing: the local Quick, Draw!
+    # NDJSON mirror (CC BY 4.0). "synthetic" draws procedural shapes offline and
+    # exists only to self-test the pipeline; it is never a real training run.
+    dataset: str = "quickdraw-js"
+    quickdraw_source_dir: Path = QUICKDRAW_SOURCE_DIR
     data_dir: Path = WORK_DIR / "data"
     cache_dir: Path = WORK_DIR / "cache"
     output_dir: Path = WORK_DIR / "run"
@@ -146,7 +158,8 @@ class Config:
 
     def describe(self) -> dict:
         data = asdict(self)
-        for key in ("data_dir", "cache_dir", "output_dir", "export_dir", "drive_checkpoint_dir"):
+        for key in ("data_dir", "cache_dir", "output_dir", "export_dir",
+                    "drive_checkpoint_dir", "quickdraw_source_dir"):
             value = data.get(key)
             data[key] = str(value) if value else None
         return data
@@ -190,80 +203,26 @@ def slug(name: str) -> str:
 # --------------------------------------------------------------------------------------
 
 
-class NpyRangeReader:
-    """Reads a .npy file from a URL without downloading the whole thing.
-
-    Quick, Draw!'s .npy files are ~30-100 MB each (all examples of one class).
-    SketchAI only needs the first N rows, so we read the 128-byte numpy header and
-    then ask the server for exactly the bytes we need. If the server ignores the
-    Range header we still cope: the response is then the whole file and we slice
-    it ourselves.
-    """
-
-    MAGIC = b"\x93NUMPY"
-
-    def __init__(self, url: str, timeout: int = 120):
-        self.url = url
-        self.timeout = timeout
-
-    def _get(self, start: int, end: int) -> tuple[bytes, bool]:
-        request = urllib.request.Request(self.url, headers={"Range": f"bytes={start}-{end}"})
-        with urllib.request.urlopen(request, timeout=self.timeout) as response:
-            body = response.read()
-            partial = response.status == 206
-        return body, partial
-
-    def header(self) -> tuple[dict, int]:
-        """Returns (header dict, byte offset where pixel data starts)."""
-        body, partial = self._get(0, 4095)
-        if not body.startswith(self.MAGIC):
-            raise ValueError(f"{self.url} is not a .npy file")
-        major = body[6]
-        if major == 1:
-            header_len = int.from_bytes(body[8:10], "little")
-            header_start = 10
-        elif major in (2, 3):
-            header_len = int.from_bytes(body[8:12], "little")
-            header_start = 12
-        else:
-            raise ValueError(f"Unsupported .npy version {major}")
-        raw = body[header_start:header_start + header_len].decode("latin1")
-        header = ast.literal_eval(raw.strip())
-        return header, header_start + header_len
-
-    def read_rows(self, rows: int) -> np.ndarray:
-        header, data_start = self.header()
-        shape = header["shape"]
-        dtype = np.dtype(header["descr"])
-        if len(shape) != 2 or shape[1] != PIXELS_PER_IMAGE:
-            raise ValueError(f"Unexpected array shape {shape} in {self.url}")
-        available = int(shape[0])
-        take = min(rows, available)
-        row_bytes = PIXELS_PER_IMAGE * dtype.itemsize
-        body, partial = self._get(data_start, data_start + take * row_bytes - 1)
-        if not partial:
-            # Server ignored Range: body is the entire array.
-            body = body[: take * row_bytes]
-        expected = take * row_bytes
-        if len(body) < expected:
-            raise IOError(f"Short read from {self.url}: {len(body)} of {expected} bytes")
-        array = np.frombuffer(body[:expected], dtype=dtype)
-        return array.reshape(take, PIXELS_PER_IMAGE).copy()
-
-
 def load_class_samples(name: str, rows: int, cfg: Config) -> np.ndarray:
-    """Fetch (or reuse cached) samples for one category as a uint8 array."""
+    """Load real Quick, Draw! samples for one category as uint8 (n, 784).
+
+    Drawings come from the local NDJSON mirror documented in
+    `quickdraw_ndjson.py` and are re-rasterised into SketchAI's own input
+    geometry first. Results are cached per category so a re-run is instant.
+    """
     cfg.cache_dir.mkdir(parents=True, exist_ok=True)
     cache_file = cfg.cache_dir / f"{slug(name)}.npy"
     if cache_file.exists():
         cached = np.load(cache_file, mmap_mode="r")
         if cached.shape[0] >= rows:
             return np.asarray(cached[:rows])
-    url = DATASET_BASE_URL + urllib.parse.quote(name) + ".npy"
-    array = NpyRangeReader(url).read_rows(rows)
+    array, available = quickdraw_ndjson.load_class_samples(
+        name, rows, cfg.quickdraw_source_dir)
+    if available < rows:
+        print(f"  note: {name} has only {available} drawings in the source "
+              f"(asked for {rows}); using {available}")
     np.save(cache_file, array)
     return array
-
 
 def synthetic_class_samples(name: str, rows: int, seed: int) -> np.ndarray:
     """Deterministic procedural doodles for offline pipeline self-tests.
@@ -398,12 +357,47 @@ def build_splits(categories: Sequence[str], cfg: Config, logger=print) -> Datase
     return bundle
 
 
-def _read_batch(bundle: DatasetBundle, pairs: np.ndarray) -> np.ndarray:
+def _thickness_augment(batch: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """Vary stroke thickness and ink intensity, independently per image.
+
+    Quick, Draw! bitmaps were drawn with a ~1.5 px pen on the 28x28 grid. A
+    browser pen on SketchAI's 1200x720 canvas is far thinner once it has been
+    squashed into 28x28 -- measured at roughly 0.3-0.6 px -- so a model that only
+    ever saw fat strokes meets a systematically different input in production and
+    its accuracy collapses on real doodles.
+
+    Thickening and thinning (a 3x3 grey max/min filter) plus a log-uniform
+    intensity gamma teach the network that ink width is not a class feature.
+    """
+    from scipy.ndimage import maximum_filter, minimum_filter
+
+    out = batch.copy()
+    for i in range(out.shape[0]):
+        image = out[i, :, :, 0]
+        roll = rng.random()
+        if roll < 0.30:  # fatter pen
+            image = maximum_filter(image, size=3)
+        elif roll < 0.60:  # thinner pen
+            image = minimum_filter(image, size=3)
+        # Log-uniform around 1.0 so brightening and darkening are equally likely.
+        gamma = float(np.exp(rng.uniform(-0.7, 0.7)))
+        out[i, :, :, 0] = np.power(image, gamma)
+    return out
+
+
+def _read_batch(
+    bundle: DatasetBundle,
+    pairs: np.ndarray,
+    augment: bool = False,
+    rng: np.random.Generator | None = None,
+) -> np.ndarray:
     """Materialise (batch, 28, 28, 1) float32 from the memmaps."""
     out = np.empty((pairs.shape[0], IMAGE_SIZE, IMAGE_SIZE, 1), dtype=np.float32)
     for i, (class_index, row) in enumerate(pairs):
         out[i, :, :, 0] = bundle.cache[class_index][row].reshape(IMAGE_SIZE, IMAGE_SIZE)
     out /= 255.0  # Quick, Draw! bitmaps are 0-255 white ink on black
+    if augment and rng is not None:
+        out = _thickness_augment(out, rng)
     return out
 
 
@@ -424,13 +418,17 @@ def make_dataset(bundle: DatasetBundle, split: str, training: bool):
         needed and `steps_per_epoch` still defines where an epoch ends.
         """
         rng = np.random.default_rng(cfg.seed)
+        # A separate stream for thickness so changing it never reorders the data.
+        ink_rng = np.random.default_rng(cfg.seed + 1) if (training and cfg.augment
+                                                          and cfg.thickness_augment) else None
         while True:
             order = np.arange(len(source))
             rng.shuffle(order)
             for start in range(0, len(order), cfg.batch_size):
                 chunk = order[start:start + cfg.batch_size]
                 pairs = source.indices[chunk]
-                yield _read_batch(bundle, pairs), source.labels[chunk]
+                yield _read_batch(bundle, pairs, augment=ink_rng is not None,
+                                  rng=ink_rng), source.labels[chunk]
 
     signature = (
         tf.TensorSpec(shape=(None, IMAGE_SIZE, IMAGE_SIZE, 1), dtype=tf.float32),
@@ -801,12 +799,14 @@ def save_and_export(model, bundle: DatasetBundle, metrics: dict, cfg: Config, hi
         "name": "SketchAI 345-class doodle classifier",
         "trained_for": "SketchAI (school demonstration project)",
         "dataset": (
-            "Google Quick, Draw! 28x28 numpy bitmaps (CC BY 4.0)"
-            if cfg.dataset == "quickdraw"
+            "Google Quick, Draw! drawings (CC BY 4.0), accessed via the "
+            "quickdraw.js npm redistribution of the official dataset"
+            if cfg.dataset == "quickdraw-js"
             else "synthetic-offline-selftest (NOT Quick, Draw!)"
         ),
         "dataset_url": "https://github.com/googlecreativelab/quickdraw-dataset",
-        "is_self_test_only": cfg.dataset != "quickdraw",
+        "dataset_access_path": "npm:quickdraw.js@1.0.6 (CC BY 4.0, data by Google, Inc.)",
+        "is_self_test_only": cfg.dataset != "quickdraw-js",
         "categories": len(bundle.categories),
         "samples_per_class": cfg.samples_per_class,
         "train_samples": len(bundle.train),
@@ -823,7 +823,7 @@ def save_and_export(model, bundle: DatasetBundle, metrics: dict, cfg: Config, hi
             "centre": True,
             "preserve_aspect_ratio": True,
             "ink_source": "canvas alpha",
-            "normalisation": "peak-normalised to ~0.9 before /1",
+            "normalisation": "white ink on black, 0-1; 97th-percentile ink lifted to 1.0 (min gamma 0.25)",
         },
         "augmentation": {
             "enabled": cfg.augment,
@@ -944,7 +944,7 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
     parser.add_argument("--epochs", type=int, default=Config.epochs)
     parser.add_argument("--batch-size", type=int, default=Config.batch_size)
     parser.add_argument("--seed", type=int, default=Config.seed)
-    parser.add_argument("--dataset", choices=["quickdraw", "synthetic"], default="quickdraw",
+    parser.add_argument("--dataset", choices=["quickdraw-js", "synthetic"], default="quickdraw-js",
                         help="'synthetic' only self-tests the pipeline offline; it is not real data")
     parser.add_argument("--no-augment", action="store_true", help="disable light augmentation")
     parser.add_argument("--categories", type=int, default=0, help="limit the number of categories (debug)")

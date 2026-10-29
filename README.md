@@ -29,9 +29,60 @@ the vector icons.
 
 ## The AI model
 
-SketchAI can run two classifiers. Until you train the 345-class model yourself
-(see [Training our own 345-class model](#training-our-own-345-class-model)), it
-runs the 100-class fallback below, which is what the repository ships with.
+SketchAI can run two classifiers. The **345-class model** is SketchAI's own: it
+was trained for this project on Google's Quick, Draw! dataset and is used
+whenever its files are present. The **100-class fallback** below is a
+third-party model and takes over automatically if the 345-class files are
+missing, incomplete or fail validation.
+
+### The 345-class model (trained for this project)
+
+This is **SketchAI's classifier trained on the Google Quick Draw dataset**. It is
+*not* Google's model, not AutoDraw and not a third-party checkpoint: every weight
+was produced by `training/train_345.py` in this repository.
+
+| | |
+| --- | --- |
+| Files | `public/model-345/model.json` + `public/model-345/group1-shard1of1.bin` (0.83 MB, one shard) |
+| Dataset | [Google Quick, Draw!](https://github.com/googlecreativelab/quickdraw-dataset) — CC BY 4.0, © Google, Inc. |
+| Data access path | `quickdraw.js@1.0.6` npm package (MIT wrapper redistributing the official dataset). The canonical Google Cloud Storage bucket and Hugging Face were both unreachable from the training environment, so this mirror was used instead; its own licence file carries the CC BY 4.0 attribution to Google. |
+| Examples per class | **100** — the maximum that mirror provides (34,500 drawings total, not the full 50 M) |
+| Split | 27,600 train / 3,450 validation / 3,450 test, stratified per class, `SEED = 42` |
+| Input | `[1, 28, 28, 1]` float32, white ink on black, values 0–1 |
+| Output | 345 softmax probabilities |
+| Parameters | 214,649 |
+| Test accuracy | **top-1 37.7% · top-3 58.1% · top-10 76.1%** (held-out split; random baseline 0.29%) |
+| Hand-drawn doodles | top-1 7/16 · top-3 9/16 · top-10 12/16 on 16 hand-drawn test doodles |
+
+Architecture (unchanged from the design target):
+
+```
+Conv2D(32, 3×3, same) → BatchNorm → ReLU → MaxPool(2×2)
+Conv2D(64, 3×3, same) → BatchNorm → ReLU → MaxPool(2×2)
+Conv2D(128, 3×3, same) → ReLU
+GlobalAveragePooling2D → Dense(256, relu) → Dropout(0.4) → Dense(345, softmax)
+```
+
+Preprocessing is the same pipeline the browser runs (`src/ai/preprocess.js`,
+profile `"345"`): find the ink bounding box, take a centred square
+`max(w, h) × 1.186`, area-average it into 28×28, then lift the 97th-percentile
+ink value to 1.0 (minimum gamma 0.25). The source bitmaps were re-normalised
+into exactly that geometry before training, so training and inference see the
+same thing.
+
+Training used Adam (lr 1e-3) with `EarlyStopping`, `ReduceLROnPlateau` and
+`ModelCheckpoint`, batch size 128, 60 epochs (best at 57) on a **CPU-only**
+machine (no GPU) with TensorFlow 2.21.0 / Python 3.11 — about 12.5 minutes.
+Augmentation was light translation and rotation (±5%, ±2.9°) plus deliberate
+**pen-width invariance**: Quick, Draw! strokes are ~1.5 px wide on the 28×28
+grid, while a browser pen on SketchAI's 1200×720 canvas is only ~0.3–0.6 px, so
+each training image was randomly thickened, thinned or gamma-shifted. Without
+that, the model scored 41.9% top-1 on the clean test split but only 9/16 top-10
+on real hand-drawn doodles; with it the doodle score rose to 12/16.
+
+See [Training our own 345-class model](#training-our-own-345-class-model) for how
+to reproduce it, and `training/export/model-345/ATTRIBUTION.txt` for the
+attribution shipped alongside the weights.
 
 **Fallback model (bundled).** SketchAI does not redistribute a model it trained
 here; the bundled one is pretrained:
@@ -97,17 +148,17 @@ icon in `src/data/icons.js`:
 Icons come from Fluent Emoji Flat (MIT), Noto Emoji (Apache-2.0) and Material
 Design Icons (Apache-2.0), bundled locally, no network requests. Categories are
 chosen by hand and reviewed against a rendered sheet, because a wrong picture is
-worse than no picture. Only the 100 predicted classes can actually appear today,
-but the library and mapping are ready for a 345-class model.
+worse than no picture. With the 345-class model installed, any of the 345 official
+categories can appear; the 100-class fallback narrows that to the 100 classes it
+knows.
 
 ![Artwork coverage for the 345 categories](docs/images/artwork-coverage.png)
 
-### Why the app does not ship a 345-class model
+### Why SketchAI trains its own 345-class model instead of bundling one
 
-All 345 official Quick, Draw! categories would need a model with 345 outputs. The
-obvious candidate, [yining1023/doodleNet](https://github.com/yining1023/doodleNet)
-("DoodleClassifier_345", ~50k drawings per class), was investigated and rejected
-for bundling:
+All 345 official Quick, Draw! categories need a model with 345 outputs. The obvious
+candidate, [yining1023/doodleNet](https://github.com/yining1023/doodleNet)
+("DoodleClassifier_345", ~50k drawings per class), was investigated and rejected:
 
 - **License:** the GitHub API reports `license: null`, there is no `LICENSE` file
   in the repository or anywhere in its 26-commit history, and neither the README
@@ -119,14 +170,20 @@ for bundling:
 - It also has a malformed first layer, and its training data is described as
   "50k per class" rather than the definitive Quick Draw counts.
 
-Searching for an alternative turned up no browser-ready 345-class model with a
+A search for an alternative found no browser-ready 345-class model with a
 redistribution licence (other Quick, Draw! CNN projects on GitHub carry no licence,
-`NOASSERTION`, or ship code only, with no weights). Rather than ignore the
-licensing problem just because the repository is public, SketchAI keeps the
-clearly-licensed MIT 100-class model and is honest about its coverage.
+`NOASSERTION`, or ship code only, with no weights). Rather than ignore the licensing
+problem just because a repository is public, SketchAI **trains its own** classifier
+on the Quick, Draw! dataset itself — the dataset is CC BY 4.0 and explicitly
+redistributable, so the resulting weights are ours to ship.
 
-**Everything else in this release is built to support 345 categories**, so a
-licensed 345-class model can be dropped in without UI work:
+The honest trade-off: the reachable mirror of the dataset provides 100 drawings per
+class rather than the tens of thousands available from Google's own bucket, so this
+model is trained on 34,500 drawings, not millions. That is why its top-1 accuracy
+(37.7%) is below published Quick, Draw! numbers, and why the app shows a ranked
+top-10 rather than a single verdict.
+
+The rest of the app is built to be class-count agnostic:
 
 - the full official list of 345 categories lives in
   `src/data/quickdraw-categories.txt` (CC BY 4.0), with metadata for every class;
@@ -141,33 +198,39 @@ faked to look like broader coverage.
 
 The licensing problem above has a clean solution: **train the model ourselves**
 on Google's Quick, Draw! dataset, which *is* clearly licensed (CC BY 4.0). The
-complete training pipeline is in [`training/`](training/README.md) and runs on a
-free Google Colab runtime:
+complete pipeline lives in [`training/`](training/README.md) and has been run —
+the result is the 345-class model described above.
 
 ```
-training/SketchAI_345_Training.ipynb   the Colab notebook (start here)
-training/train_345.py                  the same pipeline as a script
+training/train_345.py                  the training pipeline (start here)
+training/quickdraw_ndjson.py           loads + normalises the real drawings
+training/fetch_quickdraw_data.py       downloads the dataset mirror
 training/manual_test.py                sixteen hand-drawn doodles -> top 10
-scripts/install-model-345.mjs           validate + install a trained model
+scripts/install-model-345.mjs          validate + install a trained model
+scripts/audit-app.mjs                  end-to-end app checks (no browser needed)
+training/SketchAI_345_Training.ipynb   the same pipeline as a Colab notebook
 ```
 
-Quick, Draw! 28x28 numpy bitmaps -> range-requested slices (never the whole
-~50 GB dataset) -> memory-mapped batches -> a ~215k-parameter CNN ->
-TensorFlow.js export -> `public/model-345/`.
+Real Quick, Draw! drawings -> re-normalised into SketchAI's own 28×28 geometry ->
+memory-mapped batches (never the whole dataset in RAM) -> a 214,649-parameter CNN
+-> TensorFlow.js export -> `public/model-345/`.
 
-Until that training run is finished, the app uses the 100-class model and says so.
+Training runs fine on a **CPU**; the run documented above took about 12.5 minutes
+without a GPU. `SAMPLES_PER_CLASS` and `QUICK_TEST` are the two switches that
+matter, and the category order always comes from
+`src/data/quickdraw-categories.txt`, never from a directory listing.
 
 ### Two models, one app
 
 | | Primary | Fallback |
 | --- | --- | --- |
-| Classes | 345 (ours, when trained) | 100 (MIT third-party) |
+| Classes | 345 (ours, trained here) | 100 (MIT third-party) |
 | Location | `public/model-345/` | `public/model/` |
 | Preprocessing | profile `"345"` | profile `"100"` (frozen) |
 | Status pill | "AI ready — 345 objects" | "AI ready — 100 objects" |
 
-The 345-class model is tried first. If its files are absent — which is the case
-in a plain checkout, since `public/model-345/` is not committed — or if any
+The 345-class model is tried first. If its files are absent — `public/model-345/`
+is not committed, so a plain checkout starts on the fallback — or if any
 validation check fails, the app quietly falls back and shows
 "Extended AI unavailable — using 100-object model". Drawing, undo/redo and PNG
 export are unaffected either way. Each model has its own preprocessing function
