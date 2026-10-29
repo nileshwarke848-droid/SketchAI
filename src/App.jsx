@@ -1,18 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Brush, Check, ChevronDown, CircleHelp, Eraser, Info, LockKeyhole, MousePointer2, Pencil, RotateCcw, Star, Sparkles, Trash2, X, Zap } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Brush, Check, ChevronDown, CircleHelp, Eraser, Info, LockKeyhole, MousePointer2, Pencil, RotateCcw, Square, Star, Sparkles, Trash2, X, Zap } from 'lucide-react';
 import { loadModel, predict } from './ai/model';
 import { getSketchBounds } from './ai/preprocess';
-import { artwork } from './data/artwork';
+import SuggestionIcon from './components/SuggestionIcon';
+import { displayName, hasArtwork, iconToSvgString } from './data/artwork';
+import { compositeLayers, releaseUrl, saveCanvasAsPng, EXPORT_FILENAME } from './lib/download';
 import DebugPanel from './dev/DebugPanel';
 
 const W = 1200, H = 720;
 const colors = ['#242422', '#e26755', '#e9ab45', '#799b79', '#6590bd', '#a282b5'];
-const display = (s) => s ? s[0].toUpperCase() + s.slice(1) : '';
+
 // The preprocessing inspector is a development tool. It opens automatically in
 // dev builds and can be forced on a deployed build with ?debug=ai.
 const DEBUG_AI = import.meta.env.DEV || new URLSearchParams(window.location.search).get('debug') === 'ai';
 const IDLE = { status: 'idle', predictions: [] };
+// A probability under half a percent is real but not meaningful to show as "0%".
+const formatScore = (score) => (score < 0.005 ? '<1%' : `${Math.round(score * 100)}%`);
 
 function App() {
   const canvasRef = useRef(null), sketchRef = useRef(null), modelRef = useRef(null), timerRef = useRef(null), pointerRef = useRef(null);
@@ -20,7 +23,10 @@ function App() {
   const [tool, setTool] = useState('pencil'), [color, setColor] = useState(colors[0]), [size, setSize] = useState(7);
   const [status, setStatus] = useState('loading'), [recognition, setRecognition] = useState(IDLE), [hasInk, setHasInk] = useState(false);
   const [canUndo, setCanUndo] = useState(false), [canRedo, setCanRedo] = useState(false), [showHelp, setShowHelp] = useState(false), [message, setMessage] = useState('');
-  const [showDebug, setShowDebug] = useState(DEBUG_AI), [backend, setBackend] = useState('');
+  const [showDebug, setShowDebug] = useState(DEBUG_AI), [backend, setBackend] = useState(''), [classCount, setClassCount] = useState(0);
+  const [transparentExport, setTransparentExport] = useState(false);
+  const [saveLink, setSaveLink] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   const updateHistoryButtons = () => { setCanUndo(historyIndex.current > 0); setCanRedo(historyIndex.current < historyRef.current.length - 1); };
   const saveHistory = useCallback(() => {
@@ -64,7 +70,7 @@ function App() {
     const sketch = document.createElement('canvas'); sketch.width = W; sketch.height = H; sketchRef.current = sketch;
     saveHistory();
     let active = true;
-    loadModel({ onBackend: setBackend }).then((loaded) => { if (!active) { loaded.model.dispose(); return; } modelRef.current = loaded; setStatus('ready'); schedulePrediction(); }).catch((error) => { console.error('Model load failed:', error); if (!active) return; setStatus('error'); setMessage('The recognition model could not be loaded. Drawing and downloading still work.'); });
+    loadModel({ onBackend: setBackend }).then((loaded) => { if (!active) { loaded.model.dispose(); return; } modelRef.current = loaded; setClassCount(loaded.labels.length); setStatus('ready'); schedulePrediction(); }).catch((error) => { console.error('Model load failed:', error); if (!active) return; setStatus('error'); setMessage('The recognition model could not be loaded. Drawing and downloading still work.'); });
     return () => { active = false; clearTimeout(timerRef.current); modelRef.current?.model.dispose(); };
   }, [saveHistory, schedulePrediction]);
 
@@ -116,12 +122,13 @@ function App() {
     revisionRef.current++; clearTimeout(timerRef.current); canvasRef.current.getContext('2d').clearRect(0, 0, W, H); sketchRef.current.getContext('2d').clearRect(0, 0, W, H);
     setRecognition(IDLE); setHasInk(false); setMessage(''); saveHistory();
   };
-  const insert = async (label, variant) => {
-    const Icon = artwork[label]; const bounds = getSketchBounds(sketchRef.current);
-    if (!Icon || !bounds.width) { setMessage('No illustration is available for this prediction yet.'); return; }
+  const insert = async (label) => {
+    const bounds = getSketchBounds(sketchRef.current);
+    const svg = iconToSvgString(label, { size: 320, color });
+    if (!svg) { setMessage('That guess has no illustration yet — try another suggestion.'); return; }
+    if (!bounds.width) { setMessage('Draw a sketch first, then add an illustration.'); return; }
     try {
       const revision = ++revisionRef.current;
-      const svg = renderToStaticMarkup(<Icon xmlns="http://www.w3.org/2000/svg" size={160} color={color} strokeWidth={variant === 1 ? 2.5 : variant === 2 ? 1.2 : 1.8} />);
       const image = new Image(); image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
       await image.decode();
       if (revision !== revisionRef.current) return;
@@ -133,25 +140,50 @@ function App() {
       clearTimeout(timerRef.current); setRecognition(IDLE); setHasInk(false); setMessage('Illustration added! Keep drawing to start a new guess.'); saveHistory();
     } catch (error) { console.error('Artwork insertion failed:', error); setMessage('Could not add that illustration. Please try again.'); }
   };
-  const download = () => {
-    const out = document.createElement('canvas'); out.width = W; out.height = H;
-    const ctx = out.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.drawImage(canvasRef.current, 0, 0);
-    const link = document.createElement('a'); link.download = 'sketchai-drawing.png'; link.href = out.toDataURL('image/png'); link.click();
+  const download = async () => {
+    if (exporting) return;
+    setExporting(true);
+    setSaveLink(null);
+    try {
+      // Composite every visible layer (user strokes + inserted illustrations) and
+      // never the temporary recognition overlay.
+      const out = compositeLayers({
+        width: W,
+        height: H,
+        layers: [canvasRef.current],
+        opaque: !transparentExport,
+      });
+      const saved = await saveCanvasAsPng(out, { filename: EXPORT_FILENAME });
+      setSaveLink({ url: saved.url, filename: saved.filename, mime: 'image/png' });
+      setMessage(`Saved ${saved.filename} (${W} × ${H} PNG).`);
+    } catch (error) {
+      console.error('PNG export failed:', error);
+      setMessage('The PNG could not be created. Please try again, or use a different browser.');
+    } finally {
+      setExporting(false);
+    }
   };
   const predictions = recognition.predictions;
-  const emptyState = status === 'loading' ? { title: 'Getting things ready', copy: 'Loading the recognition model…' }
+  const emptyState = status === 'loading' ? { title: 'Getting things ready', copy: 'Preparing the drawing categories…' }
     : status === 'error' ? { title: 'AI is taking a break', copy: 'The model could not load. You can still draw and download.' }
     : recognition.status === 'tiny' ? { title: 'Keep going', copy: 'The AI needs a little more drawing before it can guess.' }
     : recognition.status === 'error' ? { title: 'That one confused the AI', copy: 'Something went wrong reading the sketch. Keep drawing and it will try again.' }
     : { title: 'Waiting for your sketch', copy: 'Start drawing to see AI predictions.' };
-  const available = predictions.filter(p => artwork[p.label]);
-  const suggestions = available.length ? [ ...available.map(p => ({ ...p, variant: 0 })), ...Array.from({ length: Math.max(0, 3 - available.length) }, (_, i) => ({ ...available[0], variant: i + 1 })) ].slice(0, 3) : [];
-  const statusText = status === 'loading' ? 'Loading AI model' : status === 'error' ? 'AI unavailable' : 'AI model ready';
+  // Top 10 model probabilities. Cards are shown for every guess; those without an
+  // honest icon render as typographic cards instead of a misleading picture.
+  const suggestions = predictions
+    .filter((p, i) => i === 0 || p.score >= 0.0005) // drop never-meaningful <0.05% tail
+    .slice(0, 10)
+    .map((p) => ({ ...p, name: displayName(p.label), illustrated: hasArtwork(p.label) }));
+  const primary = predictions[0];
+  const others = predictions.slice(1, 5);
+  const lowConfidence = primary && primary.score < 0.45;
+  const statusText = status === 'loading' ? 'Loading drawing AI…' : status === 'error' ? 'AI unavailable' : `AI ready — ${classCount} objects`;
   return <div className="app-shell">
     <header className="topbar"><a className="brand" href="#" aria-label="SketchAI home"><span className="brand-icon"><Sparkles size={18}/></span><span>Sketch<span className="brand-ai">AI</span><small>DRAWING STUDIO</small></span></a><div className="header-right"><span className={`model-status ${status}`}><i/> {statusText}</span><button className="help-link" onClick={() => setShowHelp(true)}><CircleHelp size={17}/> How it works</button></div></header>
     <main>
       <section className="intro"><div><div className="eyebrow"><span className="eyebrow-dot"/> YOUR CREATIVE SPACE <span className="eyebrow-line"/></div><h1>Big ideas start <em>small.</em></h1><p>Draw something, and let a little AI magic bring it to life.</p></div><div className="intro-note"><Sparkles size={16}/><span>MADE FOR<br/><strong>CURIOUS MINDS</strong></span></div></section>
-      <div className="workspace-heading"><div><span className="section-number">01 /</span><h2>Your canvas</h2><span className="heading-sub">A space to make your mark.</span></div><div className="workspace-actions"><button className="text-button" onClick={clear}><Trash2 size={16}/> Clear canvas</button><button className="download-button" onClick={download}><ArrowDownToLine size={16}/> Download <span>PNG</span></button></div></div>
+      <div className="workspace-heading"><div><span className="section-number">01 /</span><h2>Your canvas</h2><span className="heading-sub">A space to make your mark.</span></div><div className="workspace-actions"><button className="text-button" onClick={clear}><Trash2 size={16}/> Clear canvas</button><button className={`text-button export-option ${transparentExport ? 'on' : ''}`} onClick={() => setTransparentExport(!transparentExport)} aria-pressed={transparentExport} title="Export without the white background"><Square size={14}/> Transparent</button><button className="download-button" onClick={download} disabled={exporting}><ArrowDownToLine size={16}/> {exporting ? 'Saving…' : 'Download'} <span>{transparentExport ? 'PNG · transparent' : 'PNG'}</span></button></div></div>
       <div className="workspace">
         <div className="editor">
           <div className="editor-top"><div className="file-name"><span className="file-dot"/> Untitled sketch <span className="file-label">/ EDITING</span></div><div className="editor-top-right"><span><LockKeyhole size={13}/> PRIVATE BY DESIGN</span><span className="canvas-dim">1200 × 720</span></div></div>
@@ -162,13 +194,19 @@ function App() {
           <div className="editor-bottom"><div className="palette"><span className="control-label">COLOR</span>{colors.map(c => <button key={c} className={`color-swatch ${color === c ? 'active' : ''}`} style={{'--swatch':c}} onClick={() => setColor(c)} aria-pressed={color === c} aria-label={`Brush color ${c}`} title={c}>{color === c && <Check size={12}/>}</button>)}</div><div className="brush-control"><span className="control-label">SIZE</span><div className="size-dot"/><input aria-label="Brush size" type="range" min="3" max="24" value={size} onChange={e => setSize(Number(e.target.value))}/><div className="size-dot big"/><span className="size-value">{size}px</span></div><div className="bottom-tip"><MousePointer2 size={14}/> Draw freely</div></div>
         </div>
         <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">A peek inside the model's mind.</p>
-          {recognition.status === 'ok' ? <div aria-live="polite"><p className="prediction-verdict">AI thinks you might be drawing…</p><div className="prediction-list">{predictions.map((p, i) => <div className="prediction-row" key={p.label}><div><span><b className="rank">0{i+1}</b> {display(p.label)}</span><strong>{Math.round(p.score * 100)}%</strong></div><div className="progress"><span style={{width:`${p.score * 100}%`}}/></div></div>)}</div><p className="prediction-footnote">Top three guesses from the model. Confidence is an estimate, not a promise.</p></div> : <div className="empty-predictions" aria-live="polite"><div className="empty-sparkle"><Sparkles size={20}/></div><strong>{emptyState.title}</strong><span>{emptyState.copy}</span></div>}
+          {recognition.status === 'ok' ? <div aria-live="polite">
+            <p className="prediction-verdict">{lowConfidence ? 'AI isn’t completely sure. Maybe:' : 'AI thinks you might be drawing…'}</p>
+            <div className="primary-guess"><span className="primary-name">{suggestions[0].name}</span><span className="primary-score">{Math.round(suggestions[0].score * 100)}%</span></div>
+            <div className="progress primary"><span style={{width:`${suggestions[0].score * 100}%`}}/></div>
+            {others.length > 0 && <div className="other-guesses"><span className="other-label">Other guesses</span><div className="other-chips">{others.map((p) => <button key={p.label} className="other-chip" onClick={() => insert(p.label)} title={`Insert ${displayName(p.label)}`}>{displayName(p.label)} <em>{formatScore(p.score)}</em></button>)}</div></div>}
+            <p className="prediction-footnote">Top {suggestions.length} guesses from the model. Confidence is an estimate, not a promise.</p>
+          </div> : <div className="empty-predictions" aria-live="polite"><div className="empty-sparkle"><Sparkles size={20}/></div><strong>{emptyState.title}</strong><span>{emptyState.copy}</span></div>}
           {DEBUG_AI && recognition.debug && <DebugPanel sketch={sketchRef.current} debug={recognition.debug} open={showDebug} onToggle={() => setShowDebug(!showDebug)} backend={backend} predictions={predictions}/>}
           <div className="panel-bottom"><Info size={15}/><span>Confidence is the model’s estimate, not a guarantee. The more you draw, the more it can see.</span></div>
         </aside>
       </div>
-      <section className="suggestions"><div className="suggestion-copy"><span className="section-number">03 /</span><h2>Do you mean<span>?</span></h2><p>Turn your doodle into something delightful.</p></div><div className="suggestion-content">{suggestions.length ? <div className="suggestion-cards">{suggestions.map((s, i) => { const Icon = artwork[s.label]; return <button className="suggestion-card" key={`${s.label}-${i}`} onClick={() => insert(s.label, s.variant)} title={`Add ${s.label} illustration`}><Icon size={35} strokeWidth={s.variant === 1 ? 2.5 : s.variant === 2 ? 1.2 : 1.8}/><span>{display(s.label)}{s.variant ? (s.variant === 1 ? ' · bold' : ' · fine') : ''}</span><span className="add-sign">+</span></button>; })}</div> : <div className="suggestion-empty"><div className="mini-icons"><span><Star size={20}/></span><span><Flower2Placeholder/></span><span><SunPlaceholder/></span></div><div><strong>{predictions.length ? 'No matching illustrations yet' : 'Suggestions will appear here'}</strong><p>{predictions.length ? 'Try a different sketch to see available artwork.' : 'Draw an object above and see what pops up.'}</p></div></div>}<span className="suggestion-note"><Sparkles size={14}/> CLICK TO ADD TO CANVAS</span></div></section>
-      {message && <div className="notice" role="status">{message}</div>}
+      <section className="suggestions"><div className="suggestion-copy"><span className="section-number">03 /</span><h2>Do you mean<span>?</span></h2><p>Pick a clean illustration to add beside your sketch.</p></div><div className="suggestion-content">{suggestions.length ? <div className="suggestion-strip" role="list">{suggestions.map((s2, i) => s2.illustrated ? <button className="suggestion-card" role="listitem" key={`${s2.label}-${i}`} onClick={() => insert(s2.label)} title={`Add ${s2.name} illustration`}><SuggestionIcon label={s2.label} size={34}/><span className="suggestion-name">{s2.name}</span><span className="suggestion-score">{formatScore(s2.score)}</span><span className="add-sign">+</span></button> : <div className="suggestion-card text-only" role="listitem" key={`${s2.label}-${i}`} title={`${s2.name} — AI guess, no illustration yet`}><span className="text-card-name">{s2.name}</span><span className="suggestion-score">{formatScore(s2.score)}</span></div>)}</div> : <div className="suggestion-empty"><div className="mini-icons"><span><Star size={20}/></span><span><Flower2Placeholder/></span><span><SunPlaceholder/></span></div><div><strong>{predictions.length ? 'No matching illustrations yet' : 'Suggestions will appear here'}</strong><p>{predictions.length ? 'Keep drawing — clearer shapes give better suggestions.' : 'Draw an object above and see what pops up.'}</p></div></div>}<span className="suggestion-note"><Sparkles size={14}/> {suggestions.length ? 'CLICK A CARD TO ADD IT' : 'UP TO 10 SUGGESTIONS'}</span></div></section>
+      {message && <div className="notice" role="status">{message}{saveLink && <> <a className="notice-link" href={saveLink.url} download={saveLink.filename} onClick={() => setTimeout(() => releaseUrl(saveLink.url), 30000)}>Save the PNG again</a> if your browser blocked the download.</>}</div>}
       <div className="page-bottom"><span><span className="tiny-star">✳</span> Made for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
     {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={e => e.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>You draw an object on the canvas.</li><li>SketchAI crops, centers and resizes the sketch into a 28 × 28 image, matching the way its training data was drawn.</li><li>A neural network looks for patterns in the pixels.</li><li>A 100-category Quick, Draw! model predicts the most likely objects and their confidence scores. It only knows those categories, so unusual objects may be guessed as something similar.</li><li>Pick an available illustration to add it next to your sketch, then keep creating.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your drawing isn't uploaded.</div><button className="download-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}

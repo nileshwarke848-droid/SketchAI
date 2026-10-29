@@ -27,3 +27,28 @@
 .debug-note{font-size:9px;color:#a8ada3;line-height:1.5;margin:0}
 .prediction-verdict{font-size:11px;font-weight:600;color:#5a6257;margin:14px 0 0}
 .prediction-footnote{font-size:9px;color:#b1b6ad;line-height:1.5;margin:0 0 4px}
+.export-option{display:inline-flex;align-items:center;gap:6px}
+.export-option.on{color:#b9644a}
+.notice-link{color:#b9644a;font-weight:600;text-decoration:underline}
+
+/* ---- top-10 predictions: primary guess, chips and the card strip ---- */
+.primary-guess{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:10px}
+.primary-name{font-family:'DM Serif Display',Georgia,serif;font-size:22px;color:#252724;line-height:1.1}
+.primary-score{font-size:13px;font-weight:700;color:#c0684c}
+.progress.primary{height:6px;margin-top:8px}
+.other-guesses{margin-top:14px}
+.other-label{font-size:8px;letter-spacing:1.2px;font-weight:700;color:#a8ada3;text-transform:uppercase}
+.other-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.other-chip{border:1px solid #e9ebe5;background:#fafbf8;border-radius:999px;padding:4px 9px;font-size:10px;color:#4a5449;display:inline-flex;gap:5px;align-items:center}
+.other-chip:hover{border-color:#d8977e;background:#fdf5f1}
+.other-chip em{font-style:normal;color:#b0b5ab;font-size:9px}
+.suggestion-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.suggestion-card{flex:0 0 auto;scroll-snap-align:start}
+.suggestion-card{width:86px;height:86px;gap:2px}
+.suggestion-card svg{flex:0 0 auto}
+.suggestion-name{font-size:9px;color:#6c7568;max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.suggestion-score{font-size:8px;color:#b0b5ab}
+.suggestion-card.text-only{background:#f7f8f4;border-style:dashed;cursor:default;padding:6px;justify-content:center}
+.text-card-name{font-family:'DM Serif Display',Georgia,serif;font-size:11px;line-height:1.15;color:#6c7568;text-align:center;overflow-wrap:anywhere}
+.suggestion-strip::-webkit-scrollbar{height:5px}
+.suggestion-strip::-webkit-scrollbar-thumb{background:#e4e7de;border-radius:4px}

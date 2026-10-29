@@ -8,8 +8,10 @@ API key, or paid service is required. Your drawing stays in your browser.
 ## Features
 
 - Mouse, trackpad, stylus and touch drawing with pencil, eraser, colors and brush size.
-- Local AI recognition after a 600 ms pause; the top three probabilities are shown
-  together with matching vector suggestions.
+- Local AI recognition after a 600 ms pause; the top 10 probabilities drive a
+  horizontally scrollable strip of up to 10 clean suggestion cards.
+- One-click PNG export (1200 × 720, white background by default, optional
+  transparency) that composites every visible layer and needs no server.
 - "AI thinks you might be drawing…" framing: the panel reports the model's
   uncertainty (for example `Cat 54% · Dog 31% · Tiger 8%`) instead of claiming a
   certain answer.
@@ -70,10 +72,65 @@ donut, bird, circle, beard, coffee_cup, butterfly, bench, rifle, cat, sock
 ice_cream, moustache, suitcase, hammer, rainbow, knife, cookie, baseball, lightning, bicycle
 ```
 
-Both `flower` and `sun` are in the list. 39 of these classes have a Lucide
-illustration available in the suggestion cards; when a prediction has no
-artwork, the app says so rather than inventing one. Classes such as `house`,
-`fish` and `heart` are **not** supported by this model.
+Both `flower` and `sun` are in the list. Classes such as `house`, `fish`, `dog`
+and `heart` are **not** predicted by this model — it can only answer with one of
+the 100 above, which is why an unsupported object is answered with the closest
+supported shape.
+
+### Suggestion artwork
+
+Every one of the 345 official categories has metadata (display name, icon key,
+tier, source) in `src/data/categories.js`, and 323 of them have a bundled vector
+icon in `src/data/icons.js`:
+
+| Tier | Meaning | Count |
+| --- | --- | --- |
+| A | Icon depicts the object | 265 |
+| B | Recognisable stand-in | 58 |
+| C | No honest icon — the card shows the category name as typography | 22 |
+
+Icons come from Fluent Emoji Flat (MIT), Noto Emoji (Apache-2.0) and Material
+Design Icons (Apache-2.0), bundled locally, no network requests. Categories are
+chosen by hand and reviewed against a rendered sheet, because a wrong picture is
+worse than no picture. Only the 100 predicted classes can actually appear today,
+but the library and mapping are ready for a 345-class model.
+
+![Artwork coverage for the 345 categories](docs/images/artwork-coverage.png)
+
+### Why the app does not ship a 345-class model
+
+All 345 official Quick, Draw! categories would need a model with 345 outputs. The
+obvious candidate, [yining1023/doodleNet](https://github.com/yining1023/doodleNet)
+("DoodleClassifier_345", ~50k drawings per class), was investigated and rejected
+for bundling:
+
+- **License:** the GitHub API reports `license: null`, there is no `LICENSE` file
+  in the repository or anywhere in its 26-commit history, and neither the README
+  nor the training notebook grants redistribution rights. Copyright therefore
+  defaults to all rights reserved, so redistributing its weights is not permitted.
+- **Mislabelled order:** its `class_names.txt` is not in the official category
+  order, so its output index → name mapping would have had to be derived
+  separately. Shipping a guessed mapping could silently mislabel every prediction.
+- It also has a malformed first layer, and its training data is described as
+  "50k per class" rather than the definitive Quick Draw counts.
+
+Searching for an alternative turned up no browser-ready 345-class model with a
+redistribution licence (other Quick, Draw! CNN projects on GitHub carry no licence,
+`NOASSERTION`, or ship code only, with no weights). Rather than ignore the
+licensing problem just because the repository is public, SketchAI keeps the
+clearly-licensed MIT 100-class model and is honest about its coverage.
+
+**Everything else in this release is built to support 345 categories**, so a
+licensed 345-class model can be dropped in without UI work:
+
+- the full official list of 345 categories lives in
+  `src/data/quickdraw-categories.txt` (CC BY 4.0), with metadata for every class;
+- recognition, the panel and the suggestion strip are all class-count agnostic
+  (top 10, live count in the status pill);
+- the artwork library covers 323 of the 345 categories already.
+
+The 100-class model's own predictions are what you see; nothing is padded or
+faked to look like broader coverage.
 
 ## How AI recognition works
 
@@ -98,7 +155,10 @@ illustrations never reach the model.
    without moving any geometry.
 6. **Inference** – `tf.tensor4d(ink, [1, 28, 28, 1])` is passed to
    `model.predict()` inside `tf.tidy()`, the probabilities are sorted, and the top
-   three are displayed. WebGL is used when available and the CPU backend
+   ten are kept. The panel shows the best guess plus four alternatives; the strip
+   shows up to ten cards. Scores below 0.5% are shown as `<1%` rather than a
+   misleading `0%`, and a best guess under 45% changes the wording to
+   “AI isn't completely sure. Maybe:”. WebGL is used when available and the CPU backend
    otherwise.
 
 Recognition is debounced: one prediction runs ~600 ms after drawing stops, and a
@@ -111,6 +171,18 @@ recognises 100 classes and can make mistakes; simple, centered, single-object
 doodles tend to work best. Once an illustration is inserted, a new recognition
 sketch begins; the existing artwork stays on the canvas, and recognition never
 treats all finished objects together as a new sketch.
+
+## Exporting a PNG
+
+The drawing lives on more than one canvas while you work: the visible art canvas
+(strokes plus inserted illustrations) and a separate overlay holding the
+temporary recognition sketch. `src/lib/download.js` composites the visible layers
+into a fresh 1200 × 720 canvas — never the recognition overlay — and saves it via
+`canvas.toBlob()` + a `blob:` object URL + an `<a download>`. It falls back to a
+data URL if `toBlob` returns nothing or throws, attaches the anchor to the DOM
+before clicking (Firefox and older Safari ignore detached anchors), and shows a
+manual “Save the PNG again” link in case the browser blocks the download. The
+“Transparent” toggle exports with an alpha background instead of white.
 
 ## Inspecting the model input (development only)
 
@@ -153,6 +225,12 @@ order were verified, the Quick, Draw! rasterisation the preprocessing now
 reproduces, before/after measurements across pen widths and drawing sizes, the
 problems found, and the application test results.
 
+## Release notes
+
+`docs/RELEASE-345.md` covers the PNG export repair, the 345-category licensing
+investigation and its outcome, top-10 predictions, the artwork library and the
+full test results for this release.
+
 ## Limitations
 
 - The classifier is a small CNN trained on only ~5,000 images per class; it is
@@ -161,7 +239,12 @@ problems found, and the application test results.
 - 28 × 28 grayscale input means fine detail is lost; texture, colour and small
   features do not contribute to the prediction.
 - Only the 100 Quick, Draw! classes above are recognised. Anything else (a house,
-  a fish, a heart) can only be guessed at as a similar supported class.
+  a dog, a fish, a heart) can only be guessed at as a similar supported class —
+  in testing, a drawn bus came back as "Car 83%" and a crayon as "Knife 79%".
+  Suggestions are therefore useful for supported objects and unreliable for
+  everything else; the app never claims a 345-class model.
+- The suggestion library is larger than the model: 323 categories have artwork,
+  but only the 100 predicted classes can currently surface as cards.
 - Recognition looks at the current unfinalised sketch. If two different objects
   are drawn before inserting an illustration, they are classified together.
 - Inference time depends on the device: WebGL is fast, the CPU fallback is usable
@@ -173,9 +256,16 @@ problems found, and the application test results.
 
 - Model and labels: [GuessTheDoodle](https://github.com/AniketDogra/GuessTheDoodle),
   MIT; the license text is included in `public/model/LICENSE`.
+- Category names: Google's official Quick, Draw! category list, CC BY 4.0
+  (`src/data/quickdraw-categories.txt`, license text alongside it). We did not
+  create the dataset and did not draw the training data.
+- Suggestion icons: [Fluent Emoji Flat](https://github.com/microsoft/fluentui-emoji)
+  (MIT), [Noto Emoji](https://github.com/googlefonts/noto-emoji) (Apache-2.0) and
+  [Material Design Icons](https://github.com/Pictogrammers/MaterialDesignIcons)
+  (Apache-2.0), via the Iconify JSON packages. Bundled, not fetched.
 - Training data: [The Quick, Draw! Dataset](https://github.com/googlecreativelab/quickdraw-dataset),
   Google, Inc., CC BY 4.0. The dataset itself is not bundled here.
-- Interface and suggestion icons: [Lucide](https://lucide.dev/), ISC license.
+- Interface icons: [Lucide](https://lucide.dev/), ISC license.
 - Fonts: DM Sans and DM Serif Display, distributed through
   [Fontsource](https://fontsource.org/), SIL Open Font License 1.1.
 - React, Vite and TensorFlow.js are open-source dependencies; see their

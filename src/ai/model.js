@@ -83,7 +83,9 @@ export function toProbabilities(scores) {
  * Runs the real network on the current sketch canvas.
  * Returns a status so the UI can explain *why* there is nothing to show.
  */
-export function predict(model, labels, sketch, { topK = 3 } = {}) {
+export const MAX_PREDICTIONS = 10;
+
+export function predict(model, labels, sketch, { topK = MAX_PREDICTIONS } = {}) {
   const pre = preprocessSketch(sketch, { size: INPUT_SIZE });
   if (!pre.ok) return { status: pre.reason, predictions: [], debug: pre };
   let scores;
