@@ -29,7 +29,12 @@ the vector icons.
 
 ## The AI model
 
-SketchAI does **not** train a model. It bundles a pretrained doodle classifier:
+SketchAI can run two classifiers. Until you train the 345-class model yourself
+(see [Training our own 345-class model](#training-our-own-345-class-model)), it
+runs the 100-class fallback below, which is what the repository ships with.
+
+**Fallback model (bundled).** SketchAI does not redistribute a model it trained
+here; the bundled one is pretrained:
 
 | | |
 | --- | --- |
@@ -131,6 +136,42 @@ licensed 345-class model can be dropped in without UI work:
 
 The 100-class model's own predictions are what you see; nothing is padded or
 faked to look like broader coverage.
+
+### Training our own 345-class model
+
+The licensing problem above has a clean solution: **train the model ourselves**
+on Google's Quick, Draw! dataset, which *is* clearly licensed (CC BY 4.0). The
+complete training pipeline is in [`training/`](training/README.md) and runs on a
+free Google Colab runtime:
+
+```
+training/SketchAI_345_Training.ipynb   the Colab notebook (start here)
+training/train_345.py                  the same pipeline as a script
+training/manual_test.py                sixteen hand-drawn doodles -> top 10
+scripts/install-model-345.mjs           validate + install a trained model
+```
+
+Quick, Draw! 28x28 numpy bitmaps -> range-requested slices (never the whole
+~50 GB dataset) -> memory-mapped batches -> a ~215k-parameter CNN ->
+TensorFlow.js export -> `public/model-345/`.
+
+Until that training run is finished, the app uses the 100-class model and says so.
+
+### Two models, one app
+
+| | Primary | Fallback |
+| --- | --- | --- |
+| Classes | 345 (ours, when trained) | 100 (MIT third-party) |
+| Location | `public/model-345/` | `public/model/` |
+| Preprocessing | profile `"345"` | profile `"100"` (frozen) |
+| Status pill | "AI ready — 345 objects" | "AI ready — 100 objects" |
+
+The 345-class model is tried first. If its files are absent — which is the case
+in a plain checkout, since `public/model-345/` is not committed — or if any
+validation check fails, the app quietly falls back and shows
+"Extended AI unavailable — using 100-object model". Drawing, undo/redo and PNG
+export are unaffected either way. Each model has its own preprocessing function
+so the fallback can never be degraded by work on the new one.
 
 ## How AI recognition works
 
@@ -251,6 +292,17 @@ full test results for this release.
   but slower.
 - Very thick pens on a very small drawing can over-fill the frame; the contrast
   normalisation only repairs strokes that are too thin, not ones that are too fat.
+
+## Model attribution
+
+SketchAI's 345-class classifier is **trained for this project** using Google's
+Quick, Draw! dataset. It is not Google's model, not AutoDraw, and not a
+third-party checkpoint. SketchAI is not affiliated with or endorsed by Google.
+
+The dataset is Google's; we did not create it and did not draw any of the
+training data. Every export ships an `ATTRIBUTION.txt` restating this, and
+`training/README.md` documents the dataset source, licence, sample counts,
+architecture, preprocessing and measured metrics.
 
 ## Credits / licenses
 

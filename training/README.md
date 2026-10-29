@@ -1,0 +1,328 @@
+# Training SketchAI's own 345-class classifier
+
+This folder contains everything needed to train a drawing classifier on
+**Google's Quick, Draw! dataset** and install it into SketchAI.
+
+The app currently ships with a 100-class model. The goal here is a model that
+recognises **all 345 official Quick, Draw! categories**, trained by us, so there
+are no third-party weights and no licensing grey areas.
+
+> **Everything is free.** Training runs on a free Google Colab runtime; the
+> finished model is downloaded to your computer and runs offline in the user's
+> browser. No API keys, no paid GPU, no server, no cloud inference.
+
+---
+
+## Contents
+
+| File | What it is |
+| --- | --- |
+| `SketchAI_345_Training.ipynb` | The Colab notebook. **Start here.** |
+| `train_345.py` | The training pipeline as a normal Python script (the notebook calls it). |
+| `build_notebook.py` | Regenerates the notebook from source, so the two cannot drift apart. |
+| `manual_test.py` | Runs sixteen hand-drawn doodles through a trained model and prints the top ten guesses. |
+| `doodles.json` | Those sixteen doodles, as stroke data shared with `scripts/manual-test-345.mjs`. |
+| `work/` | Scratch space (cached data, checkpoints, plots). Created on first run; not committed. |
+| `export/model-345/` | Where a finished 345-class model is written. Not committed. |
+
+---
+
+## Requirements
+
+* **A free Google account** (for Google Colab and Google Drive).
+* **A web browser.** Training happens in Colab, so you do not need a powerful
+  computer and nothing needs installing locally.
+* **Node.js 18+** — only for the last step, installing the finished model into
+  SketchAI. Check with `node --version`.
+
+That is all. Colab already has TensorFlow, NumPy and matplotlib; the notebook
+installs the one extra package it needs (`tensorflowjs`).
+
+---
+
+## Quick start (the short version)
+
+1. Open `training/SketchAI_345_Training.ipynb` in Google Colab.
+2. Leave `QUICK_TEST = True`, then **Runtime → Run all**.
+3. When it finishes, set `QUICK_TEST = False` and **Runtime → Run all** again.
+4. Download `sketchai-model-345.zip` when prompted.
+5. Unzip it and run `node scripts/install-model-345.mjs ./model-345`.
+6. `npm run dev` — the header should say **AI ready — 345 objects**.
+
+Step 2 takes a few minutes and proves everything works. Step 3 is the real
+training run and takes hours.
+
+---
+
+## Running in Google Colab — step by step
+
+### 1. Open the notebook
+
+* Push this branch to GitHub (or open the repository on GitHub).
+* Go to <https://colab.research.google.com>.
+* Choose **GitHub**, paste the repository URL, and open
+  `training/SketchAI_345_Training.ipynb`.
+
+### 2. Pick a runtime
+
+**Runtime → Change runtime type → Hardware accelerator → GPU (T4)**, then Save.
+
+A GPU is not required — the notebook runs on CPU too — but a T4 turns a
+multi-day run into a few hours. If Colab tells you no GPUs are available, use
+**None** and reduce `SAMPLES_PER_CLASS` to 3000.
+
+### 3. Run the quick test first
+
+In cell 2, make sure it says:
+
+```python
+QUICK_TEST = True
+```
+
+Then **Runtime → Run all**. It trains 20 categories on 500 drawings each for
+10 epochs. Watch for:
+
+* the category list printing 345 names,
+* the download progress lines,
+* `train 8,000  validation 1,000  test 1,000`,
+* the model summary ending in a Dense layer with 20 outputs,
+* training accuracy climbing over ten epochs,
+* `TensorFlow.js load verified`,
+* `sketchai-model-345.zip` appearing in the Files panel.
+
+If all of that happens, the pipeline works and you can commit to the long run.
+
+### 4. Run the full training
+
+Set `QUICK_TEST = False` in cell 2 and **Runtime → Run all** again.
+
+* `SAMPLES_PER_CLASS = 5000` → 1,725,000 drawings (the safe default).
+* `SAMPLES_PER_CLASS = 10000` → 3,450,000 drawings, better model, longer run.
+
+**Optional but recommended:** set `USE_DRIVE = True` so checkpoints are also
+written to your Google Drive. If Colab disconnects overnight you can restart
+from the saved checkpoint instead of losing the run.
+
+### 5. Expected runtime
+
+There is no honest way to give a precise number: it depends on which GPU Colab
+hands you, on how busy the machines are, and on `SAMPLES_PER_CLASS`.
+
+Roughly, for the full 345-class run:
+
+| Setup | Order of magnitude |
+| --- | --- |
+| Free T4 GPU, 5,000 per class | a few hours |
+| Free T4 GPU, 10,000 per class | most of a day |
+| CPU runtime, 5,000 per class | days — not recommended |
+
+Colab free runtimes also disconnect after periods of inactivity and have daily
+usage limits, so plan for the possibility of restarting. The dataset cache and
+(optionally) the Drive checkpoint make a restart cheap.
+
+### 6. Export
+
+At the end the notebook produces, inside `sketchai-model-345.zip`:
+
+```
+model-345/
+  model.json               network architecture
+  group1-shard1of1.bin     trained weights
+  classes.txt              the 345 categories, in output-neuron order
+  manifest.json            how it was trained + measured accuracy
+  ATTRIBUTION.txt          credits and licence notes
+```
+
+Cell 15 loads that folder back with TensorFlow.js to confirm it works before you
+download anything.
+
+### 7. Install into SketchAI
+
+On your own computer, in the SketchAI repository:
+
+```bash
+unzip ~/Downloads/sketchai-model-345.zip        # creates ./model-345
+
+node scripts/install-model-345.mjs ./model-345  # validate + copy to public/model-345/
+
+npm run dev                                     # or npm run build
+```
+
+The installer **refuses** to copy anything it cannot verify. It checks:
+
+| Check | Why |
+| --- | --- |
+| `model.json` and every weight shard exist | a partial copy would fail at load time |
+| the network outputs exactly 345 classes | otherwise the app would mislabel every guess |
+| input shape is 28×28×1 | that is what the browser sends |
+| `classes.txt` has 345 unique labels | duplicates would break the label order |
+| `classes.txt` matches `src/data/quickdraw-categories.txt` line for line | output neuron N must mean line N |
+| the export is not a self-test model | synthetic-shape exports cannot recognise anything |
+
+To validate without copying: `node scripts/install-model-345.mjs ./model-345 --check`
+
+### 8. Smoke-test the installed model
+
+```bash
+node scripts/manual-test-345.mjs
+```
+
+This loads `public/model-345` with TensorFlow.js, renders the sixteen doodles in
+`training/doodles.json`, pushes them through **the same preprocessing the app
+uses**, and prints the top ten guesses for each. If the guesses are sensible, the
+model is correctly installed and the label order is right.
+
+---
+
+## Alternative: run it from the command line
+
+If you have a machine with Python 3.9+ and `tensorflowjs` installed:
+
+```bash
+python training/train_345.py --quick-test                  # prove the pipeline
+python training/train_345.py --samples-per-class 5000      # the real run
+python training/train_345.py --help
+```
+
+Useful flags:
+
+| Flag | Meaning |
+| --- | --- |
+| `--samples-per-class N` | drawings per category (default 5000) |
+| `--epochs N` | maximum epochs; early stopping usually ends sooner |
+| `--batch-size N` | lower it if you run out of memory |
+| `--no-augment` | disable the light shift/rotate augmentation |
+| `--drive-dir PATH` | also save checkpoints to this folder |
+| `--dataset synthetic` | **offline self-test only** — procedural shapes, not real data |
+| `--categories N` | trim the category list (debugging) |
+
+`--dataset synthetic` exists so the plumbing can be exercised where Google's
+bucket is unreachable. Its exports are marked `is_self_test_only` and the
+installer will reject them.
+
+---
+
+## How it works
+
+### The class list is the single source of truth
+
+`src/data/quickdraw-categories.txt` holds the official 345 category names in a
+fixed order. The pipeline reads that file, never a directory listing, and writes
+the same list back out as `classes.txt` beside the exported model. Output neuron
+N therefore always means line N of `classes.txt`. This is the single most common
+way a classifier silently produces wrong labels, so it is enforced in three
+places: the training script, the export verifier and the installer.
+
+### Dataset
+
+Google's Quick, Draw! **28×28 numpy bitmaps**: one `.npy` per category, each row
+784 bytes of white ink on a black background, already centred on the drawing's
+bounding box. Perfect for a tiny browser model — no resizing, no artefacts.
+
+Each category file is 30–100 MB and holds every drawing ever collected, so the
+loader does not download whole files. It reads the small `.npy` header, works out
+where the pixel data starts, and issues an HTTP range request for only the first
+`SAMPLES_PER_CLASS` rows. Those slices are cached to disk.
+
+### Memory
+
+Nothing is ever fully loaded into RAM. Each category's slice lives in a
+memory-mapped file; the split is just a list of `(category, row)` pairs; and a
+Python generator materialises one batch at a time for `tf.data`. Shuffling
+happens in that generator (a numpy index array), because a `tf.data` shuffle
+buffer holds whole *batches* — one big enough for 1.7 million examples would be
+gigabytes.
+
+### Splits
+
+80% train, 10% validation, 10% held-out test, taken **per category** after a
+seeded shuffle (`SEED = 42`). The test set is touched exactly once, at the end.
+Re-running reproduces the identical partition.
+
+### Input format
+
+`28×28×1`, float32, 0–1, white ink on black — which is what Quick, Draw! bitmaps
+already are, divided by 255. The browser's preprocessing (profile `"345"` in
+`src/ai/preprocess.js`) reproduces the same geometry: crop the drawing's bounding
+box, pad it to ~84% of the frame (`CROP_PADDING = 1.186`), area-average into
+28×28, then rescale intensity so the ink peak reaches 1.0.
+
+The 100-class fallback model keeps its own profile (`"100"`) with a lower ink
+target and a looser gamma floor, because it was trained elsewhere and that
+profile is what measured best for it. The two profiles are separate functions —
+`preprocessFor100Model()` and `preprocessFor345Model()` — so improving one can
+never quietly degrade the other.
+
+### Augmentation
+
+Very light: ±5% translation and ±2.9° rotation during training only. No flips —
+a mirrored umbrella or fork is a different drawing — and no large distortions.
+
+### Model
+
+```
+Input (28, 28, 1)
+Conv2D 32 → BatchNorm → ReLU → MaxPool
+Conv2D 64 → BatchNorm → ReLU → MaxPool
+Conv2D 128 → ReLU → GlobalAveragePooling
+Dense 256 → Dropout 0.4
+Dense 345 → softmax
+```
+
+About **215,000 parameters** for 345 classes (~0.9 MB of float32 weights),
+comfortably under the 5 MB target. Training uses `SparseCategoricalCrossentropy`,
+Adam (lr 1e-3), and tracks top-1, top-3 and top-10 accuracy, with
+`EarlyStopping` (patience 4) and `ReduceLROnPlateau`.
+
+> **A note on epochs.** A CNN needs optimiser *steps*, not just epochs. The full
+> run gets ~6,700 steps per epoch and converges comfortably. A tiny quick test
+> gets ~60, which is why quick tests run 10 epochs with a smaller batch: with
+> only 3 epochs a quick test looks broken when it is merely short.
+
+### Output
+
+`best.h5` (HDF5, what the converter needs) and `best.keras` in the run
+directory, plus `classes.txt`, the training log, accuracy/loss plots,
+`summary.json`, and the converted package in `export/model-345/`.
+
+---
+
+## Measuring the result
+
+`training/manual_test.py` renders sixteen hand-made doodles — dog, fish, house,
+bus, shoe, guitar, elephant, lion, train, cat, flower, sun, car, airplane, tree,
+umbrella — with the same thin-stroke geometry a browser produces, and prints the
+top ten guesses for each. Nine of those categories are ones the old 100-class
+model cannot recognise at all, so this is where the expansion should show.
+
+```bash
+python training/manual_test.py --model training/work/run/best.h5 --thickness 12
+```
+
+Its output is a smoke test on sixteen drawings, **not** a benchmark — quote the
+test-split numbers from the notebook for accuracy claims.
+
+---
+
+## Attribution
+
+* **Dataset:** Google Quick, Draw! (<https://github.com/googlecreativelab/quickdraw-dataset>),
+  licensed **CC BY 4.0**. The dataset is Google's; we did not create it and did
+  not draw any of the training data.
+* **Model:** trained *for this project* by this pipeline. It is not Google's
+  model, not AutoDraw, and not a third-party checkpoint. SketchAI is not
+  affiliated with or endorsed by Google.
+* `ATTRIBUTION.txt` ships inside every export with these same credits.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| "Canonical category list not found" | The clone failed. Re-run cell 3. |
+| Runtime disconnects mid-run | Use `USE_DRIVE = True`, lower `SAMPLES_PER_CLASS`, restart from cell 4 (data is cached). |
+| Out of memory | Lower `BATCH_SIZE` to 128 or 64. |
+| Header still says "100 objects" | Run `node scripts/install-model-345.mjs ./model-345 --check`; it prints which test failed. |
+| "Label N is X but the canonical list says Y" | The export `classes.txt` is not from this repository's run. Re-run the export cell. |
+| Accuracy is awful on real doodles | Check cell 12's doodle contact sheet. If the 28×28 inputs look blank or blobby, the browser preprocessing profile and the training preprocessing disagree. |

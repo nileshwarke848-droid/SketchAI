@@ -24,6 +24,7 @@ function App() {
   const [status, setStatus] = useState('loading'), [recognition, setRecognition] = useState(IDLE), [hasInk, setHasInk] = useState(false);
   const [canUndo, setCanUndo] = useState(false), [canRedo, setCanRedo] = useState(false), [showHelp, setShowHelp] = useState(false), [message, setMessage] = useState('');
   const [showDebug, setShowDebug] = useState(DEBUG_AI), [backend, setBackend] = useState(''), [classCount, setClassCount] = useState(0);
+  const [modelTier, setModelTier] = useState(''), [fallbackReason, setFallbackReason] = useState(null);
   const [transparentExport, setTransparentExport] = useState(false);
   const [saveLink, setSaveLink] = useState(null);
   const [exporting, setExporting] = useState(false);
@@ -53,7 +54,7 @@ function App() {
       const loaded = modelRef.current;
       if (!loaded) return;
       try {
-        const result = predict(loaded.model, loaded.labels, sketch);
+        const result = predict(loaded.model, loaded.labels, sketch, { profile: loaded.profile });
         if (result.status === 'error') throw result.error ?? new Error('Inference failed');
         setHasInk(Boolean(result.debug?.bounds));
         setRecognition(result);
@@ -70,7 +71,7 @@ function App() {
     const sketch = document.createElement('canvas'); sketch.width = W; sketch.height = H; sketchRef.current = sketch;
     saveHistory();
     let active = true;
-    loadModel({ onBackend: setBackend }).then((loaded) => { if (!active) { loaded.model.dispose(); return; } modelRef.current = loaded; setClassCount(loaded.labels.length); setStatus('ready'); schedulePrediction(); }).catch((error) => { console.error('Model load failed:', error); if (!active) return; setStatus('error'); setMessage('The recognition model could not be loaded. Drawing and downloading still work.'); });
+    loadModel({ onBackend: setBackend, onProfile: (info) => { if (info.tier) setModelTier(info.tier); if (info.fallbackReason !== undefined) setFallbackReason(info.fallbackReason); } }).then((loaded) => { if (!active) { loaded.model.dispose(); return; } modelRef.current = loaded; setClassCount(loaded.labels.length); setModelTier(loaded.tier); setFallbackReason(loaded.fallbackReason); setStatus('ready'); schedulePrediction(); }).catch((error) => { console.error('Model load failed:', error); if (!active) return; setStatus('error'); setMessage('The recognition model could not be loaded. Drawing and downloading still work.'); });
     return () => { active = false; clearTimeout(timerRef.current); modelRef.current?.model.dispose(); };
   }, [saveHistory, schedulePrediction]);
 
@@ -193,7 +194,8 @@ function App() {
           </div>
           <div className="editor-bottom"><div className="palette"><span className="control-label">COLOR</span>{colors.map(c => <button key={c} className={`color-swatch ${color === c ? 'active' : ''}`} style={{'--swatch':c}} onClick={() => setColor(c)} aria-pressed={color === c} aria-label={`Brush color ${c}`} title={c}>{color === c && <Check size={12}/>}</button>)}</div><div className="brush-control"><span className="control-label">SIZE</span><div className="size-dot"/><input aria-label="Brush size" type="range" min="3" max="24" value={size} onChange={e => setSize(Number(e.target.value))}/><div className="size-dot big"/><span className="size-value">{size}px</span></div><div className="bottom-tip"><MousePointer2 size={14}/> Draw freely</div></div>
         </div>
-        <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">A peek inside the model's mind.</p>
+        <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">A peek inside the model’s mind.</p>
+          {status === 'ready' && modelTier === 'basic' && <p className="model-note" title={fallbackReason ? `Reason: ${fallbackReason}` : undefined}><Info size={12}/> Extended AI unavailable — using 100-object model</p>}
           {recognition.status === 'ok' ? <div aria-live="polite">
             <p className="prediction-verdict">{lowConfidence ? 'AI isn’t completely sure. Maybe:' : 'AI thinks you might be drawing…'}</p>
             <div className="primary-guess"><span className="primary-name">{suggestions[0].name}</span><span className="primary-score">{Math.round(suggestions[0].score * 100)}%</span></div>
@@ -201,7 +203,7 @@ function App() {
             {others.length > 0 && <div className="other-guesses"><span className="other-label">Other guesses</span><div className="other-chips">{others.map((p) => <button key={p.label} className="other-chip" onClick={() => insert(p.label)} title={`Insert ${displayName(p.label)}`}>{displayName(p.label)} <em>{formatScore(p.score)}</em></button>)}</div></div>}
             <p className="prediction-footnote">Top {suggestions.length} guesses from the model. Confidence is an estimate, not a promise.</p>
           </div> : <div className="empty-predictions" aria-live="polite"><div className="empty-sparkle"><Sparkles size={20}/></div><strong>{emptyState.title}</strong><span>{emptyState.copy}</span></div>}
-          {DEBUG_AI && recognition.debug && <DebugPanel sketch={sketchRef.current} debug={recognition.debug} open={showDebug} onToggle={() => setShowDebug(!showDebug)} backend={backend} predictions={predictions}/>}
+          {DEBUG_AI && recognition.debug && <DebugPanel sketch={sketchRef.current} debug={recognition.debug} open={showDebug} onToggle={() => setShowDebug(!showDebug)} backend={backend} predictions={predictions} profile={modelRef.current?.profile}/>}
           <div className="panel-bottom"><Info size={15}/><span>Confidence is the model’s estimate, not a guarantee. The more you draw, the more it can see.</span></div>
         </aside>
       </div>
@@ -209,7 +211,7 @@ function App() {
       {message && <div className="notice" role="status">{message}{saveLink && <> <a className="notice-link" href={saveLink.url} download={saveLink.filename} onClick={() => setTimeout(() => releaseUrl(saveLink.url), 30000)}>Save the PNG again</a> if your browser blocked the download.</>}</div>}
       <div className="page-bottom"><span><span className="tiny-star">✳</span> Made for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
-    {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={e => e.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>You draw an object on the canvas.</li><li>SketchAI crops, centers and resizes the sketch into a 28 × 28 image, matching the way its training data was drawn.</li><li>A neural network looks for patterns in the pixels.</li><li>A 100-category Quick, Draw! model predicts the most likely objects and their confidence scores. It only knows those categories, so unusual objects may be guessed as something similar.</li><li>Pick an available illustration to add it next to your sketch, then keep creating.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your drawing isn't uploaded.</div><button className="download-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
+    {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={e => e.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>You draw an object on the canvas.</li><li>SketchAI crops, centers and resizes the sketch into a 28 × 28 image, matching the way its training data was drawn.</li><li>A neural network looks for patterns in the pixels.</li><li>A Quick, Draw! classifier trained for this project looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Pick an available illustration to add it next to your sketch, then keep creating.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your drawing isn't uploaded.</div><button className="download-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
   </div>;
 }
 function Flower2Placeholder() { return <span className="placeholder-flower">✿</span>; }

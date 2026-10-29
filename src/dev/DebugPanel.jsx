@@ -5,7 +5,7 @@ import { INPUT_SIZE } from '../ai/preprocess';
 // Developer-only inspection of the exact image handed to the network:
 // original canvas -> cropped+centred region -> 28x28 model input.
 // Enabled in development builds, or on a deployed build with ?debug=ai.
-export default function DebugPanel({ sketch, debug, open, onToggle, backend, predictions = [] }) {
+export default function DebugPanel({ sketch, debug, open, onToggle, backend, predictions = [], profile = '' }) {
   const originalRef = useRef(null), cropRef = useRef(null), inputRef = useRef(null);
 
   useEffect(() => {
@@ -59,6 +59,7 @@ export default function DebugPanel({ sketch, debug, open, onToggle, backend, pre
             <div><dt>Ink peak → gamma</dt><dd>{stats.peak.toFixed(2)} → {stats.gamma.toFixed(2)}</dd></div>
             <div><dt>Ink coverage</dt><dd>{(stats.coverage * 100).toFixed(1)}%</dd></div>
             <div><dt>Backend</dt><dd>{backend || '—'}</dd></div>
+            <div><dt>Model</dt><dd>{profile ? `${profile}-class` : '—'}</dd></div>
           </dl>
           {predictions.length > 0 && <p className="debug-note">Output index → label: {predictions.map(p => `${p.index}→${p.label}`).join(' · ')}</p>}
         </>}

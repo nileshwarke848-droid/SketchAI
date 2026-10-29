@@ -1,3 +1,15 @@
 node_modules/
 dist/
 .DS_Store
+
+# Trained 345-class model. The repository ships with the 100-class fallback only;
+# the extended model is produced by training/README.md and installed with
+# scripts/install-model-345.mjs. (A random-weight test fixture may live here too —
+# see scripts/make-fixture-model-345.mjs — and must never be committed.)
+public/model-345/
+
+# Training scratch space: cached dataset slices, checkpoints, Keras files, exports.
+training/work/
+training/export/
+training/__pycache__/
+*.pyc

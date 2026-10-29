@@ -144,11 +144,11 @@ export function rasterizeInk(alpha, width, height, square, size = INPUT_SIZE) {
  * network was trained on. Geometry (and therefore petals, thin lines and rays)
  * is untouched; only brightness is remapped.
  */
-export function normaliseInkPeak(ink, target = TARGET_INK_PEAK) {
+export function normaliseInkPeak(ink, target = TARGET_INK_PEAK, minGamma = MIN_CONTRAST_GAMMA) {
   const sorted = Float32Array.from(ink).sort();
   const peak = sorted[Math.min(sorted.length - 1, Math.floor(0.97 * (sorted.length - 1)))];
   if (!(peak > 0) || peak >= target) return { ink, gamma: 1, peak };
-  const gamma = Math.min(1, Math.max(MIN_CONTRAST_GAMMA, Math.log(target) / Math.log(peak)));
+  const gamma = Math.min(1, Math.max(minGamma, Math.log(target) / Math.log(peak)));
   if (gamma >= 1) return { ink, gamma: 1, peak };
   const out = new Float32Array(ink.length);
   for (let i = 0; i < ink.length; i += 1) out[i] = Math.pow(ink[i], gamma);
@@ -162,14 +162,17 @@ export function normaliseInkPeak(ink, target = TARGET_INK_PEAK) {
  * Returns `{ ok: false, reason }` for blank or tiny sketches so that inference is
  * never run on an empty canvas.
  */
-export function preprocessSketch(canvas, { size = INPUT_SIZE, padding = CROP_PADDING } = {}) {
+export function preprocessSketch(
+  canvas,
+  { size = INPUT_SIZE, padding = CROP_PADDING, targetInkPeak = TARGET_INK_PEAK, minGamma = MIN_CONTRAST_GAMMA } = {},
+) {
   const { alpha, width, height } = readSketchAlpha(canvas);
   const bounds = findInkBounds(alpha, width, height);
   if (!bounds) return { ok: false, reason: 'blank', size, canvasWidth: width, canvasHeight: height };
   if (!isMeaningfulSketch(bounds)) return { ok: false, reason: 'tiny', bounds, size };
   const square = getCropSquare(bounds, padding);
   const raw = rasterizeInk(alpha, width, height, square, size);
-  const { ink, gamma, peak } = normaliseInkPeak(raw);
+  const { ink, gamma, peak } = normaliseInkPeak(raw, targetInkPeak, minGamma);
   return {
     ok: true,
     size,
@@ -177,6 +180,7 @@ export function preprocessSketch(canvas, { size = INPUT_SIZE, padding = CROP_PAD
     bounds,
     square,
     padding,
+    targetInkPeak,
     diagnostics: {
       gamma,
       peak,
@@ -184,4 +188,75 @@ export function preprocessSketch(canvas, { size = INPUT_SIZE, padding = CROP_PAD
       coverage: ink.reduce((total, value) => total + value, 0) / ink.length,
     },
   };
+}
+
+// ---------------------------------------------------------------------------------------
+// Model-specific preprocessing profiles
+// ---------------------------------------------------------------------------------------
+//
+// SketchAI ships two classifiers and they were *not* trained the same way, so each
+// one gets its own pixel profile instead of a shared guess:
+//
+//   100-class (fallback)  Trained by a third party; the profile below is the one the
+//                         audit measured to work best for it (top-1 81% on its test
+//                         doodles). It is frozen — do not "improve" it, because that
+//                         would change the accuracy of the model that has to keep
+//                         working when the big model is missing.
+//
+//   345-class (ours)      Trained here on Google's Quick, Draw! 28x28 numpy bitmaps:
+//                         fully opaque white ink (255 -> 1.0 after dividing by 255),
+//                         1.5 px pen, drawing bbox scaled to 84% of the frame. The
+//                         geometry is identical to the profile above (both reproduce
+//                         the Quick, Draw! renderer), but the *ink intensity* target is
+//                         higher and the darkest gamma allowed is stricter, because
+//                         our training pixels really are at full opacity. A browser
+//                         pen is thinner, so its antialiased strokes would otherwise
+//                         sit at ~0.3-0.5 where the model only ever saw ~1.0.
+
+export const PREPROCESS_PROFILES = Object.freeze({
+  '100': Object.freeze({
+    id: '100',
+    size: INPUT_SIZE,
+    padding: CROP_PADDING,
+    targetInkPeak: TARGET_INK_PEAK,
+    minGamma: MIN_CONTRAST_GAMMA,
+    source: 'third-party training pipeline, audit-tuned, frozen',
+  }),
+  '345': Object.freeze({
+    id: '345',
+    size: INPUT_SIZE,
+    padding: CROP_PADDING,
+    // Quick, Draw! bitmaps top out at 255/255 after normalisation.
+    targetInkPeak: 1.0,
+    // Never brighten so aggressively that noise becomes solid ink.
+    minGamma: 0.25,
+    source: 'Google Quick, Draw! 28x28 numpy bitmaps (this project\'s own training run)',
+  }),
+});
+
+/** Preprocessing for the 100-class fallback model (unchanged legacy behaviour). */
+export function preprocessFor100Model(canvas) {
+  const profile = PREPROCESS_PROFILES['100'];
+  return preprocessSketch(canvas, {
+    size: profile.size,
+    padding: profile.padding,
+    targetInkPeak: profile.targetInkPeak,
+    minGamma: profile.minGamma,
+  });
+}
+
+/** Preprocessing for the 345-class model trained by this project. */
+export function preprocessFor345Model(canvas) {
+  const profile = PREPROCESS_PROFILES['345'];
+  return preprocessSketch(canvas, {
+    size: profile.size,
+    padding: profile.padding,
+    targetInkPeak: profile.targetInkPeak,
+    minGamma: profile.minGamma,
+  });
+}
+
+/** Dispatch by profile id, with the 100-class profile as the safe default. */
+export function preprocessForModel(canvas, profileId = '100') {
+  return profileId === '345' ? preprocessFor345Model(canvas) : preprocessFor100Model(canvas);
 }

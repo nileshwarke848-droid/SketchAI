@@ -52,3 +52,5 @@
 .text-card-name{font-family:'DM Serif Display',Georgia,serif;font-size:11px;line-height:1.15;color:#6c7568;text-align:center;overflow-wrap:anywhere}
 .suggestion-strip::-webkit-scrollbar{height:5px}
 .suggestion-strip::-webkit-scrollbar-thumb{background:#e4e7de;border-radius:4px}
+
+.model-note{display:flex;align-items:center;gap:6px;font-size:9px;line-height:1.5;color:#a5814f;background:#fdf6ea;border:1px solid #f2e5cd;border-radius:6px;padding:7px 8px;margin:9px 0 0}.model-note svg{flex:none;color:#c39a5e}

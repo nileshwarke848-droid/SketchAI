@@ -73,6 +73,16 @@ dropped in later without UI changes:
 The shipped model keeps its 100 classes and its measured accuracy; nothing is
 padded to simulate coverage.
 
+### Training our own instead
+
+Rather than ship an unlicensed model or fake the coverage, the release adds a
+complete training pipeline (`training/README.md`, `training/train_345.py`,
+`training/SketchAI_345_Training.ipynb`) that trains a 345-class classifier on
+Google's own CC BY 4.0 dataset in free Google Colab. Until that run is finished,
+the app uses the 100-class model and says so; see
+[Two models, one app](../../#two-models-one-app) in the README for how the
+primary/fallback loading works.
+
 ## 3. Accuracy
 
 Measured with the shipped model and the corrected preprocessing (same test set as
