@@ -8,3 +8,22 @@
 @media(max-width:1000px){main{padding:0 4%}.topbar{padding:0 4%}.workspace{grid-template-columns:minmax(0,1fr) 245px}.editor-bottom{gap:15px}.brush-control{padding-left:15px}.bottom-tip{display:none}.suggestion-copy{min-width:200px}.suggestion-note{display:none}}
 @media(max-width:700px){.topbar{height:66px;padding:0 18px}.header-right{gap:12px}.model-status{font-size:10px}.model-status i{width:8px;height:8px}.help-link{font-size:11px}.brand{font-size:20px}main{padding:0 16px}.intro{padding:35px 0 30px}.intro-note{display:none}h1{font-size:37px}.intro p{line-height:1.6}.workspace-heading{align-items:flex-end}.workspace-heading>div:first-child{gap:6px;flex-wrap:wrap}.heading-sub{display:none}.workspace-heading h2{font-size:20px}.workspace-actions{gap:2px}.text-button,.download-button{padding:10px;font-size:10px}.download-button span{display:none}.workspace{grid-template-columns:1fr}.editor-top{height:43px}.editor-top-right .canvas-dim{display:none}.drawing-area .tool-rail{width:48px;padding-top:12px}.rail-button{width:34px;height:34px}.canvas-hint{gap:5px}.canvas-hint strong{font-size:10px}.canvas-hint span{font-size:9px}.canvas-corner{display:none}.editor-bottom{flex-wrap:wrap;gap:15px;min-height:60px}.palette{gap:10px}.brush-control{border:0;padding:0}.insight-panel{padding:18px}.panel-kicker,.panel-title-icon,.insight-panel h2,.panel-intro,.panel-divider{display:none}.empty-predictions{min-height:100px}.panel-bottom{margin-top:10px}.suggestions{padding:18px;align-items:flex-start;gap:16px;flex-direction:column}.suggestion-copy{min-width:0}.suggestion-content{border:0;border-top:1px solid #eeefe9;padding:15px 0 0;width:100%}.mini-icons>span{width:40px;height:40px}.suggestion-empty{gap:10px}.suggestion-card{width:82px}.page-bottom{gap:15px;line-height:1.5}.page-bottom span:last-child{text-align:right}.modal .panel-title-icon{display:grid}}
 @media(max-width:380px){.palette{gap:7px}.editor-bottom{padding:12px}.suggestion-empty p{display:none}.file-label{display:none}}
+
+/* ---- developer preprocessing inspector (dev builds / ?debug=ai) ---- */
+.debug-panel{margin-top:12px;border-top:1px dashed #e3e5dd;padding-top:10px}
+.debug-toggle{border:0;background:none;color:#9aa094;font-size:9px;letter-spacing:1.1px;font-weight:700;display:flex;gap:6px;align-items:center;padding:2px 0}
+.debug-toggle:hover{color:#d78a6c}
+.debug-body{display:grid;gap:10px;margin-top:9px}
+.debug-stages{display:flex;gap:8px;flex-wrap:wrap}
+.debug-stages figure{margin:0;display:grid;gap:4px}
+.debug-stages canvas{width:112px;height:auto;border:1px solid #e9ebe5;border-radius:4px;background:#fff;display:block}
+.debug-stages figure:first-child canvas{width:150px}
+.debug-stages canvas.pixel{image-rendering:pixelated;background:#000}
+.debug-stages figcaption{font-size:8px;color:#a8ada3;letter-spacing:.4px}
+.debug-stats{display:grid;gap:3px;margin:0;font-size:9px;color:#7d857a}
+.debug-stats div{display:flex;justify-content:space-between;gap:10px}
+.debug-stats dt{color:#a8ada3}
+.debug-stats dd{margin:0;font-variant-numeric:tabular-nums}
+.debug-note{font-size:9px;color:#a8ada3;line-height:1.5;margin:0}
+.prediction-verdict{font-size:11px;font-weight:600;color:#5a6257;margin:14px 0 0}
+.prediction-footnote{font-size:9px;color:#b1b6ad;line-height:1.5;margin:0 0 4px}
