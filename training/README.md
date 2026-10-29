@@ -19,7 +19,8 @@ are no third-party weights and no licensing grey areas.
 | --- | --- |
 | `SketchAI_345_Training.ipynb` | The Colab notebook. **Start here.** |
 | `train_345.py` | The training pipeline as a normal Python script (the notebook calls it). |
-| `build_notebook.py` | Regenerates the notebook from source, so the two cannot drift apart. |
+| `colab_setup.py` | Keeps the notebook alive on a real Colab runtime: dependency handling that never downgrades TensorFlow, repository cloning, and pre-flight checks. |
+| `build_notebook.py` | Regenerates the notebook from source, so the notebook and the code cannot drift apart. |
 | `manual_test.py` | Runs sixteen hand-drawn doodles through a trained model and prints the top ten guesses. |
 | `doodles.json` | Those sixteen doodles, as stroke data shared with `scripts/manual-test-345.mjs`. |
 | `work/` | Scratch space (cached data, checkpoints, plots). Created on first run; not committed. |
@@ -35,8 +36,12 @@ are no third-party weights and no licensing grey areas.
 * **Node.js 18+** — only for the last step, installing the finished model into
   SketchAI. Check with `node --version`.
 
-That is all. Colab already has TensorFlow, NumPy and matplotlib; the notebook
-installs the one extra package it needs (`tensorflowjs`).
+That is all. Colab already ships TensorFlow, NumPy and matplotlib. The notebook's
+first cell installs anything else it needs — and it is careful about how it does
+it (see [What the setup cell does](#what-the-setup-cell-does)).
+
+You need **no GitHub account, no token and no SSH key**: the repository is public
+and is cloned over plain HTTPS.
 
 ---
 
@@ -73,18 +78,21 @@ multi-day run into a few hours. If Colab tells you no GPUs are available, use
 
 ### 3. Run the quick test first
 
-In cell 2, make sure it says:
+In the configuration cell, make sure it says:
 
 ```python
-QUICK_TEST = True
+QUICK_TEST = True      # first run
 ```
 
 Then **Runtime → Run all**. It trains 20 categories on 500 drawings each for
-10 epochs. Watch for:
+10 epochs, using **real Google Quick, Draw! data**. Watch for:
 
-* the category list printing 345 names,
+* the environment block (Python / TensorFlow / Keras / TensorFlow.js / GPU / RAM),
+* `Repository already present` or a successful clone,
+* `Exporter smoke test: PASSED` — the converter works in your runtime,
+* `Quick Draw dataset reachable` — Google's bucket is reachable,
 * the download progress lines,
-* `train 8,000  validation 1,000  test 1,000`,
+* `train 8,000   validation 1,000   test 1,000`,
 * the model summary ending in a Dense layer with 20 outputs,
 * training accuracy climbing over ten epochs,
 * `TensorFlow.js load verified`,
@@ -94,7 +102,13 @@ If all of that happens, the pipeline works and you can commit to the long run.
 
 ### 4. Run the full training
 
-Set `QUICK_TEST = False` in cell 2 and **Runtime → Run all** again.
+Change **one line** in the configuration cell:
+
+```python
+QUICK_TEST = False     # second run: all 345 categories
+```
+
+then **Runtime → Run all** again. Nothing else needs changing.
 
 * `SAMPLES_PER_CLASS = 5000` → 1,725,000 drawings (the safe default).
 * `SAMPLES_PER_CLASS = 10000` → 3,450,000 drawings, better model, longer run.
@@ -281,9 +295,29 @@ Adam (lr 1e-3), and tracks top-1, top-3 and top-10 accuracy, with
 
 ### Output
 
-`best.h5` (HDF5, what the converter needs) and `best.keras` in the run
-directory, plus `classes.txt`, the training log, accuracy/loss plots,
-`summary.json`, and the converted package in `export/model-345/`.
+Two copies of the best model are written to the run directory:
+
+* **`best.keras`** — the modern Keras format, for reloading and further training.
+* **`best.h5`** — HDF5. The converter understands some newer `.keras` files and
+  rejects others, so **HDF5 is what gets converted**; do not rely on the
+  `.keras` file for export.
+
+Alongside them: `classes.txt` (the exact labels the run was trained on), the
+training log, accuracy and loss plots, `summary.json`, and the converted package
+in `export/model-345/`.
+
+### Export
+
+Conversion goes through `tensorflowjs`, and the notebook verifies it three times:
+
+1. **Before training** — a throwaway five-class model is converted, so a broken
+   exporter is discovered in seconds rather than hours later.
+2. **After conversion** — `classes.txt` must match the canonical list line for
+   line, every weight shard must exist, and the network's output width must equal
+   the number of labels.
+3. **Reload** — the exported folder is loaded back with TensorFlow.js, the same
+   code path `tf.loadLayersModel()` uses in the browser, and the input/output
+   shapes are printed.
 
 ---
 
@@ -320,9 +354,57 @@ test-split numbers from the notebook for accuracy claims.
 
 | Symptom | Fix |
 | --- | --- |
-| "Canonical category list not found" | The clone failed. Re-run cell 3. |
-| Runtime disconnects mid-run | Use `USE_DRIVE = True`, lower `SAMPLES_PER_CLASS`, restart from cell 4 (data is cached). |
+| `Could not get the SketchAI repository automatically` | The public clone failed. Download the ZIP from GitHub, upload it to the Files panel, `!unzip -q SketchAI*.zip -d /content/`, then re-run the cell. |
+| `No module named 'train_345'` | The clone is missing `training/`. Re-run the setup cell — it checks for that file and re-clones if needed. |
+| `Exporter smoke test: FAILED` | TensorFlow.js cannot convert in this runtime. Re-run the setup cell; if it still fails, **Runtime → Restart runtime** then Run all. |
+| `Quick Draw dataset could not be reached` | The runtime cannot reach Google Cloud Storage. Re-run the cell (transient), or check the runtime has internet access. |
+| `No GPU detected` | Fine but slow. Runtime → Change runtime type → T4 GPU, then Run all again. |
+| Runtime disconnects mid-run | Set `USE_DRIVE = True`, lower `SAMPLES_PER_CLASS`, re-run from section 3 (data is cached). |
 | Out of memory | Lower `BATCH_SIZE` to 128 or 64. |
 | Header still says "100 objects" | Run `node scripts/install-model-345.mjs ./model-345 --check`; it prints which test failed. |
 | "Label N is X but the canonical list says Y" | The export `classes.txt` is not from this repository's run. Re-run the export cell. |
-| Accuracy is awful on real doodles | Check cell 12's doodle contact sheet. If the 28×28 inputs look blank or blobby, the browser preprocessing profile and the training preprocessing disagree. |
+| Accuracy is awful on real doodles | Check the doodle contact sheet in section 12. If the 28×28 inputs look blank or blobby, the browser preprocessing profile and the training preprocessing disagree. |
+
+---
+
+## What the setup cell does
+
+Colab notebooks usually break in the five minutes *before* any learning happens,
+so `colab_setup.py` handles that part defensively. Its rules:
+
+**It never touches TensorFlow if it can avoid it.** `pip install tensorflowjs`
+pulls in `tensorflow-decision-forests`, which pins one exact TensorFlow version —
+on a newer Colab runtime that either errors out or triggers a ~600 MB TensorFlow
+downgrade that can disturb the GPU stack. Instead the notebook installs
+`tensorflowjs` with `--no-deps`, adds the small runtime packages it needs, and
+registers a harmless placeholder for `tensorflow_decision_forests` (the converter
+imports it at module scope but only uses it for decision-forest saved models,
+which this project never creates). If TensorFlow's version changes anyway, the
+setup reinstalls the version it started with.
+
+**It checks that the clone actually contains the pipeline.** A plain
+`git clone` of the default branch can succeed while missing `training/` entirely,
+which surfaces ten cells later as a mystery `ModuleNotFoundError`. So the clone is
+verified, and alternative branches are tried until one contains
+`training/train_345.py`. Cloning happens over public HTTPS with
+`GIT_TERMINAL_PROMPT=0`, so a renamed or private repository fails fast with
+instructions instead of hanging on a credential prompt.
+
+**It fails early, not late.** Section 2 converts a throwaway five-class model to
+TensorFlow.js and probes the dataset bucket — seconds of work that prevent
+discovering a broken exporter after hours of training.
+
+**It is idempotent.** Existing checkouts, caches, packages and exports are reused;
+nothing fails because a file or folder already exists.
+
+`colab_setup.setup()` prints exactly what it did, and `colab_setup.diagnostics()`
+prints the environment block, so a problem can be diagnosed from the output alone.
+
+> **Testing note.** These paths were exercised in a sandboxed Linux environment
+> with TensorFlow 2.21, tf-keras 2.21 and TensorFlow.js 4.22: the dependency
+> hardening, the branch fallback, the exporter smoke test and the whole
+> train → export → zip flow were each run end to end. They were **not** run on
+> Google Colab itself — the sandbox has no GPU and no network access to Google
+> Cloud Storage, so the Colab-specific pieces (GPU detection, the real bucket)
+> could not be confirmed there. If the setup cell reports something unexpected,
+> its output is designed to say what to do next.
