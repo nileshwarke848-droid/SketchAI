@@ -12,6 +12,7 @@
 import { ICONS, ICON_LICENSES } from './icons.js';
 import { categoriesByLabel, categoriesByNormalisedLabel } from './categories.js';
 import { VARIANT_SETS } from './artwork-variants.js';
+import { LINE_ART } from './line-art.js';
 
 /** Model labels use underscores ("alarm_clock"); the official list uses spaces. */
 export function normaliseLabel(label) {
@@ -99,23 +100,41 @@ export function iconToSvgString(label, { size = 160, color } = {}) {
  */
 export function getArtworkVariants(label, { max = 4 } = {}) {
   const variants = [];
-  const base = getIconData(label);
-  if (base) {
-    variants.push({
-      id: `${normaliseLabel(label)}-1`,
-      w: base.w,
-      h: base.h,
-      b: base.b,
-      origin: 'icon',
-      tier: base.tier,
-      source: base.source,
-    });
-  }
-  const extras = VARIANT_SETS[normaliseLabel(label)] ?? [];
-  extras.forEach((extra, index) => {
-    variants.push({ ...extra, id: `${normaliseLabel(label)}-${index + 2}`, origin: 'variant' });
+  const key = normaliseLabel(label);
+  const push = (art, id, origin) =>
+    variants.push({ ...art, id: `${key}-${id}`, origin });
+
+  // SketchAI is "rough sketch -> cleaner drawing of the same object", never
+  // "rough sketch -> emoji". So the order of preference is:
+  //
+  //   1. an original SketchAI clean line-art drawing
+  //   2. alternate SketchAI clean line-art drawings
+  //   3. an acceptable open-source monochrome line icon (Material)
+  //   4. the legacy colour emoji/icon, as a last resort
+  //   5. text only
+  const drawing = LINE_ART[key];
+  if (drawing) push(drawing, 'line', 'lineart');
+
+  (VARIANT_SETS[key] ?? []).forEach((extra, index) => {
+    push(extra, `variant-${index + 2}`, 'variant');
   });
-  return variants.slice(0, Math.max(1, max));
+
+  const icon = getIconData(label);
+  if (icon) push(icon, 'icon', 'icon');
+
+  return variants
+    // Monochrome line icons outrank colour emoji, which only appear when a
+    // category has no drawing of its own yet.
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, Math.max(1, max));
+}
+
+/** Lower sorts first. */
+function rank(art) {
+  if (art.origin === 'lineart') return 0;
+  if (art.origin === 'variant') return 1;
+  if (art.origin === 'icon') return art.source === 'mdi' ? 2 : 3;
+  return 4;
 }
 
 /** How many distinct artwork options a label has. */
@@ -132,12 +151,14 @@ export function variantCount(label) {
  */
 export function variantToSvgString(variant, { size = 160, color = '#242422' } = {}) {
   if (!variant) return null;
-  const body =
-    variant.origin === 'variant'
-      ? variant.b.replaceAll('STROKE', color)
-      : variant.source === 'mdi'
-        ? `<g fill="${color}">${variant.b}</g>`
-        : variant.b;
+  // Line art (primary and alternates) is drawn with the pen colour, so an
+  // inserted drawing matches the brush the user picked.
+  const isLineArt = variant.origin === 'lineart' || variant.origin === 'variant';
+  const body = isLineArt
+    ? variant.b.replaceAll('STROKE', color)
+    : variant.source === 'mdi'
+      ? `<g fill="${color}">${variant.b}</g>`
+      : variant.b;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${variant.w} ${variant.h}">${body}</svg>`;
 }
 
