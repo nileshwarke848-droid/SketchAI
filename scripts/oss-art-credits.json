@@ -1,0 +1,1641 @@
+{
+  "iconoir": {
+    "name": "Iconoir",
+    "version": "7.12.1",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2021 Iconoir",
+    "url": "https://github.com/iconoir-icons/iconoir",
+    "categories": [
+      {
+        "label": "airplane",
+        "icon": "airplane",
+        "mode": "stroke"
+      },
+      {
+        "label": "basketball",
+        "icon": "basketball",
+        "mode": "stroke"
+      },
+      {
+        "label": "bicycle",
+        "icon": "bicycle",
+        "mode": "stroke"
+      },
+      {
+        "label": "birthday cake",
+        "icon": "birthday-cake",
+        "mode": "stroke"
+      },
+      {
+        "label": "coffee cup",
+        "icon": "coffee-cup",
+        "mode": "stroke"
+      },
+      {
+        "label": "dishwasher",
+        "icon": "dishwasher",
+        "mode": "stroke"
+      },
+      {
+        "label": "hat",
+        "icon": "hat",
+        "mode": "stroke"
+      },
+      {
+        "label": "light bulb",
+        "icon": "light-bulb",
+        "mode": "stroke"
+      },
+      {
+        "label": "pants",
+        "icon": "pants",
+        "mode": "stroke"
+      },
+      {
+        "label": "rain",
+        "icon": "rain",
+        "mode": "stroke"
+      },
+      {
+        "label": "soccer ball",
+        "icon": "soccer-ball",
+        "mode": "stroke"
+      },
+      {
+        "label": "suitcase",
+        "icon": "suitcase",
+        "mode": "stroke"
+      },
+      {
+        "label": "wristwatch",
+        "icon": "wristwatch",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "lucide": {
+    "name": "Lucide",
+    "version": "1.65.0",
+    "license": "ISC",
+    "copyright": "Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.",
+    "url": "https://github.com/lucide-icons/lucide",
+    "categories": [
+      {
+        "label": "alarm clock",
+        "icon": "alarm-clock",
+        "mode": "stroke"
+      },
+      {
+        "label": "anvil",
+        "icon": "anvil",
+        "mode": "stroke"
+      },
+      {
+        "label": "bird",
+        "icon": "bird",
+        "mode": "stroke"
+      },
+      {
+        "label": "bridge",
+        "icon": "bridge",
+        "mode": "stroke"
+      },
+      {
+        "label": "broccoli",
+        "icon": "broccoli",
+        "mode": "stroke"
+      },
+      {
+        "label": "broom",
+        "icon": "broom",
+        "mode": "stroke"
+      },
+      {
+        "label": "castle",
+        "icon": "castle",
+        "mode": "stroke"
+      },
+      {
+        "label": "church",
+        "icon": "church",
+        "mode": "stroke"
+      },
+      {
+        "label": "computer",
+        "icon": "computer",
+        "mode": "stroke"
+      },
+      {
+        "label": "donut",
+        "icon": "donut",
+        "mode": "stroke"
+      },
+      {
+        "label": "door",
+        "icon": "door-closed",
+        "mode": "stroke"
+      },
+      {
+        "label": "drill",
+        "icon": "drill",
+        "mode": "stroke"
+      },
+      {
+        "label": "drums",
+        "icon": "drum",
+        "mode": "stroke"
+      },
+      {
+        "label": "eyeglasses",
+        "icon": "glasses",
+        "mode": "stroke"
+      },
+      {
+        "label": "fan",
+        "icon": "fan",
+        "mode": "stroke"
+      },
+      {
+        "label": "flamingo",
+        "icon": "bird",
+        "mode": "stroke"
+      },
+      {
+        "label": "flashlight",
+        "icon": "flashlight",
+        "mode": "stroke"
+      },
+      {
+        "label": "guitar",
+        "icon": "guitar",
+        "mode": "stroke"
+      },
+      {
+        "label": "hamburger",
+        "icon": "hamburger",
+        "mode": "stroke"
+      },
+      {
+        "label": "hand",
+        "icon": "hand",
+        "mode": "stroke"
+      },
+      {
+        "label": "hockey stick",
+        "icon": "hockey-stick",
+        "mode": "stroke"
+      },
+      {
+        "label": "hot air balloon",
+        "icon": "hot-air-balloon",
+        "mode": "stroke"
+      },
+      {
+        "label": "house",
+        "icon": "house",
+        "mode": "stroke"
+      },
+      {
+        "label": "laptop",
+        "icon": "laptop",
+        "mode": "stroke"
+      },
+      {
+        "label": "lighthouse",
+        "icon": "lighthouse",
+        "mode": "stroke"
+      },
+      {
+        "label": "lightning",
+        "icon": "zap",
+        "mode": "stroke"
+      },
+      {
+        "label": "megaphone",
+        "icon": "megaphone",
+        "mode": "stroke"
+      },
+      {
+        "label": "mouth",
+        "icon": "mouth",
+        "mode": "stroke"
+      },
+      {
+        "label": "ocean",
+        "icon": "waves",
+        "mode": "stroke"
+      },
+      {
+        "label": "paintbrush",
+        "icon": "paintbrush",
+        "mode": "stroke"
+      },
+      {
+        "label": "parrot",
+        "icon": "bird",
+        "mode": "stroke"
+      },
+      {
+        "label": "popsicle",
+        "icon": "popsicle",
+        "mode": "stroke"
+      },
+      {
+        "label": "river",
+        "icon": "waves",
+        "mode": "stroke"
+      },
+      {
+        "label": "roller coaster",
+        "icon": "roller-coaster",
+        "mode": "stroke"
+      },
+      {
+        "label": "sandwich",
+        "icon": "sandwich",
+        "mode": "stroke"
+      },
+      {
+        "label": "skyscraper",
+        "icon": "building-2",
+        "mode": "stroke"
+      },
+      {
+        "label": "squirrel",
+        "icon": "squirrel",
+        "mode": "stroke"
+      },
+      {
+        "label": "stereo",
+        "icon": "speaker",
+        "mode": "stroke"
+      },
+      {
+        "label": "swan",
+        "icon": "bird",
+        "mode": "stroke"
+      },
+      {
+        "label": "syringe",
+        "icon": "syringe",
+        "mode": "stroke"
+      },
+      {
+        "label": "the great wall of china",
+        "icon": "brick-wall",
+        "mode": "stroke"
+      },
+      {
+        "label": "toilet",
+        "icon": "toilet",
+        "mode": "stroke"
+      },
+      {
+        "label": "van",
+        "icon": "van",
+        "mode": "stroke"
+      },
+      {
+        "label": "washing machine",
+        "icon": "washing-machine",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "tabler": {
+    "name": "Tabler Icons",
+    "version": "3.50.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2020-2025 Paweł Kuna",
+    "url": "https://github.com/tabler/tabler-icons",
+    "categories": [
+      {
+        "label": "ambulance",
+        "icon": "ambulance",
+        "mode": "stroke"
+      },
+      {
+        "label": "apple",
+        "icon": "apple",
+        "mode": "stroke"
+      },
+      {
+        "label": "asparagus",
+        "icon": "carrot",
+        "mode": "stroke"
+      },
+      {
+        "label": "axe",
+        "icon": "axe",
+        "mode": "stroke"
+      },
+      {
+        "label": "backpack",
+        "icon": "backpack",
+        "mode": "stroke"
+      },
+      {
+        "label": "banana",
+        "icon": "banana",
+        "mode": "stroke"
+      },
+      {
+        "label": "bandage",
+        "icon": "bandage",
+        "mode": "stroke"
+      },
+      {
+        "label": "basket",
+        "icon": "basket",
+        "mode": "stroke"
+      },
+      {
+        "label": "beach",
+        "icon": "beach",
+        "mode": "stroke"
+      },
+      {
+        "label": "bed",
+        "icon": "bed",
+        "mode": "stroke"
+      },
+      {
+        "label": "binoculars",
+        "icon": "binoculars",
+        "mode": "stroke"
+      },
+      {
+        "label": "blackberry",
+        "icon": "grape",
+        "mode": "stroke"
+      },
+      {
+        "label": "blueberry",
+        "icon": "grape",
+        "mode": "stroke"
+      },
+      {
+        "label": "book",
+        "icon": "book",
+        "mode": "stroke"
+      },
+      {
+        "label": "bowtie",
+        "icon": "bow",
+        "mode": "stroke"
+      },
+      {
+        "label": "brain",
+        "icon": "brain",
+        "mode": "stroke"
+      },
+      {
+        "label": "bread",
+        "icon": "bread",
+        "mode": "stroke"
+      },
+      {
+        "label": "bucket",
+        "icon": "bucket",
+        "mode": "stroke"
+      },
+      {
+        "label": "bulldozer",
+        "icon": "bulldozer",
+        "mode": "stroke"
+      },
+      {
+        "label": "bus",
+        "icon": "bus",
+        "mode": "stroke"
+      },
+      {
+        "label": "bush",
+        "icon": "plant",
+        "mode": "stroke"
+      },
+      {
+        "label": "cactus",
+        "icon": "cactus",
+        "mode": "stroke"
+      },
+      {
+        "label": "cake",
+        "icon": "cake",
+        "mode": "stroke"
+      },
+      {
+        "label": "calculator",
+        "icon": "calculator",
+        "mode": "stroke"
+      },
+      {
+        "label": "calendar",
+        "icon": "calendar",
+        "mode": "stroke"
+      },
+      {
+        "label": "camera",
+        "icon": "camera",
+        "mode": "stroke"
+      },
+      {
+        "label": "campfire",
+        "icon": "campfire",
+        "mode": "stroke"
+      },
+      {
+        "label": "candle",
+        "icon": "candle",
+        "mode": "stroke"
+      },
+      {
+        "label": "car",
+        "icon": "car",
+        "mode": "stroke"
+      },
+      {
+        "label": "carrot",
+        "icon": "carrot",
+        "mode": "stroke"
+      },
+      {
+        "label": "cell phone",
+        "icon": "device-mobile",
+        "mode": "stroke"
+      },
+      {
+        "label": "circle",
+        "icon": "circle",
+        "mode": "stroke"
+      },
+      {
+        "label": "clock",
+        "icon": "clock",
+        "mode": "stroke"
+      },
+      {
+        "label": "cloud",
+        "icon": "cloud",
+        "mode": "stroke"
+      },
+      {
+        "label": "compass",
+        "icon": "compass",
+        "mode": "stroke"
+      },
+      {
+        "label": "cookie",
+        "icon": "cookie",
+        "mode": "stroke"
+      },
+      {
+        "label": "crayon",
+        "icon": "brush",
+        "mode": "stroke"
+      },
+      {
+        "label": "crown",
+        "icon": "crown",
+        "mode": "stroke"
+      },
+      {
+        "label": "cruise ship",
+        "icon": "ship",
+        "mode": "stroke"
+      },
+      {
+        "label": "cup",
+        "icon": "cup",
+        "mode": "stroke"
+      },
+      {
+        "label": "diamond",
+        "icon": "diamond",
+        "mode": "stroke"
+      },
+      {
+        "label": "diving board",
+        "icon": "pool",
+        "mode": "stroke"
+      },
+      {
+        "label": "dragon",
+        "icon": "dragon",
+        "mode": "stroke"
+      },
+      {
+        "label": "dumbbell",
+        "icon": "dumbbell",
+        "mode": "stroke"
+      },
+      {
+        "label": "ear",
+        "icon": "ear",
+        "mode": "stroke"
+      },
+      {
+        "label": "eraser",
+        "icon": "eraser",
+        "mode": "stroke"
+      },
+      {
+        "label": "eye",
+        "icon": "eye",
+        "mode": "stroke"
+      },
+      {
+        "label": "face",
+        "icon": "mood-smile",
+        "mode": "stroke"
+      },
+      {
+        "label": "feather",
+        "icon": "feather",
+        "mode": "stroke"
+      },
+      {
+        "label": "fence",
+        "icon": "fence",
+        "mode": "stroke"
+      },
+      {
+        "label": "fire hydrant",
+        "icon": "fire-hydrant",
+        "mode": "stroke"
+      },
+      {
+        "label": "firetruck",
+        "icon": "firetruck",
+        "mode": "stroke"
+      },
+      {
+        "label": "fish",
+        "icon": "fish",
+        "mode": "stroke"
+      },
+      {
+        "label": "flip flops",
+        "icon": "flip-flops",
+        "mode": "stroke"
+      },
+      {
+        "label": "flower",
+        "icon": "flower",
+        "mode": "stroke"
+      },
+      {
+        "label": "flying saucer",
+        "icon": "ufo",
+        "mode": "stroke"
+      },
+      {
+        "label": "garden",
+        "icon": "garden-cart",
+        "mode": "stroke"
+      },
+      {
+        "label": "golf club",
+        "icon": "golf",
+        "mode": "stroke"
+      },
+      {
+        "label": "grapes",
+        "icon": "grape",
+        "mode": "stroke"
+      },
+      {
+        "label": "hammer",
+        "icon": "hammer",
+        "mode": "stroke"
+      },
+      {
+        "label": "headphones",
+        "icon": "headphones",
+        "mode": "stroke"
+      },
+      {
+        "label": "helicopter",
+        "icon": "helicopter",
+        "mode": "stroke"
+      },
+      {
+        "label": "helmet",
+        "icon": "helmet",
+        "mode": "stroke"
+      },
+      {
+        "label": "hexagon",
+        "icon": "hexagon",
+        "mode": "stroke"
+      },
+      {
+        "label": "hospital",
+        "icon": "hospital",
+        "mode": "stroke"
+      },
+      {
+        "label": "hourglass",
+        "icon": "hourglass",
+        "mode": "stroke"
+      },
+      {
+        "label": "house plant",
+        "icon": "plant",
+        "mode": "stroke"
+      },
+      {
+        "label": "ice cream",
+        "icon": "ice-cream",
+        "mode": "stroke"
+      },
+      {
+        "label": "jacket",
+        "icon": "jacket",
+        "mode": "stroke"
+      },
+      {
+        "label": "key",
+        "icon": "key",
+        "mode": "stroke"
+      },
+      {
+        "label": "keyboard",
+        "icon": "keyboard",
+        "mode": "stroke"
+      },
+      {
+        "label": "ladder",
+        "icon": "ladder",
+        "mode": "stroke"
+      },
+      {
+        "label": "leaf",
+        "icon": "leaf",
+        "mode": "stroke"
+      },
+      {
+        "label": "lighter",
+        "icon": "lighter",
+        "mode": "stroke"
+      },
+      {
+        "label": "line",
+        "icon": "line",
+        "mode": "stroke"
+      },
+      {
+        "label": "lollipop",
+        "icon": "lollipop",
+        "mode": "stroke"
+      },
+      {
+        "label": "mailbox",
+        "icon": "mailbox",
+        "mode": "stroke"
+      },
+      {
+        "label": "map",
+        "icon": "map",
+        "mode": "stroke"
+      },
+      {
+        "label": "matches",
+        "icon": "matchstick",
+        "mode": "stroke"
+      },
+      {
+        "label": "microphone",
+        "icon": "microphone",
+        "mode": "stroke"
+      },
+      {
+        "label": "microwave",
+        "icon": "microwave",
+        "mode": "stroke"
+      },
+      {
+        "label": "moon",
+        "icon": "moon",
+        "mode": "stroke"
+      },
+      {
+        "label": "motorbike",
+        "icon": "motorbike",
+        "mode": "stroke"
+      },
+      {
+        "label": "mountain",
+        "icon": "mountain",
+        "mode": "stroke"
+      },
+      {
+        "label": "moustache",
+        "icon": "moustache",
+        "mode": "stroke"
+      },
+      {
+        "label": "mug",
+        "icon": "mug",
+        "mode": "stroke"
+      },
+      {
+        "label": "mushroom",
+        "icon": "mushroom",
+        "mode": "stroke"
+      },
+      {
+        "label": "octagon",
+        "icon": "octagon",
+        "mode": "stroke"
+      },
+      {
+        "label": "oven",
+        "icon": "microwave",
+        "mode": "stroke"
+      },
+      {
+        "label": "paint can",
+        "icon": "paint",
+        "mode": "stroke"
+      },
+      {
+        "label": "paper clip",
+        "icon": "paperclip",
+        "mode": "stroke"
+      },
+      {
+        "label": "parachute",
+        "icon": "parachute",
+        "mode": "stroke"
+      },
+      {
+        "label": "peas",
+        "icon": "plant",
+        "mode": "stroke"
+      },
+      {
+        "label": "pencil",
+        "icon": "pencil",
+        "mode": "stroke"
+      },
+      {
+        "label": "piano",
+        "icon": "piano",
+        "mode": "stroke"
+      },
+      {
+        "label": "pickup truck",
+        "icon": "truck",
+        "mode": "stroke"
+      },
+      {
+        "label": "picture frame",
+        "icon": "photo",
+        "mode": "stroke"
+      },
+      {
+        "label": "pillow",
+        "icon": "pillow",
+        "mode": "stroke"
+      },
+      {
+        "label": "pizza",
+        "icon": "pizza",
+        "mode": "stroke"
+      },
+      {
+        "label": "police car",
+        "icon": "car",
+        "mode": "stroke"
+      },
+      {
+        "label": "pond",
+        "icon": "pool",
+        "mode": "stroke"
+      },
+      {
+        "label": "pool",
+        "icon": "pool",
+        "mode": "stroke"
+      },
+      {
+        "label": "power outlet",
+        "icon": "plug",
+        "mode": "stroke"
+      },
+      {
+        "label": "radio",
+        "icon": "radio",
+        "mode": "stroke"
+      },
+      {
+        "label": "rainbow",
+        "icon": "rainbow",
+        "mode": "stroke"
+      },
+      {
+        "label": "remote control",
+        "icon": "remote-control",
+        "mode": "stroke"
+      },
+      {
+        "label": "rollerskates",
+        "icon": "roller-skating",
+        "mode": "stroke"
+      },
+      {
+        "label": "sailboat",
+        "icon": "sailboat",
+        "mode": "stroke"
+      },
+      {
+        "label": "school bus",
+        "icon": "bus",
+        "mode": "stroke"
+      },
+      {
+        "label": "scissors",
+        "icon": "scissors",
+        "mode": "stroke"
+      },
+      {
+        "label": "shoe",
+        "icon": "shoe",
+        "mode": "stroke"
+      },
+      {
+        "label": "shorts",
+        "icon": "shirt",
+        "mode": "stroke"
+      },
+      {
+        "label": "shovel",
+        "icon": "shovel",
+        "mode": "stroke"
+      },
+      {
+        "label": "skateboard",
+        "icon": "skateboard",
+        "mode": "stroke"
+      },
+      {
+        "label": "skull",
+        "icon": "skull",
+        "mode": "stroke"
+      },
+      {
+        "label": "smiley face",
+        "icon": "mood-smile",
+        "mode": "stroke"
+      },
+      {
+        "label": "snowflake",
+        "icon": "snowflake",
+        "mode": "stroke"
+      },
+      {
+        "label": "snowman",
+        "icon": "snowman",
+        "mode": "stroke"
+      },
+      {
+        "label": "sock",
+        "icon": "sock",
+        "mode": "stroke"
+      },
+      {
+        "label": "speedboat",
+        "icon": "speedboat",
+        "mode": "stroke"
+      },
+      {
+        "label": "spreadsheet",
+        "icon": "table",
+        "mode": "stroke"
+      },
+      {
+        "label": "square",
+        "icon": "square",
+        "mode": "stroke"
+      },
+      {
+        "label": "stairs",
+        "icon": "stairs",
+        "mode": "stroke"
+      },
+      {
+        "label": "star",
+        "icon": "star",
+        "mode": "stroke"
+      },
+      {
+        "label": "steak",
+        "icon": "meat",
+        "mode": "stroke"
+      },
+      {
+        "label": "stethoscope",
+        "icon": "stethoscope",
+        "mode": "stroke"
+      },
+      {
+        "label": "string bean",
+        "icon": "carrot",
+        "mode": "stroke"
+      },
+      {
+        "label": "submarine",
+        "icon": "submarine",
+        "mode": "stroke"
+      },
+      {
+        "label": "sun",
+        "icon": "sun",
+        "mode": "stroke"
+      },
+      {
+        "label": "sweater",
+        "icon": "shirt",
+        "mode": "stroke"
+      },
+      {
+        "label": "sword",
+        "icon": "sword",
+        "mode": "stroke"
+      },
+      {
+        "label": "table",
+        "icon": "table",
+        "mode": "stroke"
+      },
+      {
+        "label": "teapot",
+        "icon": "teapot",
+        "mode": "stroke"
+      },
+      {
+        "label": "telephone",
+        "icon": "phone",
+        "mode": "stroke"
+      },
+      {
+        "label": "tennis racquet",
+        "icon": "ball-tennis",
+        "mode": "stroke"
+      },
+      {
+        "label": "tent",
+        "icon": "tent",
+        "mode": "stroke"
+      },
+      {
+        "label": "the eiffel tower",
+        "icon": "building-eiffel-tower",
+        "mode": "stroke"
+      },
+      {
+        "label": "the mona lisa",
+        "icon": "photo",
+        "mode": "stroke"
+      },
+      {
+        "label": "tornado",
+        "icon": "tornado",
+        "mode": "stroke"
+      },
+      {
+        "label": "tractor",
+        "icon": "tractor",
+        "mode": "stroke"
+      },
+      {
+        "label": "train",
+        "icon": "train",
+        "mode": "stroke"
+      },
+      {
+        "label": "tree",
+        "icon": "tree",
+        "mode": "stroke"
+      },
+      {
+        "label": "triangle",
+        "icon": "triangle",
+        "mode": "stroke"
+      },
+      {
+        "label": "truck",
+        "icon": "truck",
+        "mode": "stroke"
+      },
+      {
+        "label": "t-shirt",
+        "icon": "shirt",
+        "mode": "stroke"
+      },
+      {
+        "label": "umbrella",
+        "icon": "umbrella",
+        "mode": "stroke"
+      },
+      {
+        "label": "underwear",
+        "icon": "shirt",
+        "mode": "stroke"
+      },
+      {
+        "label": "wheel",
+        "icon": "wheel",
+        "mode": "stroke"
+      },
+      {
+        "label": "windmill",
+        "icon": "windmill",
+        "mode": "stroke"
+      },
+      {
+        "label": "yoga",
+        "icon": "yoga",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "gameicons": {
+    "name": "Game Icons",
+    "version": "1.2.4",
+    "license": "CC BY 3.0",
+    "copyright": "Game Icons by Lorc, Delapouite, Skoll, and contributors (game-icons.net)",
+    "url": "https://github.com/game-icons/icons",
+    "categories": [
+      {
+        "label": "ant",
+        "icon": "ant",
+        "mode": "filled"
+      },
+      {
+        "label": "arm",
+        "icon": "arm",
+        "mode": "outline"
+      },
+      {
+        "label": "beard",
+        "icon": "beard",
+        "mode": "outline"
+      },
+      {
+        "label": "belt",
+        "icon": "belt",
+        "mode": "outline"
+      },
+      {
+        "label": "camel",
+        "icon": "camel",
+        "mode": "outline"
+      },
+      {
+        "label": "cannon",
+        "icon": "cannon",
+        "mode": "outline"
+      },
+      {
+        "label": "canoe",
+        "icon": "canoe",
+        "mode": "outline"
+      },
+      {
+        "label": "cooler",
+        "icon": "cooler",
+        "mode": "filled"
+      },
+      {
+        "label": "crab",
+        "icon": "crab",
+        "mode": "outline"
+      },
+      {
+        "label": "harp",
+        "icon": "harp",
+        "mode": "filled"
+      },
+      {
+        "label": "hedgehog",
+        "icon": "hedgehog",
+        "mode": "outline"
+      },
+      {
+        "label": "lantern",
+        "icon": "lantern",
+        "mode": "filled"
+      },
+      {
+        "label": "leg",
+        "icon": "leg",
+        "mode": "outline"
+      },
+      {
+        "label": "lion",
+        "icon": "lion",
+        "mode": "outline"
+      },
+      {
+        "label": "mermaid",
+        "icon": "mermaid",
+        "mode": "outline"
+      },
+      {
+        "label": "monkey",
+        "icon": "monkey",
+        "mode": "outline"
+      },
+      {
+        "label": "nose",
+        "icon": "nose-side",
+        "mode": "outline"
+      },
+      {
+        "label": "octopus",
+        "icon": "octopus",
+        "mode": "filled"
+      },
+      {
+        "label": "potato",
+        "icon": "potato",
+        "mode": "outline"
+      },
+      {
+        "label": "rifle",
+        "icon": "rifle",
+        "mode": "outline"
+      },
+      {
+        "label": "sleeping bag",
+        "icon": "sleeping-bag",
+        "mode": "outline"
+      },
+      {
+        "label": "snorkel",
+        "icon": "snorkel",
+        "mode": "outline"
+      },
+      {
+        "label": "stop sign",
+        "icon": "stop-sign",
+        "mode": "filled"
+      },
+      {
+        "label": "strawberry",
+        "icon": "strawberry",
+        "mode": "filled"
+      },
+      {
+        "label": "tiger",
+        "icon": "tiger",
+        "mode": "filled"
+      },
+      {
+        "label": "vase",
+        "icon": "porcelain-vase",
+        "mode": "outline"
+      },
+      {
+        "label": "whale",
+        "icon": "sperm-whale",
+        "mode": "outline"
+      }
+    ]
+  },
+  "mdi": {
+    "name": "Material Design Icons",
+    "version": "7.4.47",
+    "license": "Apache-2.0",
+    "copyright": "Copyright 2020 Pictogrammers",
+    "url": "https://github.com/Templarian/MaterialDesign",
+    "categories": [
+      {
+        "label": "barn",
+        "icon": "barn",
+        "mode": "outline"
+      },
+      {
+        "label": "baseball",
+        "icon": "baseball",
+        "mode": "outline"
+      },
+      {
+        "label": "baseball bat",
+        "icon": "baseball-bat",
+        "mode": "outline"
+      },
+      {
+        "label": "bat",
+        "icon": "bat",
+        "mode": "outline"
+      },
+      {
+        "label": "bathtub",
+        "icon": "bathtub",
+        "mode": "outline"
+      },
+      {
+        "label": "bear",
+        "icon": "teddy-bear",
+        "mode": "outline"
+      },
+      {
+        "label": "bee",
+        "icon": "bee",
+        "mode": "outline"
+      },
+      {
+        "label": "bench",
+        "icon": "bench",
+        "mode": "outline"
+      },
+      {
+        "label": "boomerang",
+        "icon": "boomerang",
+        "mode": "outline"
+      },
+      {
+        "label": "butterfly",
+        "icon": "butterfly",
+        "mode": "outline"
+      },
+      {
+        "label": "ceiling fan",
+        "icon": "ceiling-fan",
+        "mode": "outline"
+      },
+      {
+        "label": "cello",
+        "icon": "violin",
+        "mode": "outline"
+      },
+      {
+        "label": "chandelier",
+        "icon": "chandelier",
+        "mode": "outline"
+      },
+      {
+        "label": "clarinet",
+        "icon": "glass-flute",
+        "mode": "outline"
+      },
+      {
+        "label": "cow",
+        "icon": "cow",
+        "mode": "outline"
+      },
+      {
+        "label": "crocodile",
+        "icon": "snake",
+        "mode": "outline"
+      },
+      {
+        "label": "dog",
+        "icon": "dog-side",
+        "mode": "outline"
+      },
+      {
+        "label": "dolphin",
+        "icon": "dolphin",
+        "mode": "outline"
+      },
+      {
+        "label": "dresser",
+        "icon": "dresser",
+        "mode": "filled"
+      },
+      {
+        "label": "duck",
+        "icon": "duck",
+        "mode": "outline"
+      },
+      {
+        "label": "elephant",
+        "icon": "elephant",
+        "mode": "outline"
+      },
+      {
+        "label": "fireplace",
+        "icon": "fireplace",
+        "mode": "filled"
+      },
+      {
+        "label": "floor lamp",
+        "icon": "floor-lamp",
+        "mode": "outline"
+      },
+      {
+        "label": "grass",
+        "icon": "grass",
+        "mode": "outline"
+      },
+      {
+        "label": "hockey puck",
+        "icon": "hockey-puck",
+        "mode": "outline"
+      },
+      {
+        "label": "horse",
+        "icon": "horse",
+        "mode": "outline"
+      },
+      {
+        "label": "hot dog",
+        "icon": "food-hot-dog",
+        "mode": "outline"
+      },
+      {
+        "label": "hot tub",
+        "icon": "hot-tub",
+        "mode": "filled"
+      },
+      {
+        "label": "kangaroo",
+        "icon": "kangaroo",
+        "mode": "outline"
+      },
+      {
+        "label": "knife",
+        "icon": "knife",
+        "mode": "outline"
+      },
+      {
+        "label": "lipstick",
+        "icon": "lipstick",
+        "mode": "outline"
+      },
+      {
+        "label": "marker",
+        "icon": "marker",
+        "mode": "outline"
+      },
+      {
+        "label": "mouse",
+        "icon": "mouse",
+        "mode": "outline"
+      },
+      {
+        "label": "nail",
+        "icon": "nail",
+        "mode": "outline"
+      },
+      {
+        "label": "necklace",
+        "icon": "necklace",
+        "mode": "outline"
+      },
+      {
+        "label": "owl",
+        "icon": "owl",
+        "mode": "filled"
+      },
+      {
+        "label": "palm tree",
+        "icon": "palm-tree",
+        "mode": "outline"
+      },
+      {
+        "label": "panda",
+        "icon": "panda",
+        "mode": "filled"
+      },
+      {
+        "label": "passport",
+        "icon": "passport",
+        "mode": "filled"
+      },
+      {
+        "label": "peanut",
+        "icon": "peanut",
+        "mode": "outline"
+      },
+      {
+        "label": "pear",
+        "icon": "fruit-pear",
+        "mode": "outline"
+      },
+      {
+        "label": "penguin",
+        "icon": "penguin",
+        "mode": "outline"
+      },
+      {
+        "label": "pig",
+        "icon": "pig-variant",
+        "mode": "outline"
+      },
+      {
+        "label": "pineapple",
+        "icon": "fruit-pineapple",
+        "mode": "outline"
+      },
+      {
+        "label": "pliers",
+        "icon": "pliers",
+        "mode": "outline"
+      },
+      {
+        "label": "purse",
+        "icon": "purse",
+        "mode": "outline"
+      },
+      {
+        "label": "rabbit",
+        "icon": "rabbit",
+        "mode": "outline"
+      },
+      {
+        "label": "rake",
+        "icon": "rake",
+        "mode": "outline"
+      },
+      {
+        "label": "saw",
+        "icon": "hand-saw",
+        "mode": "outline"
+      },
+      {
+        "label": "saxophone",
+        "icon": "saxophone",
+        "mode": "outline"
+      },
+      {
+        "label": "scorpion",
+        "icon": "spider",
+        "mode": "outline"
+      },
+      {
+        "label": "screwdriver",
+        "icon": "screwdriver",
+        "mode": "outline"
+      },
+      {
+        "label": "sea turtle",
+        "icon": "turtle",
+        "mode": "outline"
+      },
+      {
+        "label": "see saw",
+        "icon": "seesaw",
+        "mode": "outline"
+      },
+      {
+        "label": "shark",
+        "icon": "shark",
+        "mode": "outline"
+      },
+      {
+        "label": "sheep",
+        "icon": "sheep",
+        "mode": "outline"
+      },
+      {
+        "label": "snail",
+        "icon": "snail",
+        "mode": "outline"
+      },
+      {
+        "label": "snake",
+        "icon": "snake",
+        "mode": "outline"
+      },
+      {
+        "label": "spider",
+        "icon": "spider",
+        "mode": "outline"
+      },
+      {
+        "label": "stove",
+        "icon": "stove",
+        "mode": "filled"
+      },
+      {
+        "label": "teddy-bear",
+        "icon": "teddy-bear",
+        "mode": "outline"
+      },
+      {
+        "label": "television",
+        "icon": "television",
+        "mode": "outline"
+      },
+      {
+        "label": "toaster",
+        "icon": "toaster",
+        "mode": "outline"
+      },
+      {
+        "label": "tooth",
+        "icon": "tooth",
+        "mode": "outline"
+      },
+      {
+        "label": "toothbrush",
+        "icon": "toothbrush",
+        "mode": "outline"
+      },
+      {
+        "label": "toothpaste",
+        "icon": "toothbrush-paste",
+        "mode": "outline"
+      },
+      {
+        "label": "traffic light",
+        "icon": "traffic-light",
+        "mode": "outline"
+      },
+      {
+        "label": "trombone",
+        "icon": "trumpet",
+        "mode": "outline"
+      },
+      {
+        "label": "trumpet",
+        "icon": "trumpet",
+        "mode": "outline"
+      },
+      {
+        "label": "violin",
+        "icon": "violin",
+        "mode": "outline"
+      },
+      {
+        "label": "watermelon",
+        "icon": "fruit-watermelon",
+        "mode": "outline"
+      },
+      {
+        "label": "zebra",
+        "icon": "horse",
+        "mode": "outline"
+      }
+    ]
+  },
+  "fontawesome": {
+    "name": "Font Awesome Free",
+    "version": "7.3.1",
+    "license": "CC BY 4.0",
+    "copyright": "Copyright Fonticons, Inc.",
+    "url": "https://github.com/FortAwesome/Font-Awesome",
+    "categories": [
+      {
+        "label": "cat",
+        "icon": "cat",
+        "mode": "outline"
+      },
+      {
+        "label": "chair",
+        "icon": "chair",
+        "mode": "outline"
+      },
+      {
+        "label": "couch",
+        "icon": "couch",
+        "mode": "outline"
+      },
+      {
+        "label": "envelope",
+        "icon": "envelope",
+        "mode": "outline"
+      },
+      {
+        "label": "frog",
+        "icon": "frog",
+        "mode": "outline"
+      },
+      {
+        "label": "hurricane",
+        "icon": "hurricane",
+        "mode": "outline"
+      },
+      {
+        "label": "mosquito",
+        "icon": "mosquito",
+        "mode": "outline"
+      },
+      {
+        "label": "sink",
+        "icon": "sink",
+        "mode": "outline"
+      },
+      {
+        "label": "spoon",
+        "icon": "spoon",
+        "mode": "outline"
+      },
+      {
+        "label": "wine bottle",
+        "icon": "wine-bottle",
+        "mode": "outline"
+      },
+      {
+        "label": "wine glass",
+        "icon": "wine-glass",
+        "mode": "outline"
+      }
+    ]
+  }
+}

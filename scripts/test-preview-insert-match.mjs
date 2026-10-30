@@ -13,10 +13,12 @@ import { categories } from '../src/data/categories.js';
 
 const BRUSH = '#e26755';
 
+/** Origins rendered as line art (pen-coloured, no fill). */
+const LINE_ORIGINS = ['imported', 'lineart', 'variant'];
+
 /** Exactly what SuggestionBar's VariantArt renders into the card. */
 function cardBody(variant) {
-  const isLineArt = variant.origin === 'lineart' || variant.origin === 'variant';
-  if (isLineArt) return variant.b.replaceAll('STROKE', 'currentColor');
+  if (LINE_ORIGINS.includes(variant.origin)) return variant.b.replaceAll('STROKE', 'currentColor');
   if (variant.source === 'mdi') return `<g fill="currentColor">${variant.b}</g>`;
   return variant.b;
 }
@@ -64,9 +66,15 @@ if (failures.length) {
 
 // Also confirm the primary is line art for the categories that matter.
 const demo = ['dog', 'cat', 'house', 'car', 'bus', 'airplane', 'fish', 'tree', 'flower', 'sun', 'umbrella'];
-const notLineArt = demo.filter((label) => getArtworkVariants(label)[0]?.origin !== 'lineart');
+const notLineArt = demo.filter(
+  (label) => !LINE_ORIGINS.includes(getArtworkVariants(label)[0]?.origin),
+);
 console.log();
 console.log(`demo categories whose primary is line art : ${demo.length - notLineArt.length}/${demo.length}`);
+const importedCount = categories.filter(
+  (c) => getArtworkVariants(c.label)[0]?.origin === 'imported',
+).length;
+console.log(`categories led by imported artwork        : ${importedCount}/${categories.length}`);
 if (notLineArt.length) console.log(`  ! not line art: ${notLineArt.join(', ')}`);
 
 process.exitCode = mismatched === 0 && notLineArt.length === 0 ? 0 : 1;

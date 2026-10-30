@@ -13,6 +13,7 @@ import { ICONS, ICON_LICENSES } from './icons.js';
 import { categoriesByLabel, categoriesByNormalisedLabel } from './categories.js';
 import { VARIANT_SETS } from './artwork-variants.js';
 import { LINE_ART } from './line-art.js';
+import { IMPORTED_ART } from './imported-art.js';
 
 /** Model labels use underscores ("alarm_clock"); the official list uses spaces. */
 export function normaliseLabel(label) {
@@ -107,11 +108,18 @@ export function getArtworkVariants(label, { max = 4 } = {}) {
   // SketchAI is "rough sketch -> cleaner drawing of the same object", never
   // "rough sketch -> emoji". So the order of preference is:
   //
-  //   1. an original SketchAI clean line-art drawing
-  //   2. alternate SketchAI clean line-art drawings
-  //   3. an acceptable open-source monochrome line icon (Material)
-  //   4. the legacy colour emoji/icon, as a last resort
-  //   5. text only
+  //   1. a line drawing imported from an openly licensed icon library
+  //   2. an original SketchAI clean line-art drawing
+  //   3. alternate SketchAI clean line-art drawings
+  //   4. an acceptable open-source monochrome line icon (Material)
+  //   5. the legacy colour emoji/icon, as a last resort
+  //   6. text only
+  //
+  // Imported artwork wins over the hand-authored set: professional icon
+  // libraries draw better than we do, and the brief is quality over sunk cost.
+  const imported = IMPORTED_ART[key];
+  if (imported) push(imported, 'imported', 'imported');
+
   const drawing = LINE_ART[key];
   if (drawing) push(drawing, 'line', 'lineart');
 
@@ -131,10 +139,11 @@ export function getArtworkVariants(label, { max = 4 } = {}) {
 
 /** Lower sorts first. */
 function rank(art) {
-  if (art.origin === 'lineart') return 0;
-  if (art.origin === 'variant') return 1;
-  if (art.origin === 'icon') return art.source === 'mdi' ? 2 : 3;
-  return 4;
+  if (art.origin === 'imported') return 0;
+  if (art.origin === 'lineart') return 1;
+  if (art.origin === 'variant') return 2;
+  if (art.origin === 'icon') return art.source === 'mdi' ? 3 : 4;
+  return 5;
 }
 
 /** How many distinct artwork options a label has. */
@@ -153,7 +162,10 @@ export function variantToSvgString(variant, { size = 160, color = '#242422' } = 
   if (!variant) return null;
   // Line art (primary and alternates) is drawn with the pen colour, so an
   // inserted drawing matches the brush the user picked.
-  const isLineArt = variant.origin === 'lineart' || variant.origin === 'variant';
+  const isLineArt =
+    variant.origin === 'imported' ||
+    variant.origin === 'lineart' ||
+    variant.origin === 'variant';
   const body = isLineArt
     ? variant.b.replaceAll('STROKE', color)
     : variant.source === 'mdi'

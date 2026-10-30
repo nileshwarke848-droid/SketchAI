@@ -17,7 +17,10 @@ const formatScore = (score) => (score < 0.005 ? '<1%' : `${Math.round(score * 10
  * variants pick up the brush colour, Material icons get tinted the same way.
  */
 export function VariantArt({ variant, size = 46, className = '' }) {
-  const isLineArt = variant.origin === 'lineart' || variant.origin === 'variant';
+  const isLineArt =
+    variant.origin === 'imported' ||
+    variant.origin === 'lineart' ||
+    variant.origin === 'variant';
   const body = isLineArt
     ? variant.b.replaceAll('STROKE', 'currentColor')
     : variant.source === 'mdi'
