@@ -8,6 +8,7 @@
 
 import { categories } from '../src/data/categories.js';
 import { ICONS } from '../src/data/icons.js';
+import { getArtworkVariants } from '../src/data/artwork.js';
 
 const byTier = { A: [], B: [], C: [] };
 let missingIcon = 0;
@@ -52,6 +53,36 @@ for (const key of Object.keys(ICONS)) {
 const multiVariant = [...families.entries()].filter(([, count]) => count > 1);
 console.log(`multi-variant icon families: ${multiVariant.length}`);
 
+// --- real coverage through the variants API --------------------------------
+// getArtworkVariants() is what the suggestion bar actually renders, so this is
+// the number that matters: a label with a hand-authored variant is no longer a
+// text-only card even when its tier is C.
+const optionCounts = categories.map((c) => ({
+  label: c.label,
+  tier: c.tier ?? 'C',
+  options: getArtworkVariants(c.label).length,
+}));
+const withArtwork = optionCounts.filter((c) => c.options > 0);
+const noArtwork = optionCounts.filter((c) => c.options === 0);
+const multi = optionCounts.filter((c) => c.options > 1).sort((a, b) => b.options - a.options);
+
 console.log();
-console.log('Tier C (text-only) categories:');
-console.log('  ' + byTier.C.map((c) => c.label).join(', '));
+console.log('--- effective coverage (what the suggestion bar renders) ---');
+console.log(`categories with artwork : ${withArtwork.length}`);
+console.log(`categories text-only    : ${noArtwork.length}`);
+console.log(`categories with variants: ${multi.length}`);
+console.log(`total artwork options   : ${optionCounts.reduce((n, c) => n + c.options, 0)}`);
+console.log();
+console.log('Variant depth distribution:');
+const depth = {};
+for (const c of optionCounts) depth[c.options] = (depth[c.options] ?? 0) + 1;
+for (const [count, n] of Object.entries(depth).sort((a, b) => a[0] - b[0])) {
+  console.log(`  ${count} option(s): ${n} categories`);
+}
+console.log();
+console.log('Multi-variant categories (top 12):');
+console.log('  ' + multi.slice(0, 12).map((c) => `${c.label} (${c.options})`).join(', '));
+
+console.log();
+console.log('Text-only categories after variants:');
+console.log('  ' + noArtwork.map((c) => c.label).join(', '));

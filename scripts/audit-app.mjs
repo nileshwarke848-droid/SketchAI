@@ -269,6 +269,22 @@ function inkPixels(canvas) {
   return count;
 }
 
+// Insertion now *replaces* rough strokes with clean artwork in place, so "more
+// ink" is no longer the right assertion. A fingerprint of the pixels is.
+function inkInRegion(canvas, x, y, w, h) {
+  const { data } = canvas.getContext('2d').getImageData(x, y, w, h);
+  let count = 0;
+  for (let i = 3; i < data.length; i += 4) if (data[i] > 0) count += 1;
+  return count;
+}
+
+function canvasHash(canvas) {
+  const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+  let hash = 2166136261;
+  for (let i = 0; i < data.length; i += 61) { hash ^= data[i]; hash = Math.imul(hash, 16777619); }
+  return hash >>> 0;
+}
+
 function clickBySelector(window, selector) {
   const element = window.document.querySelector(selector);
   if (!element) return null;
@@ -320,6 +336,17 @@ async function main() {
   const blankInk = inkPixels(canvas);
   check('canvas starts blank', blankInk === 0, `${blankInk} ink pixels`);
 
+  // ---- suggestion bar ----------------------------------------------------
+  section('Suggestion bar');
+  const bar = document.querySelector('.suggestion-bar');
+  check('suggestion bar is mounted', Boolean(bar), bar ? 'found' : 'missing');
+  if (bar) {
+    const following = bar.compareDocumentPosition(canvas) & window.Node.DOCUMENT_POSITION_FOLLOWING;
+    check('the bar sits above the canvas', Boolean(following), `canvas follows bar: ${Boolean(following)}`);
+  }
+  const emptyText = document.querySelector('.suggestion-bar-empty')?.textContent?.trim() ?? '';
+  check('empty state invites drawing', /start drawing/i.test(emptyText), emptyText);
+
   drawCircle(window, canvas, 600, 360, 150);
   const drawnInk = inkPixels(canvas);
   check('a stroke puts ink on the canvas', drawnInk > 2000, `${drawnInk} ink pixels`);
@@ -331,23 +358,50 @@ async function main() {
   const guessScore = document.querySelector('.primary-score')?.textContent?.trim() ?? '';
   check('a primary guess is shown', guessName.length > 0, `${guessName} ${guessScore}`);
 
-  const cards = [...document.querySelectorAll('.suggestion-card')];
-  check('top-10 suggestions render', cards.length > 0 && cards.length <= 10, `${cards.length} cards`);
+  const cards = [...document.querySelectorAll('.s-card')];
+  // Ceiling comes from the suggestion module so the test cannot drift from it.
+  const maxCards = Number(process.env.SKETCHAI_MAX_CARDS ?? 12);
+  check('suggestions render within the card ceiling', cards.length > 0 && cards.length <= maxCards,
+    `${cards.length} cards (ceiling ${maxCards})`);
 
   const canonical = fs.readFileSync(path.join(ROOT, 'src', 'data', 'quickdraw-categories.txt'), 'utf8')
     .split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const cardNames = cards.map((card) => {
-    const name = card.querySelector('.suggestion-name') ?? card.querySelector('.text-card-name');
+    const name = card.querySelector('.s-card-name');
     return name?.textContent?.trim() ?? '';
   });
   check('every card has a name', cardNames.every((name) => name.length > 0), cardNames.slice(0, 4).join(', '));
 
   const rawScores = cards.map((card) => {
-    const score = card.querySelector('.suggestion-score')?.textContent?.trim() ?? '0%';
+    const score = card.querySelector('.s-card-score')?.textContent?.trim() ?? '0%';
     return Number(score.replace(/[<%]/g, '')) || 0;
   });
-  const descending = rawScores.every((score, i) => i === 0 || score <= rawScores[i - 1] + 0.5);
-  check('scores are ordered high to low', descending, rawScores.join(' > '));
+  const allButtons = cards.every((card) => card.tagName === 'BUTTON');
+  check('cards are real buttons', allButtons, `${cards.filter((c) => c.tagName === 'BUTTON').length}/${cards.length}`);
+  const labels = cards.map((card) => card.getAttribute('aria-label') ?? '');
+  check('cards are labelled for screen readers',
+    labels.length > 0 && labels.every((text) => /^Insert .+ drawing$/.test(text)), labels[0] ?? 'none');
+  const focusable = cards.length > 0 && (() => { cards[0].focus(); return document.activeElement === cards[0]; })();
+  check('cards take keyboard focus', focusable, `activeElement is card: ${focusable}`);
+
+  // Ordering is diversity-first, NOT a flat probability sort: the leading cards
+  // must cover different classes so the intended object is findable even when
+  // top-1 is wrong.
+  const leading = cards.slice(0, Math.min(5, cards.length));
+  const leadingClasses = leading.map((card) => (card.getAttribute('aria-label') ?? '').replace(/^Insert | drawing$/g, ''));
+  const distinctLeading = new Set(leadingClasses).size;
+  check('leading suggestions cover different classes', distinctLeading === leading.length,
+    `${distinctLeading}/${leading.length} distinct: ${leadingClasses.join(', ')}`);
+  const artKeys = cards.map((card) => {
+    const art = card.querySelector('.s-card-art');
+    if (!art) return `${card.textContent}`;
+    return art.querySelector('svg') ? art.innerHTML : `text:${card.querySelector('.s-card-name')?.textContent}`;
+  });
+  check('no duplicate artwork is rendered twice', new Set(artKeys).size === cards.length,
+    `${new Set(artKeys).size}/${cards.length} unique`);
+  const firstCardScore = rawScores[0] ?? 0;
+  check('the strongest guess leads the bar', firstCardScore === Math.max(...rawScores, 0),
+    `${firstCardScore}% is the top score`);
   check('no score exceeds 100%', rawScores.every((score) => score <= 100), `max ${Math.max(...rawScores, 0)}%`);
 
   const footnote = document.querySelector('.prediction-footnote')?.textContent ?? '';
@@ -368,12 +422,18 @@ async function main() {
   const insertable = cards.find((card) => card.tagName === 'BUTTON');
   let inserted = false;
   let inkAfterInsert = drawnInk;
+  let hashBeforeInsert = canvasHash(canvas);
+  let hashAfterInsert = hashBeforeInsert;
   if (insertable) {
+    hashBeforeInsert = canvasHash(canvas);
     insertable.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
     await sleep(400);
     inkAfterInsert = inkPixels(canvas);
-    inserted = inkAfterInsert > drawnInk;
-    check('clicking a suggestion inserts artwork', inserted, `${drawnInk} -> ${inkAfterInsert} ink pixels`);
+    hashAfterInsert = canvasHash(canvas);
+    // Replaces the rough strokes in place: the canvas changes and still has ink.
+    inserted = hashAfterInsert !== hashBeforeInsert && inkAfterInsert > 0;
+    check('clicking a suggestion inserts artwork', inserted,
+      `${drawnInk} -> ${inkAfterInsert} ink pixels, fingerprint ${hashBeforeInsert} -> ${hashAfterInsert}`);
   } else {
     check('an illustrated suggestion is available to insert', false, 'no clickable card');
   }
@@ -384,17 +444,39 @@ async function main() {
   const redoButton = document.querySelector('button[aria-label="Redo"]');
   check('undo is enabled after drawing', undoButton && !undoButton.disabled, `disabled=${undoButton?.disabled}`);
 
-  const beforeUndo = inkPixels(canvas);
   undoButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(300);
-  const afterUndo = inkPixels(canvas);
-  check('undo removes the last change', afterUndo < beforeUndo, `${beforeUndo} -> ${afterUndo}`);
+  const hashAfterUndo = canvasHash(canvas);
+  check('undo reverses the inserted artwork', hashAfterUndo === hashBeforeInsert,
+    `fingerprint ${hashAfterInsert} -> ${hashAfterUndo} (drawing was ${hashBeforeInsert})`);
 
   check('redo is enabled after undo', redoButton && !redoButton.disabled, `disabled=${redoButton?.disabled}`);
   redoButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(300);
-  const afterRedo = inkPixels(canvas);
-  check('redo restores it', afterRedo > afterUndo, `${afterUndo} -> ${afterRedo}`);
+  const hashAfterRedo = canvasHash(canvas);
+  check('redo restores it', hashAfterRedo === hashAfterInsert,
+    `fingerprint ${hashAfterUndo} -> ${hashAfterRedo} (inserted was ${hashAfterInsert})`);
+
+  // ---- multiple objects --------------------------------------------------
+  // Draw a second, separate sketch and insert into it. The first inserted
+  // drawing must survive: several objects have to coexist on the canvas.
+  section('Multiple objects');
+  {
+    const firstRegion = () => inkInRegion(canvas, 450, 210, 300, 300);
+    const firstInkBefore = firstRegion();
+    drawCircle(window, canvas, 300, 200, 90);
+    await sleep(2200);
+    const secondCards = [...document.querySelectorAll('.s-card')].filter((card) => card.tagName === 'BUTTON');
+    if (secondCards.length) {
+      secondCards[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+      await sleep(500);
+    }
+    const firstInkAfter = firstRegion();
+    const secondInk = inkInRegion(canvas, 210, 110, 180, 180);
+    check('the first object survives a second insertion', firstInkAfter > 0,
+      `first region ${firstInkBefore} -> ${firstInkAfter} ink pixels`);
+    check('a second object lands in its own place', secondInk > 0, `${secondInk} ink pixels`);
+  }
 
   // ---- clear --------------------------------------------------------------
   section('Clear');

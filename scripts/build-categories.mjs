@@ -488,6 +488,13 @@ const body = `export const CATEGORY_COUNT = ${meta.length};
 export const categories = ${JSON.stringify(meta, null, 0)};
 
 export const categoriesByLabel = new Map(categories.map((entry) => [entry.label, entry]));
+
+// Three canonical labels carry capital letters ("The Eiffel Tower",
+// "The Mona Lisa", "The Great Wall of China"). Lookups route through
+// normaliseLabel(), which lowercases, so a lowercase index is required too.
+export const categoriesByNormalisedLabel = new Map(
+  categories.map((entry) => [entry.label.toLowerCase(), entry]),
+);
 `;
 fs.writeFileSync(path.join(ROOT, 'src/data/categories.js'), header + body);
 // A JS module rather than JSON so both Vite and plain Node can import it without

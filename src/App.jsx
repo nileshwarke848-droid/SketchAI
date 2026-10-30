@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Brush, Check, ChevronDown, CircleHelp, Eraser, Info, LockKeyhole, MousePointer2, Pencil, RotateCcw, Square, Star, Sparkles, Trash2, X, Zap } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Brush, Check, ChevronDown, CircleHelp, Eraser, Info, LockKeyhole, MousePointer2, Pencil, RotateCcw, Square, Sparkles, Trash2, X, Zap } from 'lucide-react';
 import { loadModel, predict } from './ai/model';
 import { getSketchBounds } from './ai/preprocess';
-import SuggestionIcon from './components/SuggestionIcon';
-import { displayName, hasArtwork, iconToSvgString } from './data/artwork';
+import SuggestionBar from './components/SuggestionBar';
+import { displayName, getArtworkVariants, variantToSvgString } from './data/artwork';
+import { buildSuggestions } from './lib/suggestions';
 import { compositeLayers, releaseUrl, saveCanvasAsPng, EXPORT_FILENAME } from './lib/download';
 import DebugPanel from './dev/DebugPanel';
 
@@ -123,22 +124,42 @@ function App() {
     revisionRef.current++; clearTimeout(timerRef.current); canvasRef.current.getContext('2d').clearRect(0, 0, W, H); sketchRef.current.getContext('2d').clearRect(0, 0, W, H);
     setRecognition(IDLE); setHasInk(false); setMessage(''); saveHistory();
   };
-  const insert = async (label) => {
-    const bounds = getSketchBounds(sketchRef.current);
-    const svg = iconToSvgString(label, { size: 320, color });
+  // Clicking a suggestion swaps the rough strokes for clean artwork in place:
+  // the drawing lands where the sketch was, at roughly the sketch's size, so the
+  // composition survives the swap. A tiny scribble still becomes a clearly
+  // visible drawing rather than a speck. Undo restores the original strokes.
+  //
+  // Accepts either a suggestion card or a bare label.
+  const insert = async (target) => {
+    const label = typeof target === 'string' ? target : target.label;
+    const variant = typeof target === 'string'
+      ? getArtworkVariants(label)[0] ?? null
+      : target.variant ?? null;
+    const svg = variantToSvgString(variant, { size: 320, color });
     if (!svg) { setMessage('That guess has no illustration yet — try another suggestion.'); return; }
+    const bounds = getSketchBounds(sketchRef.current);
     if (!bounds.width) { setMessage('Draw a sketch first, then add an illustration.'); return; }
     try {
       const revision = ++revisionRef.current;
       const image = new Image(); image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
       await image.decode();
       if (revision !== revisionRef.current) return;
-      const dimension = Math.min(230, Math.max(110, Math.max(bounds.width, bounds.height)));
-      let x = bounds.x + bounds.width + 35; if (x + dimension > W - 20) x = Math.max(20, bounds.x - dimension - 35);
-      const y = Math.max(20, Math.min(H - dimension - 20, bounds.y + bounds.height / 2 - dimension / 2));
-      canvasRef.current.getContext('2d').drawImage(image, x, y, dimension, dimension);
+      const ctx = canvasRef.current.getContext('2d');
+      const dimension = Math.min(320, Math.max(140, Math.max(bounds.width, bounds.height)));
+      const x = Math.max(8, Math.min(W - dimension - 8, bounds.x + bounds.width / 2 - dimension / 2));
+      const y = Math.max(8, Math.min(H - dimension - 8, bounds.y + bounds.height / 2 - dimension / 2));
+      // sketchRef holds a faithful copy of just the rough strokes, so using it
+      // as an erasing mask removes exactly those strokes and never any artwork
+      // already placed on the canvas.
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.drawImage(sketchRef.current, 0, 0);
+      ctx.restore();
+      ctx.drawImage(image, x, y, dimension, dimension);
       sketchRef.current.getContext('2d').clearRect(0, 0, W, H);
-      clearTimeout(timerRef.current); setRecognition(IDLE); setHasInk(false); setMessage('Illustration added! Keep drawing to start a new guess.'); saveHistory();
+      clearTimeout(timerRef.current); setRecognition(IDLE); setHasInk(false);
+      setMessage(`Swapped your sketch for a clean ${displayName(label)}. Keep drawing to add another.`);
+      saveHistory();
     } catch (error) { console.error('Artwork insertion failed:', error); setMessage('Could not add that illustration. Please try again.'); }
   };
   const download = async () => {
@@ -175,7 +196,19 @@ function App() {
   const suggestions = predictions
     .filter((p, i) => i === 0 || p.score >= 0.0005) // drop never-meaningful <0.05% tail
     .slice(0, 10)
-    .map((p) => ({ ...p, name: displayName(p.label), illustrated: hasArtwork(p.label) }));
+    .map((p) => ({ ...p, name: displayName(p.label), illustrated: getArtworkVariants(p.label).length > 0 }));
+  // The bar shows clean artwork, not a ranked list: one option per predicted
+  // class first, then alternative renderings, so the intended object stays
+  // findable even when top-1 is wrong.
+  const cards = buildSuggestions(predictions);
+  // How many different objects the bar is actually offering — the count the
+  // footnote quotes, so it can never contradict what is on screen.
+  const shownClasses = new Set(cards.map((card) => card.label)).size;
+  const barEmptyCopy = status === 'loading' ? 'Getting the drawing ideas ready…'
+    : status === 'error' ? 'Suggestions are unavailable — the model did not load.'
+    : recognition.status === 'tiny' ? 'Keep going — a little more drawing and ideas will appear.'
+    : recognition.status === 'error' ? 'That one confused the AI. Keep drawing and it will try again.'
+    : 'Start drawing to see smart suggestions.';
   const primary = predictions[0];
   const others = predictions.slice(1, 5);
   const lowConfidence = primary && primary.score < 0.45;
@@ -188,7 +221,13 @@ function App() {
       <div className="workspace">
         <div className="editor">
           <div className="editor-top"><div className="file-name"><span className="file-dot"/> Untitled sketch <span className="file-label">/ EDITING</span></div><div className="editor-top-right"><span><LockKeyhole size={13}/> PRIVATE BY DESIGN</span><span className="canvas-dim">1200 × 720</span></div></div>
-          <div className="drawing-area">
+            <SuggestionBar
+              cards={cards}
+              onInsert={insert}
+              emptyCopy={barEmptyCopy}
+              phase={status === 'loading' ? 'loading' : 'idle'}
+            />
+            <div className="drawing-area">
             <div className="tool-rail" aria-label="Drawing tools"><span className="rail-label">TOOLS</span><button className={`rail-button ${tool === 'pencil' ? 'selected' : ''}`} onClick={() => setTool('pencil')} aria-pressed={tool === 'pencil'} aria-label="Pencil" title="Pencil"><Pencil size={19}/></button><button className={`rail-button ${tool === 'eraser' ? 'selected' : ''}`} onClick={() => setTool('eraser')} aria-pressed={tool === 'eraser'} aria-label="Eraser" title="Eraser"><Eraser size={19}/></button><div className="rail-divider"/><button className="rail-button" disabled={!canUndo} onClick={() => restore(-1)} aria-label="Undo" title="Undo (Ctrl or Cmd + Z)"><RotateCcw size={19}/></button><button className="rail-button flip" disabled={!canRedo} onClick={() => restore(1)} aria-label="Redo" title="Redo (Ctrl or Cmd + Shift + Z)"><RotateCcw size={19}/></button><div className="rail-spacer"/><span className="rail-label bottom-label">SKETCH<br/>AWAY</span></div>
             <div className="canvas-wrap"><canvas ref={canvasRef} width={W} height={H} aria-label="Drawing canvas. Use a pointer or touch to draw." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd}/>{!hasInk && !canUndo && <div className="canvas-hint"><div className="hint-icon"><Pencil size={20}/></div><strong>Your next idea starts here</strong><span>Pick a tool and start drawing</span></div>}<div className="canvas-corner">✳ &nbsp; MAKE SOMETHING WONDERFUL</div></div>
           </div>
@@ -201,19 +240,17 @@ function App() {
             <div className="primary-guess"><span className="primary-name">{suggestions[0].name}</span><span className="primary-score">{Math.round(suggestions[0].score * 100)}%</span></div>
             <div className="progress primary"><span style={{width:`${suggestions[0].score * 100}%`}}/></div>
             {others.length > 0 && <div className="other-guesses"><span className="other-label">Other guesses</span><div className="other-chips">{others.map((p) => <button key={p.label} className="other-chip" onClick={() => insert(p.label)} title={`Insert ${displayName(p.label)}`}>{displayName(p.label)} <em>{formatScore(p.score)}</em></button>)}</div></div>}
-            <p className="prediction-footnote">Top {suggestions.length} guesses from the model. Confidence is an estimate, not a promise.</p>
+            <p className="prediction-footnote">Top {shownClasses} guesses from the model. Confidence is an estimate, not a promise.</p>
           </div> : <div className="empty-predictions" aria-live="polite"><div className="empty-sparkle"><Sparkles size={20}/></div><strong>{emptyState.title}</strong><span>{emptyState.copy}</span></div>}
           {DEBUG_AI && recognition.debug && <DebugPanel sketch={sketchRef.current} debug={recognition.debug} open={showDebug} onToggle={() => setShowDebug(!showDebug)} backend={backend} predictions={predictions} profile={modelRef.current?.profile}/>}
           <div className="panel-bottom"><Info size={15}/><span>Confidence is the model’s estimate, not a guarantee. The more you draw, the more it can see.</span></div>
         </aside>
       </div>
-      <section className="suggestions"><div className="suggestion-copy"><span className="section-number">03 /</span><h2>Do you mean<span>?</span></h2><p>Pick a clean illustration to add beside your sketch.</p></div><div className="suggestion-content">{suggestions.length ? <div className="suggestion-strip" role="list">{suggestions.map((s2, i) => s2.illustrated ? <button className="suggestion-card" role="listitem" key={`${s2.label}-${i}`} onClick={() => insert(s2.label)} title={`Add ${s2.name} illustration`}><SuggestionIcon label={s2.label} size={34}/><span className="suggestion-name">{s2.name}</span><span className="suggestion-score">{formatScore(s2.score)}</span><span className="add-sign">+</span></button> : <div className="suggestion-card text-only" role="listitem" key={`${s2.label}-${i}`} title={`${s2.name} — AI guess, no illustration yet`}><span className="text-card-name">{s2.name}</span><span className="suggestion-score">{formatScore(s2.score)}</span></div>)}</div> : <div className="suggestion-empty"><div className="mini-icons"><span><Star size={20}/></span><span><Flower2Placeholder/></span><span><SunPlaceholder/></span></div><div><strong>{predictions.length ? 'No matching illustrations yet' : 'Suggestions will appear here'}</strong><p>{predictions.length ? 'Keep drawing — clearer shapes give better suggestions.' : 'Draw an object above and see what pops up.'}</p></div></div>}<span className="suggestion-note"><Sparkles size={14}/> {suggestions.length ? 'CLICK A CARD TO ADD IT' : 'UP TO 10 SUGGESTIONS'}</span></div></section>
+
       {message && <div className="notice" role="status">{message}{saveLink && <> <a className="notice-link" href={saveLink.url} download={saveLink.filename} onClick={() => setTimeout(() => releaseUrl(saveLink.url), 30000)}>Save the PNG again</a> if your browser blocked the download.</>}</div>}
       <div className="page-bottom"><span><span className="tiny-star">✳</span> Made for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
     {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={e => e.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>You draw an object on the canvas.</li><li>SketchAI crops, centers and resizes the sketch into a 28 × 28 image, matching the way its training data was drawn.</li><li>A neural network looks for patterns in the pixels.</li><li>A Quick, Draw! classifier trained for this project looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Pick an available illustration to add it next to your sketch, then keep creating.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your drawing isn't uploaded.</div><button className="download-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
   </div>;
 }
-function Flower2Placeholder() { return <span className="placeholder-flower">✿</span>; }
-function SunPlaceholder() { return <span className="placeholder-sun">☼</span>; }
 export default App;
