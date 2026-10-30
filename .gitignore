@@ -1,3 +1,28 @@
 node_modules/
 dist/
 .DS_Store
+
+# The trained 345-class model IS committed, on purpose.
+#
+# Generated files do not survive an Arena workspace reset (they are not part of a
+# git snapshot), and the model was lost once that way. GitHub release assets are
+# not an option because uploads.github.com is unreachable from the sandbox. So
+# the model is versioned here, alongside the backup archives in
+# training/backup/. It is 0.83 MB.
+#
+# Rebuild it from scratch with `bash training/restore-model.sh`.
+# A random-weight test fixture must NEVER be committed here — see
+# scripts/make-fixture-model-345.mjs.
+# public/model-345/  (intentionally not ignored)
+
+# Training scratch space: cached dataset slices, checkpoints, Keras files, exports.
+training/work/
+training/export/
+training/__pycache__/
+*.pyc
+
+# Training environment + downloaded dataset (not committed)
+training/quickdraw-source/
+
+# Durable model backups (committed on purpose - see .gitignore note above)
+# training/backup/ is tracked; do not ignore it.

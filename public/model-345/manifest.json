@@ -1,0 +1,99 @@
+{
+  "name": "SketchAI 345-class doodle classifier",
+  "trained_for": "SketchAI (school demonstration project)",
+  "dataset": "Google Quick, Draw! drawings (CC BY 4.0), accessed via the quickdraw.js npm redistribution of the official dataset",
+  "dataset_url": "https://github.com/googlecreativelab/quickdraw-dataset",
+  "dataset_access_path": "npm:quickdraw.js@1.0.6 (CC BY 4.0, data by Google, Inc.)",
+  "is_self_test_only": false,
+  "categories": 345,
+  "samples_per_class": 100,
+  "train_samples": 27600,
+  "validation_samples": 3450,
+  "test_samples": 3450,
+  "split": {
+    "train": 0.8,
+    "validation": 0.1,
+    "test": 0.09999999999999995
+  },
+  "seed": 42,
+  "input_shape": [
+    1,
+    28,
+    28,
+    1
+  ],
+  "input_format": "28x28x1 float32, white ink on black, 0-1",
+  "output_classes": 345,
+  "preprocessing": {
+    "profile": "quickdraw-28",
+    "crop_padding": 1.186,
+    "centre": true,
+    "preserve_aspect_ratio": true,
+    "ink_source": "canvas alpha",
+    "normalisation": "white ink on black, 0-1; 97th-percentile ink lifted to 1.0 (min gamma 0.25)"
+  },
+  "augmentation": {
+    "enabled": true,
+    "translation": 0.05,
+    "rotation": 0.05
+  },
+  "architecture": [
+    "InputLayer",
+    "Conv2D",
+    "BatchNormalization",
+    "Activation",
+    "MaxPooling2D",
+    "Conv2D",
+    "BatchNormalization",
+    "Activation",
+    "MaxPooling2D",
+    "Conv2D",
+    "GlobalAveragePooling2D",
+    "Dense",
+    "Dropout",
+    "Dense"
+  ],
+  "parameters": 214649,
+  "metrics": {
+    "test_accuracy": 0.37710145115852356,
+    "test_top3_accuracy": 0.5811594128608704,
+    "test_top10_accuracy": 0.7611594200134277,
+    "test_loss": 2.824235677719116,
+    "test_samples": 3450
+  },
+  "weights_bytes": 867004,
+  "trained_at": "2026-10-30T09:14:51+00:00",
+  "config": {
+    "samples_per_class": 100,
+    "batch_size": 128,
+    "epochs": 60,
+    "seed": 42,
+    "train_fraction": 0.8,
+    "val_fraction": 0.1,
+    "quick_test": false,
+    "category_limit": 0,
+    "quick_test_categories": 20,
+    "quick_test_samples": 500,
+    "quick_test_epochs": 10,
+    "quick_test_batch_size": 128,
+    "augment": true,
+    "augment_translation": 0.05,
+    "augment_rotation": 0.05,
+    "thickness_augment": true,
+    "dataset": "quickdraw-js",
+    "quickdraw_source_dir": "/home/user/SketchAI/training/quickdraw-source/drawings",
+    "data_dir": "/home/user/SketchAI/training/work/data",
+    "cache_dir": "/home/user/SketchAI/training/work/cache",
+    "output_dir": "/home/user/SketchAI/training/work/run",
+    "export_dir": "/home/user/SketchAI/training/export/model-345",
+    "early_stopping_patience": 8,
+    "learning_rate": 0.001,
+    "dropout": 0.4,
+    "dense_units": 256,
+    "drive_checkpoint_dir": null
+  },
+  "license": {
+    "dataset": "CC BY 4.0 (Google, Inc.)",
+    "model": "trained for this project; no third-party weights included"
+  }
+}

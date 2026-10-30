@@ -1,0 +1,65 @@
+########## 1/4 ENVIRONMENT ##########
+  from pkg_resources import parse_version
+E0000 00:00:1793350786.583520    3814 cuda_platform.cc:52] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (303)
+python : 3.11.2
+numpy           2.2.6
+tensorflow      2.21.0
+tf_keras        2.21.0
+tensorflowjs    4.22.0
+h5py            3.14.0
+scipy           1.17.1
+tfjs converter import: OK
+gpus   : none (CPU training)
+=== ENVIRONMENT READY ===
+
+########## 2/4 DATASET ##########
+Verifying against quickdraw-categories.txt …
+  expected 345 categories, found 345
+
+✔ All 345 categories present and named identically to the canonical list
+  data      : /home/user/SketchAI/training/quickdraw-source/drawings
+  licence   : /home/user/SketchAI/training/quickdraw-source/UPSTREAM-LICENSE.txt (CC BY 4.0, © Google, Inc.)
+
+Next: python training/train_345.py --quick-test
+
+########## 3/4 TRAINING (frozen pipeline, SEED=42) ##########
+/home/user/tfenv/lib/python3.11/site-packages/tensorflow_hub/__init__.py:61: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+Converting with the tensorflowjs Python API …
+Exported to /home/user/SketchAI/training/export/model-345 (0.83 MB)
+Zip archive: /home/user/SketchAI/training/export/sketchai-model-345.zip
+
+Done in 15.06 minutes. Summary: /home/user/SketchAI/training/work/run/summary.json
+
+========================================================================
+FULL RUN SUMMARY (real Quick, Draw! data)
+========================================================================
+categories        : 345
+dataset           : quickdraw-js
+random baseline   : 0.29%
+export dir        : /home/user/SketchAI/training/export/model-345
+export            : {
+  "classes": 345,
+  "output_units": 345,
+  "weight_shards": 1,
+  "bytes": 867004,
+  "megabytes": 0.83
+}
+minutes           : 15.06
+
+########## 4/4 INSTALL ##########
+
+found 0 vulnerabilities
+✔ 1 weight shard · 847 KB total
+  trained on Google Quick, Draw! drawings (CC BY 4.0), accessed via the quickdraw.js npm redistribution of the official dataset · 27,600 train / 3,450 test · top-1 37.7% · top-3 58.1% · top-10 76.1%
+
+✔ Installed into public/model-345/
+  Files: model.json, classes.txt, group1-shard1of1.bin
+
+Next: npm run build (or npm run dev) and check the header says "AI ready — 345 objects".
+Then: node scripts/manual-test-345.mjs
+
+########## VERIFY ##########
+
+top-1 7/16 · top-3 9/16 · top-10 12/16
+Sixteen quick hand-drawn doodles, not a test split — read the confidence values, not just the misses.
+=== RESTORE COMPLETE ===
