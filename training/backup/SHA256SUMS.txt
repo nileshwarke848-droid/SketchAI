@@ -1,0 +1,2 @@
+9bde91b1f54c513220bf7a287238db85f1c945070127cc0e2d892c3d2331e20e  SketchAI-345-Production-Model.zip
+1da0f25c1eba84e88d95d63ee7ba121e457368f8a25ec78d330d68148272241e  SketchAI-345-Training-Checkpoint.zip
