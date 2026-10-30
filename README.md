@@ -335,6 +335,21 @@ problems found, and the application test results.
 investigation and its outcome, top-10 predictions, the artwork library and the
 full test results for this release.
 
+## Recovering from a clean machine
+
+`docs/RECOVERY.md` lists what is committed versus what is regenerated, how to
+restore the trained models from the committed copy or the backup archives in
+`training/backup/`, how to rebuild the artwork from its open-source sources,
+and the commands that verify a restore.
+
+The short version — the models and the artwork are both committed, so a fresh
+clone only needs:
+
+```bash
+npm install
+npm run dev
+```
+
 ## Limitations
 
 - The classifier is a small CNN trained on only ~5,000 images per class; it is
