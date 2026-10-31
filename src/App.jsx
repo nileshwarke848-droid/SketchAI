@@ -22,6 +22,7 @@ const formatScore = (score) => (score < 0.005 ? '<1%' : `${Math.round(score * 10
 function App() {
   const canvasRef = useRef(null), sketchRef = useRef(null), modelRef = useRef(null), timerRef = useRef(null), pointerRef = useRef(null);
   const historyRef = useRef([]), historyIndex = useRef(-1), revisionRef = useRef(0);
+  const saveUrlRef = useRef(null), exportLockRef = useRef(false);
   const [tool, setTool] = useState('pencil'), [color, setColor] = useState(colors[0]), [size, setSize] = useState(7);
   const [status, setStatus] = useState('loading'), [recognition, setRecognition] = useState(IDLE), [hasInk, setHasInk] = useState(false);
   const [canUndo, setCanUndo] = useState(false), [canRedo, setCanRedo] = useState(false), [showHelp, setShowHelp] = useState(false), [message, setMessage] = useState('');
@@ -75,6 +76,10 @@ function App() {
     loadModel({ onBackend: setBackend, onProfile: (info) => { if (info.tier) setModelTier(info.tier); if (info.fallbackReason !== undefined) setFallbackReason(info.fallbackReason); } }).then((loaded) => { if (!active) { loaded.model.dispose(); return; } modelRef.current = loaded; setClassCount(loaded.labels.length); setModelTier(loaded.tier); setFallbackReason(loaded.fallbackReason); setStatus('ready'); schedulePrediction(); }).catch((error) => { console.error('Model load failed:', error); if (!active) return; setStatus('error'); setMessage('The recognition model could not be loaded. Drawing and downloading still work.'); });
     return () => { active = false; clearTimeout(timerRef.current); modelRef.current?.model.dispose(); };
   }, [saveHistory, schedulePrediction]);
+  useEffect(() => () => {
+    if (saveUrlRef.current) releaseUrl(saveUrlRef.current);
+    saveUrlRef.current = null;
+  }, []);
 
   const restore = useCallback((offset) => {
     const next = historyIndex.current + offset;
@@ -161,9 +166,14 @@ function App() {
       saveHistory();
     } catch (error) { console.error('Artwork insertion failed:', error); setMessage('Could not add that illustration. Please try again.'); }
   };
-  const download = async () => {
-    if (exporting) return;
+  const download = () => {
+    // Keep one export per button event; the actual anchor click is synchronous
+    // so it remains inside the browser's user-activation window.
+    if (exportLockRef.current) return;
+    exportLockRef.current = true;
     setExporting(true);
+    if (saveUrlRef.current) releaseUrl(saveUrlRef.current);
+    saveUrlRef.current = null;
     setSaveLink(null);
     try {
       // Export the same visible composition: accepted permanent art, then the
@@ -174,13 +184,17 @@ function App() {
         layers: [canvasRef.current, sketchRef.current],
         opaque: !transparentExport,
       });
-      const saved = await saveCanvasAsPng(out, { filename: EXPORT_FILENAME });
+      const saved = saveCanvasAsPng(out, { filename: EXPORT_FILENAME });
+      if (saved.url.startsWith('blob:')) saveUrlRef.current = saved.url;
       setSaveLink({ url: saved.url, filename: saved.filename, mime: 'image/png' });
-      setMessage(`Saved ${saved.filename} (${W} × ${H} PNG).`);
+      setMessage(saved.automaticClick
+        ? `PNG is ready (${W} × ${H}). If the download did not start, use the manual save link.`
+        : 'The browser could not start the automatic download. Use the manual save link below.');
     } catch (error) {
       console.error('PNG export failed:', error);
       setMessage('The PNG could not be created. Please try again, or use a different browser.');
     } finally {
+      exportLockRef.current = false;
       setExporting(false);
     }
   };
@@ -246,7 +260,12 @@ function App() {
         </aside>
       </div>
 
-      {message && <div className="notice" role="status">{message}{saveLink && <> <a className="notice-link" href={saveLink.url} download={saveLink.filename} onClick={() => setTimeout(() => releaseUrl(saveLink.url), 30000)}>Save the PNG again</a> if your browser blocked the download.</>}</div>}
+      {message && <div className="notice" role="status">{message}{saveLink && <> <a className="notice-link" href={saveLink.url} download={saveLink.filename} onClick={() => window.setTimeout(() => {
+        if (saveUrlRef.current === saveLink.url) {
+          releaseUrl(saveLink.url);
+          saveUrlRef.current = null;
+        }
+      }, 30000)}>Save the PNG again</a> if your browser blocked the download.</>}</div>}
       <div className="page-bottom"><span><span className="tiny-star">✳</span> Made for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
     {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={e => e.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>You draw an object on the canvas.</li><li>SketchAI crops, centers and resizes the sketch into a 28 × 28 image, matching the way its training data was drawn.</li><li>A neural network looks for patterns in the pixels.</li><li>A Quick, Draw! classifier trained for this project looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Pick an available illustration to add it next to your sketch, then keep creating.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your drawing isn't uploaded.</div><button className="download-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}

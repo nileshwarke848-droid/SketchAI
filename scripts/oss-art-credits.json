@@ -62,6 +62,11 @@
         "mode": "outline"
       },
       {
+        "label": "flamingo",
+        "icon": "flamingo",
+        "mode": "outline"
+      },
+      {
         "label": "harp",
         "icon": "harp",
         "mode": "filled"
@@ -82,18 +87,8 @@
         "mode": "outline"
       },
       {
-        "label": "lion",
-        "icon": "lion",
-        "mode": "outline"
-      },
-      {
         "label": "mermaid",
         "icon": "mermaid",
-        "mode": "outline"
-      },
-      {
-        "label": "monkey",
-        "icon": "monkey",
         "mode": "outline"
       },
       {
@@ -107,6 +102,26 @@
         "mode": "filled"
       },
       {
+        "label": "owl",
+        "icon": "owl",
+        "mode": "filled"
+      },
+      {
+        "label": "passport",
+        "icon": "passport",
+        "mode": "filled"
+      },
+      {
+        "label": "peas",
+        "icon": "peas",
+        "mode": "outline"
+      },
+      {
+        "label": "police car",
+        "icon": "police-car",
+        "mode": "filled"
+      },
+      {
         "label": "potato",
         "icon": "potato",
         "mode": "outline"
@@ -114,6 +129,21 @@
       {
         "label": "rifle",
         "icon": "rifle",
+        "mode": "outline"
+      },
+      {
+        "label": "scorpion",
+        "icon": "scorpion",
+        "mode": "outline"
+      },
+      {
+        "label": "sheep",
+        "icon": "sheep",
+        "mode": "outline"
+      },
+      {
+        "label": "shorts",
+        "icon": "underwear-shorts",
         "mode": "outline"
       },
       {
@@ -127,9 +157,14 @@
         "mode": "outline"
       },
       {
-        "label": "stop sign",
-        "icon": "stop-sign",
+        "label": "steak",
+        "icon": "steak",
         "mode": "filled"
+      },
+      {
+        "label": "stove",
+        "icon": "gas-stove",
+        "mode": "outline"
       },
       {
         "label": "strawberry",
@@ -137,9 +172,39 @@
         "mode": "filled"
       },
       {
+        "label": "streetlight",
+        "icon": "street-light",
+        "mode": "outline"
+      },
+      {
+        "label": "swan",
+        "icon": "swan",
+        "mode": "outline"
+      },
+      {
+        "label": "tennis racquet",
+        "icon": "tennis-racket",
+        "mode": "outline"
+      },
+      {
+        "label": "the mona lisa",
+        "icon": "mona-lisa",
+        "mode": "filled"
+      },
+      {
         "label": "tiger",
         "icon": "tiger",
         "mode": "filled"
+      },
+      {
+        "label": "trombone",
+        "icon": "trombone",
+        "mode": "outline"
+      },
+      {
+        "label": "underwear",
+        "icon": "underwear",
+        "mode": "outline"
       },
       {
         "label": "vase",
@@ -149,6 +214,11 @@
       {
         "label": "whale",
         "icon": "sperm-whale",
+        "mode": "outline"
+      },
+      {
+        "label": "windmill",
+        "icon": "windmill",
         "mode": "outline"
       }
     ]
@@ -305,6 +375,11 @@
         "mode": "stroke"
       },
       {
+        "label": "dumbbell",
+        "icon": "dumbbell",
+        "mode": "stroke"
+      },
+      {
         "label": "eyeglasses",
         "icon": "glasses",
         "mode": "stroke"
@@ -312,11 +387,6 @@
       {
         "label": "fan",
         "icon": "fan",
-        "mode": "stroke"
-      },
-      {
-        "label": "flamingo",
-        "icon": "bird",
         "mode": "stroke"
       },
       {
@@ -390,11 +460,6 @@
         "mode": "stroke"
       },
       {
-        "label": "parrot",
-        "icon": "bird",
-        "mode": "stroke"
-      },
-      {
         "label": "popsicle",
         "icon": "popsicle",
         "mode": "stroke"
@@ -425,23 +490,8 @@
         "mode": "stroke"
       },
       {
-        "label": "stereo",
-        "icon": "speaker",
-        "mode": "stroke"
-      },
-      {
-        "label": "swan",
-        "icon": "bird",
-        "mode": "stroke"
-      },
-      {
         "label": "syringe",
         "icon": "syringe",
-        "mode": "stroke"
-      },
-      {
-        "label": "the great wall of china",
-        "icon": "brick-wall",
         "mode": "stroke"
       },
       {
@@ -649,11 +699,6 @@
         "mode": "stroke"
       },
       {
-        "label": "dumbbell",
-        "icon": "dumbbell",
-        "mode": "stroke"
-      },
-      {
         "label": "ear",
         "icon": "ear",
         "mode": "stroke"
@@ -711,16 +756,6 @@
       {
         "label": "flying saucer",
         "icon": "ufo",
-        "mode": "stroke"
-      },
-      {
-        "label": "garden",
-        "icon": "garden-cart",
-        "mode": "stroke"
-      },
-      {
-        "label": "golf club",
-        "icon": "golf",
         "mode": "stroke"
       },
       {
@@ -874,16 +909,6 @@
         "mode": "stroke"
       },
       {
-        "label": "oven",
-        "icon": "microwave",
-        "mode": "stroke"
-      },
-      {
-        "label": "paint can",
-        "icon": "paint",
-        "mode": "stroke"
-      },
-      {
         "label": "paper clip",
         "icon": "paperclip",
         "mode": "stroke"
@@ -894,11 +919,6 @@
         "mode": "stroke"
       },
       {
-        "label": "peas",
-        "icon": "plant",
-        "mode": "stroke"
-      },
-      {
         "label": "pencil",
         "icon": "pencil",
         "mode": "stroke"
@@ -906,11 +926,6 @@
       {
         "label": "piano",
         "icon": "piano",
-        "mode": "stroke"
-      },
-      {
-        "label": "pickup truck",
-        "icon": "truck",
         "mode": "stroke"
       },
       {
@@ -929,23 +944,13 @@
         "mode": "stroke"
       },
       {
-        "label": "police car",
-        "icon": "car",
-        "mode": "stroke"
-      },
-      {
-        "label": "pond",
-        "icon": "pool",
-        "mode": "stroke"
-      },
-      {
         "label": "pool",
         "icon": "pool",
         "mode": "stroke"
       },
       {
         "label": "power outlet",
-        "icon": "plug",
+        "icon": "outlet",
         "mode": "stroke"
       },
       {
@@ -974,11 +979,6 @@
         "mode": "stroke"
       },
       {
-        "label": "school bus",
-        "icon": "bus",
-        "mode": "stroke"
-      },
-      {
         "label": "scissors",
         "icon": "scissors",
         "mode": "stroke"
@@ -986,11 +986,6 @@
       {
         "label": "shoe",
         "icon": "shoe",
-        "mode": "stroke"
-      },
-      {
-        "label": "shorts",
-        "icon": "shirt",
         "mode": "stroke"
       },
       {
@@ -1054,18 +1049,8 @@
         "mode": "stroke"
       },
       {
-        "label": "steak",
-        "icon": "meat",
-        "mode": "stroke"
-      },
-      {
         "label": "stethoscope",
         "icon": "stethoscope",
-        "mode": "stroke"
-      },
-      {
-        "label": "string bean",
-        "icon": "carrot",
         "mode": "stroke"
       },
       {
@@ -1079,18 +1064,8 @@
         "mode": "stroke"
       },
       {
-        "label": "sweater",
-        "icon": "shirt",
-        "mode": "stroke"
-      },
-      {
         "label": "sword",
         "icon": "sword",
-        "mode": "stroke"
-      },
-      {
-        "label": "table",
-        "icon": "table",
         "mode": "stroke"
       },
       {
@@ -1104,11 +1079,6 @@
         "mode": "stroke"
       },
       {
-        "label": "tennis racquet",
-        "icon": "ball-tennis",
-        "mode": "stroke"
-      },
-      {
         "label": "tent",
         "icon": "tent",
         "mode": "stroke"
@@ -1116,11 +1086,6 @@
       {
         "label": "the eiffel tower",
         "icon": "building-eiffel-tower",
-        "mode": "stroke"
-      },
-      {
-        "label": "the mona lisa",
-        "icon": "photo",
         "mode": "stroke"
       },
       {
@@ -1164,18 +1129,8 @@
         "mode": "stroke"
       },
       {
-        "label": "underwear",
-        "icon": "shirt",
-        "mode": "stroke"
-      },
-      {
         "label": "wheel",
         "icon": "wheel",
-        "mode": "stroke"
-      },
-      {
-        "label": "windmill",
-        "icon": "windmill",
         "mode": "stroke"
       },
       {
@@ -1273,11 +1228,6 @@
         "mode": "outline"
       },
       {
-        "label": "fireplace",
-        "icon": "fireplace",
-        "mode": "filled"
-      },
-      {
         "label": "floor lamp",
         "icon": "floor-lamp",
         "mode": "outline"
@@ -1343,24 +1293,14 @@
         "mode": "outline"
       },
       {
-        "label": "owl",
-        "icon": "owl",
-        "mode": "filled"
+        "label": "oven",
+        "icon": "toaster-oven",
+        "mode": "outline"
       },
       {
         "label": "palm tree",
         "icon": "palm-tree",
         "mode": "outline"
-      },
-      {
-        "label": "panda",
-        "icon": "panda",
-        "mode": "filled"
-      },
-      {
-        "label": "passport",
-        "icon": "passport",
-        "mode": "filled"
       },
       {
         "label": "peanut",
@@ -1418,8 +1358,8 @@
         "mode": "outline"
       },
       {
-        "label": "scorpion",
-        "icon": "spider",
+        "label": "school bus",
+        "icon": "bus-school",
         "mode": "outline"
       },
       {
@@ -1443,11 +1383,6 @@
         "mode": "outline"
       },
       {
-        "label": "sheep",
-        "icon": "sheep",
-        "mode": "outline"
-      },
-      {
         "label": "snail",
         "icon": "snail",
         "mode": "outline"
@@ -1463,9 +1398,9 @@
         "mode": "outline"
       },
       {
-        "label": "stove",
-        "icon": "stove",
-        "mode": "filled"
+        "label": "table",
+        "icon": "table-furniture",
+        "mode": "outline"
       },
       {
         "label": "teddy-bear",
@@ -1503,11 +1438,6 @@
         "mode": "outline"
       },
       {
-        "label": "trombone",
-        "icon": "trumpet",
-        "mode": "outline"
-      },
-      {
         "label": "trumpet",
         "icon": "trumpet",
         "mode": "outline"
@@ -1520,6 +1450,16 @@
       {
         "label": "watermelon",
         "icon": "fruit-watermelon",
+        "mode": "outline"
+      },
+      {
+        "label": "wine bottle",
+        "icon": "bottle-wine",
+        "mode": "outline"
+      },
+      {
+        "label": "wine glass",
+        "icon": "glass-wine",
         "mode": "outline"
       },
       {
@@ -1577,6 +1517,11 @@
         "mode": "outline"
       },
       {
+        "label": "pickup truck",
+        "icon": "truck-pickup",
+        "mode": "outline"
+      },
+      {
         "label": "sink",
         "icon": "sink",
         "mode": "outline"
@@ -1584,16 +1529,6 @@
       {
         "label": "spoon",
         "icon": "spoon",
-        "mode": "outline"
-      },
-      {
-        "label": "wine bottle",
-        "icon": "wine-bottle",
-        "mode": "outline"
-      },
-      {
-        "label": "wine glass",
-        "icon": "wine-glass",
         "mode": "outline"
       }
     ]

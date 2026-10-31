@@ -14,16 +14,29 @@ import { categories, categoriesByLabel, categoriesByNormalisedLabel } from './ca
 import { VARIANT_SETS } from './artwork-variants.js';
 import { LINE_ART } from './line-art.js';
 import { IMPORTED_ART } from './imported-art.js';
-import { IMPORTED_ART_VARIANTS } from './imported-art-variants.js';
+import { IMPORTED_ART_VARIANTS as BATCH1_IMPORTED_ART_VARIANTS } from './imported-art-variants.js';
+import { IMPORTED_ART_VARIANTS as BATCH2_IMPORTED_ART_VARIANTS } from './imported-art-variants-batch2.js';
+import { IMPORTED_ART_VARIANTS as BATCH3_IMPORTED_ART_VARIANTS } from './imported-art-variants-batch3.js';
 import { BATCH1_DERIVED_ART } from './batch1-derived-art.js';
+import { BATCH2_DERIVED_ART } from './batch2-derived-art.js';
+import { BATCH3_DERIVED_ART } from './batch3-derived-art.js';
+
+// Keep the separately reviewed generated maps independent on disk; merge them
+// only at lookup so Batch-1 QA and its frozen review artifacts remain intact.
+const IMPORTED_ART_VARIANTS = {
+  ...BATCH1_IMPORTED_ART_VARIANTS,
+  ...BATCH2_IMPORTED_ART_VARIANTS,
+  ...BATCH3_IMPORTED_ART_VARIANTS,
+};
 
 /** Model labels use underscores ("alarm_clock"); the official list uses spaces. */
 export function normaliseLabel(label) {
   return String(label).toLowerCase().replace(/_/g, ' ').trim();
 }
 
-// Artwork-resolution changes in this task apply only to the canonical Batch-1
-// slice. Later categories retain the existing icon fallback behavior.
+// Batch 1 keeps its stricter clean-art fallback contract. Reviewed Batch-2/3
+// sources are added ahead of the existing legacy icon fallback, which remains
+// unchanged for those later categories.
 const BATCH1_LABELS = new Set(categories.slice(0, 100).map(({ label }) => normaliseLabel(label)));
 
 const ALIASES = {
@@ -112,19 +125,17 @@ export function getArtworkVariants(label, { max = 4 } = {}) {
   const push = (art, id, origin, extra = {}) =>
     variants.push({ ...art, id: `${key}-${id}`, origin, ...extra });
 
-  // The order is the Batch-1 artwork contract:
+  // The ordering contract is shared across canonical batches:
   //   1. strongest clean primary (open source, or original derived only when no
-  //      reasonable source exists)
+  //      readable, accurate source exists)
   //   2. genuinely different source/clean variants
   //   3. existing SketchAI hand-authored line art, kept available
   //   4. any older hand-authored alternates
   //   5. legacy icon fallback, then text-only
   //
-  // When a Batch-1 derived drawing is marked by its dedicated data file, it is
-  // primary and the old imported drawing is retained as an alternate rather
-  // than silently discarded. Otherwise the generated imported-art.js primary
-  // stays first, as before.
-  const derived = BATCH1_DERIVED_ART[key];
+  // A reviewed batch-specific derived drawing is primary; a replaced imported
+  // glyph remains available as a secondary only when it is still useful.
+  const derived = BATCH1_DERIVED_ART[key] ?? BATCH2_DERIVED_ART[key] ?? BATCH3_DERIVED_ART[key];
   if (derived) push(derived, 'derived', 'derived');
 
   const imported = IMPORTED_ART[key];

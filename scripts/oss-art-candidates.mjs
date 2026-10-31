@@ -3,8 +3,9 @@
 //
 //   node scripts/oss-art-candidates.mjs "cat" "dog"        # named categories
 //   node scripts/oss-art-candidates.mjs --batch=1          # canonical 1..100
-//   node scripts/oss-art-candidates.mjs --batch=1 --json   # machine-readable
-//   node scripts/oss-art-candidates.mjs --batch=1 --only-gaps
+//   node scripts/oss-art-candidates.mjs --batch=2          # canonical 101..200
+//   node scripts/oss-art-candidates.mjs --batch=3 --json   # canonical 201..345
+//   node scripts/oss-art-candidates.mjs --batch=2 --only-gaps
 //
 // This is a PROPOSAL tool, not a decision maker. Every candidate is put through
 // the real normaliser (scripts/oss-art-lib.mjs), measured for ink and frame
@@ -50,8 +51,11 @@ const selected = wanted.length
     ? batchSlice(labels, Number(batchArg.split('=')[1]))
     : labels;
 
-/** Batch N of the canonical 345 list, 100 categories per batch. */
+/** The review phases are the requested canonical ranges; Batch 3 is the remainder. */
 function batchSlice(all, batch) {
+  const ranges = { 1: [0, 100], 2: [100, 200], 3: [200, 345] };
+  const range = ranges[batch];
+  if (range) return all.slice(...range);
   const size = Number(process.env.BATCH_SIZE ?? 100);
   const from = (batch - 1) * size;
   return all.slice(from, from + size);
@@ -345,6 +349,7 @@ for (const label of selected) {
   });
 }
 
+const phase = batchArg ? `batch-${batchArg.split('=')[1]}` : 'selected';
 if (args.includes('--emit-map')) {
   const lines = [];
   for (const r of results) {
@@ -352,16 +357,19 @@ if (args.includes('--emit-map')) {
     const picks = r.accepted.map((c) => `['${c.lib}', '${c.name}']`);
     lines.push(`  '${r.label}': [${picks.join(', ')}],`);
   }
-  fs.writeFileSync('/tmp/batch1-map-draft.mjs', lines.join('\n') + '\n');
-  console.log(`wrote ${lines.length} proposed entries -> /tmp/batch1-map-draft.mjs`);
+  const mapPath = `/tmp/${phase}-map-draft.mjs`;
+  fs.writeFileSync(mapPath, lines.join('\n') + '\n');
+  console.log(`wrote ${lines.length} proposed entries -> ${mapPath}`);
   const none = results.filter((r) => !r.accepted.length);
   console.log(`${none.length} categories with no gate-passing candidate:`);
   console.log(`  ${none.map((r) => r.label).join(', ')}`);
 }
 
 if (asJson) {
-  fs.writeFileSync('/tmp/batch1-candidates.json', JSON.stringify(results, null, 1));
-  console.log(`wrote /tmp/batch1-candidates.json (${results.length} categories)`);
+  const jsonArg = args.find((arg) => arg.startsWith('--json='));
+  const jsonPath = jsonArg?.slice('--json='.length) || `/tmp/${phase}-candidates.json`;
+  fs.writeFileSync(jsonPath, JSON.stringify(results, null, 1));
+  console.log(`wrote ${jsonPath} (${results.length} categories)`);
 } else {
   for (const r of results) {
     const head = `${r.label}  [clean now: ${r.existingCount}${r.existing.length ? `: ${r.existing.join(', ')}` : ''}]`;

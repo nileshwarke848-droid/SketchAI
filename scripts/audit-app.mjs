@@ -105,19 +105,21 @@ function makeCanvasShim(window) {
 
   proto.toDataURL = function toDataURL(mime = 'image/png') {
     if (!this.__backing) this.getContext('2d');
-    return this.__backing.toDataURL(mime);
-  };
-
-  // jsdom declares toBlob() but throws "not implemented" from inside it, and it
-  // then never calls the callback, so download.js would hang. Implement it for real.
-  proto.toBlob = function toBlob(callback, mime = 'image/png') {
-    const dataUrl = this.toDataURL(mime);
+    const dataUrl = this.__backing.toDataURL(mime);
     window.__lastExportDataUrl = dataUrl;
     window.__lastExportPixels = new Uint8ClampedArray(
       this.getContext('2d').getImageData(0, 0, this.width, this.height).data,
     );
+    return dataUrl;
+  };
+
+  // jsdom's native toBlob is unimplemented. Simulate the browser's asynchronous
+  // callback so the activation regression can detect an anchor click delayed
+  // until after the Download button's event has returned.
+  proto.toBlob = function toBlob(callback, mime = 'image/png') {
+    const dataUrl = this.toDataURL(mime);
     const payload = dataUrl.slice(dataUrl.indexOf(',') + 1);
-    callback(new window.Blob([Buffer.from(payload, 'base64')], { type: mime }));
+    window.setTimeout(() => callback(new window.Blob([Buffer.from(payload, 'base64')], { type: mime })), 0);
   };
 
   // jsdom has no layout, so the app's client->canvas maths would divide by zero.
@@ -230,6 +232,18 @@ function createWindow(code) {
       makeImageShim(window);
       makeFetchShim(window);
       window.confirm = () => true;
+      window.__downloadGestureActive = false;
+      window.__rejectDownloadClick = false;
+      window.__downloadClicks = [];
+      window.HTMLAnchorElement.prototype.click = function clickDownloadAnchor() {
+        window.__downloadClicks.push({
+          href: this.href,
+          filename: this.download,
+          attached: this.isConnected,
+          userActivated: window.__downloadGestureActive,
+        });
+        if (window.__rejectDownloadClick) throw new Error('simulated browser download restriction');
+      };
     },
   });
 
@@ -299,6 +313,15 @@ function countNonWhitePixels(pixels) {
     if (pixels[i] < 250 || pixels[i + 1] < 250 || pixels[i + 2] < 250) count += 1;
   }
   return count;
+}
+
+function inspectPngDataUrl(dataUrl) {
+  const prefix = 'data:image/png;base64,';
+  if (!dataUrl.startsWith(prefix)) return null;
+  const bytes = Buffer.from(dataUrl.slice(prefix.length), 'base64');
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (bytes.length < 24 || !bytes.subarray(0, 8).equals(signature)) return null;
+  return { bytes, width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
 
 function inkPixels(canvas) {
@@ -635,30 +658,70 @@ async function main() {
   const downloadButton = [...document.querySelectorAll('button')]
     .find((button) => /Download/i.test(button.textContent ?? ''));
   check('download button exists', Boolean(downloadButton));
-  let pngUrl = null;
+  let exportedBlob = null;
   const originalCreate = window.URL.createObjectURL;
-  if (typeof originalCreate === 'function') {
-    window.URL.createObjectURL = (blob) => { pngUrl = { blob }; return 'blob:stub'; };
-  }
+  const originalRevoke = window.URL.revokeObjectURL;
+  window.URL.createObjectURL = (blob) => { exportedBlob = blob; return 'blob:sketchai-audit'; };
+  window.URL.revokeObjectURL = () => {};
   // Draw only on the temporary layer so the export must composite both layers.
   drawCircle(window, canvas, 400, 300, 120);
   const sketchInkBeforeExport = inkPixels(sketch);
   const permanentInkBeforeExport = inkPixels(canvas);
+  const permanentBeforeExport = Buffer.from(imagePixels(canvas));
+  const sketchBeforeExport = Buffer.from(imagePixels(sketch));
+  const downloadClicksBefore = window.__downloadClicks.length;
   await sleep(200);
+  window.__downloadGestureActive = true;
   downloadButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  window.__downloadGestureActive = false;
   await sleep(1500);
-  if (typeof originalCreate === 'function') window.URL.createObjectURL = originalCreate;
+  if (originalCreate === undefined) delete window.URL.createObjectURL;
+  else window.URL.createObjectURL = originalCreate;
+  if (originalRevoke === undefined) delete window.URL.revokeObjectURL;
+  else window.URL.revokeObjectURL = originalRevoke;
 
   const notice = document.querySelector('.notice')?.textContent ?? '';
   const dataUrlProbe = window.__lastExportDataUrl ?? '';
-  const isPng = dataUrlProbe.startsWith('data:image/png;base64,') && dataUrlProbe.length > 2000;
-  check('composite export is a PNG data URL', isPng, `${dataUrlProbe.length} chars`);
+  const pngInfo = inspectPngDataUrl(dataUrlProbe);
+  const isPng = Boolean(pngInfo && pngInfo.bytes.length > 2000);
+  check('composite export is a valid PNG data URL', isPng, `${pngInfo?.bytes.length ?? 0} bytes`);
+  check('export has the expected 1200x720 dimensions',
+    pngInfo?.width === CANVAS_W && pngInfo?.height === CANVAS_H,
+    `${pngInfo?.width ?? '?'}x${pngInfo?.height ?? '?'}`);
+  check('download produced a valid PNG Blob',
+    exportedBlob?.type === 'image/png' && exportedBlob.size === pngInfo?.bytes.length,
+    `${exportedBlob?.type ?? 'no blob'}, ${exportedBlob?.size ?? 0} bytes`);
   check('PNG export includes temporary sketch pixels',
     permanentInkBeforeExport === 0 && sketchInkBeforeExport > 2000
       && countNonWhitePixels(window.__lastExportPixels ?? []) > 2000,
     `permanent ${permanentInkBeforeExport}, sketch ${sketchInkBeforeExport}, exported ink ${countNonWhitePixels(window.__lastExportPixels ?? [])}`);
-  check('download reports success', /Saved|saved|download/i.test(notice) || pngUrl !== null
-    || !/could not be created/i.test(notice), notice.trim().slice(0, 90) || 'no notice');
+  const downloadClicks = window.__downloadClicks.slice(downloadClicksBefore);
+  check('one attached download anchor clicked during user activation',
+    downloadClicks.length === 1 && downloadClicks[0].attached && downloadClicks[0].userActivated
+      && downloadClicks[0].filename === 'sketchai-drawing.png'
+      && downloadClicks[0].href.startsWith('blob:'),
+    `${downloadClicks.length} anchor click(s), attached=${downloadClicks[0]?.attached}, activated=${downloadClicks[0]?.userActivated}`);
+  check('export does not mutate either source canvas',
+    Buffer.compare(permanentBeforeExport, Buffer.from(imagePixels(canvas))) === 0
+      && Buffer.compare(sketchBeforeExport, Buffer.from(imagePixels(sketch))) === 0);
+  check('download reports success', /PNG is ready|download/i.test(notice) || downloadClicks.length === 1,
+    notice.trim().slice(0, 90) || 'no notice');
+
+  window.__rejectDownloadClick = true;
+  window.__downloadGestureActive = true;
+  downloadButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  window.__downloadGestureActive = false;
+  await sleep(150);
+  window.__rejectDownloadClick = false;
+  const blockedNotice = document.querySelector('.notice')?.textContent ?? '';
+  const manualSaveLink = document.querySelector('.notice .notice-link');
+  const manualHref = manualSaveLink?.href ?? '';
+  const manualFallbackReady = manualHref.startsWith('blob:') || manualHref.startsWith('data:image/png;base64,');
+  const manualFallbackKind = manualHref.startsWith('blob:') ? 'Blob URL' : manualHref.startsWith('data:image/png;base64,') ? 'PNG data URL' : 'missing';
+  check('blocked synthetic click keeps a usable manual save link', manualFallbackReady, manualFallbackKind);
+  check('blocked synthetic click explains the manual retry',
+    /could not start the automatic download/i.test(blockedNotice) && /manual save link/i.test(blockedNotice),
+    blockedNotice.trim().slice(0, 100) || 'no notice');
 
   dom.window.close();
 

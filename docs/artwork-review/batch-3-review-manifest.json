@@ -1,0 +1,4020 @@
+{
+  "batch": 3,
+  "canonicalRange": [
+    201,
+    345
+  ],
+  "totalCategories": 145,
+  "distinctOptions": 162,
+  "distribution": {
+    "threePlus": 7,
+    "exactlyTwo": 21,
+    "exactlyOne": 99,
+    "zero": 18
+  },
+  "categoriesUnderThree": [
+    {
+      "index": 201,
+      "label": "octagon",
+      "count": 1
+    },
+    {
+      "index": 202,
+      "label": "octopus",
+      "count": 2
+    },
+    {
+      "index": 203,
+      "label": "onion",
+      "count": 0
+    },
+    {
+      "index": 204,
+      "label": "oven",
+      "count": 1
+    },
+    {
+      "index": 205,
+      "label": "owl",
+      "count": 1
+    },
+    {
+      "index": 206,
+      "label": "paintbrush",
+      "count": 2
+    },
+    {
+      "index": 207,
+      "label": "paint can",
+      "count": 0
+    },
+    {
+      "index": 208,
+      "label": "palm tree",
+      "count": 1
+    },
+    {
+      "index": 209,
+      "label": "panda",
+      "count": 0
+    },
+    {
+      "index": 210,
+      "label": "pants",
+      "count": 1
+    },
+    {
+      "index": 211,
+      "label": "paper clip",
+      "count": 1
+    },
+    {
+      "index": 212,
+      "label": "parachute",
+      "count": 1
+    },
+    {
+      "index": 213,
+      "label": "parrot",
+      "count": 0
+    },
+    {
+      "index": 214,
+      "label": "passport",
+      "count": 1
+    },
+    {
+      "index": 215,
+      "label": "peanut",
+      "count": 2
+    },
+    {
+      "index": 216,
+      "label": "pear",
+      "count": 1
+    },
+    {
+      "index": 217,
+      "label": "peas",
+      "count": 1
+    },
+    {
+      "index": 218,
+      "label": "pencil",
+      "count": 1
+    },
+    {
+      "index": 219,
+      "label": "penguin",
+      "count": 2
+    },
+    {
+      "index": 221,
+      "label": "pickup truck",
+      "count": 1
+    },
+    {
+      "index": 222,
+      "label": "picture frame",
+      "count": 1
+    },
+    {
+      "index": 223,
+      "label": "pig",
+      "count": 1
+    },
+    {
+      "index": 224,
+      "label": "pillow",
+      "count": 1
+    },
+    {
+      "index": 225,
+      "label": "pineapple",
+      "count": 2
+    },
+    {
+      "index": 226,
+      "label": "pizza",
+      "count": 2
+    },
+    {
+      "index": 227,
+      "label": "pliers",
+      "count": 1
+    },
+    {
+      "index": 228,
+      "label": "police car",
+      "count": 1
+    },
+    {
+      "index": 229,
+      "label": "pond",
+      "count": 0
+    },
+    {
+      "index": 230,
+      "label": "pool",
+      "count": 1
+    },
+    {
+      "index": 231,
+      "label": "popsicle",
+      "count": 1
+    },
+    {
+      "index": 232,
+      "label": "postcard",
+      "count": 0
+    },
+    {
+      "index": 233,
+      "label": "potato",
+      "count": 1
+    },
+    {
+      "index": 234,
+      "label": "power outlet",
+      "count": 1
+    },
+    {
+      "index": 235,
+      "label": "purse",
+      "count": 1
+    },
+    {
+      "index": 236,
+      "label": "rabbit",
+      "count": 2
+    },
+    {
+      "index": 237,
+      "label": "raccoon",
+      "count": 0
+    },
+    {
+      "index": 238,
+      "label": "radio",
+      "count": 2
+    },
+    {
+      "index": 239,
+      "label": "rain",
+      "count": 1
+    },
+    {
+      "index": 240,
+      "label": "rainbow",
+      "count": 1
+    },
+    {
+      "index": 241,
+      "label": "rake",
+      "count": 1
+    },
+    {
+      "index": 242,
+      "label": "remote control",
+      "count": 1
+    },
+    {
+      "index": 243,
+      "label": "rhinoceros",
+      "count": 0
+    },
+    {
+      "index": 244,
+      "label": "rifle",
+      "count": 1
+    },
+    {
+      "index": 245,
+      "label": "river",
+      "count": 1
+    },
+    {
+      "index": 246,
+      "label": "roller coaster",
+      "count": 1
+    },
+    {
+      "index": 247,
+      "label": "rollerskates",
+      "count": 1
+    },
+    {
+      "index": 248,
+      "label": "sailboat",
+      "count": 1
+    },
+    {
+      "index": 249,
+      "label": "sandwich",
+      "count": 1
+    },
+    {
+      "index": 250,
+      "label": "saw",
+      "count": 1
+    },
+    {
+      "index": 252,
+      "label": "school bus",
+      "count": 1
+    },
+    {
+      "index": 253,
+      "label": "scissors",
+      "count": 1
+    },
+    {
+      "index": 254,
+      "label": "scorpion",
+      "count": 1
+    },
+    {
+      "index": 255,
+      "label": "screwdriver",
+      "count": 1
+    },
+    {
+      "index": 256,
+      "label": "sea turtle",
+      "count": 2
+    },
+    {
+      "index": 257,
+      "label": "see saw",
+      "count": 1
+    },
+    {
+      "index": 258,
+      "label": "shark",
+      "count": 1
+    },
+    {
+      "index": 259,
+      "label": "sheep",
+      "count": 1
+    },
+    {
+      "index": 260,
+      "label": "shoe",
+      "count": 1
+    },
+    {
+      "index": 261,
+      "label": "shorts",
+      "count": 1
+    },
+    {
+      "index": 262,
+      "label": "shovel",
+      "count": 1
+    },
+    {
+      "index": 263,
+      "label": "sink",
+      "count": 1
+    },
+    {
+      "index": 264,
+      "label": "skateboard",
+      "count": 1
+    },
+    {
+      "index": 265,
+      "label": "skull",
+      "count": 1
+    },
+    {
+      "index": 266,
+      "label": "skyscraper",
+      "count": 2
+    },
+    {
+      "index": 267,
+      "label": "sleeping bag",
+      "count": 1
+    },
+    {
+      "index": 268,
+      "label": "smiley face",
+      "count": 2
+    },
+    {
+      "index": 269,
+      "label": "snail",
+      "count": 1
+    },
+    {
+      "index": 270,
+      "label": "snake",
+      "count": 2
+    },
+    {
+      "index": 271,
+      "label": "snorkel",
+      "count": 1
+    },
+    {
+      "index": 272,
+      "label": "snowflake",
+      "count": 1
+    },
+    {
+      "index": 273,
+      "label": "snowman",
+      "count": 2
+    },
+    {
+      "index": 274,
+      "label": "soccer ball",
+      "count": 1
+    },
+    {
+      "index": 275,
+      "label": "sock",
+      "count": 1
+    },
+    {
+      "index": 276,
+      "label": "speedboat",
+      "count": 1
+    },
+    {
+      "index": 277,
+      "label": "spider",
+      "count": 1
+    },
+    {
+      "index": 278,
+      "label": "spoon",
+      "count": 1
+    },
+    {
+      "index": 279,
+      "label": "spreadsheet",
+      "count": 1
+    },
+    {
+      "index": 280,
+      "label": "square",
+      "count": 2
+    },
+    {
+      "index": 281,
+      "label": "squiggle",
+      "count": 0
+    },
+    {
+      "index": 283,
+      "label": "stairs",
+      "count": 1
+    },
+    {
+      "index": 284,
+      "label": "star",
+      "count": 1
+    },
+    {
+      "index": 285,
+      "label": "steak",
+      "count": 1
+    },
+    {
+      "index": 286,
+      "label": "stereo",
+      "count": 0
+    },
+    {
+      "index": 287,
+      "label": "stethoscope",
+      "count": 1
+    },
+    {
+      "index": 288,
+      "label": "stitches",
+      "count": 0
+    },
+    {
+      "index": 289,
+      "label": "stop sign",
+      "count": 1
+    },
+    {
+      "index": 290,
+      "label": "stove",
+      "count": 1
+    },
+    {
+      "index": 291,
+      "label": "strawberry",
+      "count": 2
+    },
+    {
+      "index": 292,
+      "label": "streetlight",
+      "count": 1
+    },
+    {
+      "index": 293,
+      "label": "string bean",
+      "count": 0
+    },
+    {
+      "index": 294,
+      "label": "submarine",
+      "count": 1
+    },
+    {
+      "index": 295,
+      "label": "suitcase",
+      "count": 1
+    },
+    {
+      "index": 296,
+      "label": "sun",
+      "count": 2
+    },
+    {
+      "index": 297,
+      "label": "swan",
+      "count": 1
+    },
+    {
+      "index": 298,
+      "label": "sweater",
+      "count": 0
+    },
+    {
+      "index": 299,
+      "label": "swing set",
+      "count": 0
+    },
+    {
+      "index": 300,
+      "label": "sword",
+      "count": 1
+    },
+    {
+      "index": 301,
+      "label": "syringe",
+      "count": 1
+    },
+    {
+      "index": 303,
+      "label": "teapot",
+      "count": 1
+    },
+    {
+      "index": 304,
+      "label": "teddy-bear",
+      "count": 1
+    },
+    {
+      "index": 305,
+      "label": "telephone",
+      "count": 1
+    },
+    {
+      "index": 306,
+      "label": "television",
+      "count": 1
+    },
+    {
+      "index": 307,
+      "label": "tennis racquet",
+      "count": 1
+    },
+    {
+      "index": 308,
+      "label": "tent",
+      "count": 1
+    },
+    {
+      "index": 309,
+      "label": "the eiffel tower",
+      "count": 1
+    },
+    {
+      "index": 310,
+      "label": "the great wall of china",
+      "count": 0
+    },
+    {
+      "index": 311,
+      "label": "the mona lisa",
+      "count": 1
+    },
+    {
+      "index": 312,
+      "label": "tiger",
+      "count": 2
+    },
+    {
+      "index": 313,
+      "label": "toaster",
+      "count": 1
+    },
+    {
+      "index": 314,
+      "label": "toe",
+      "count": 0
+    },
+    {
+      "index": 315,
+      "label": "toilet",
+      "count": 2
+    },
+    {
+      "index": 316,
+      "label": "tooth",
+      "count": 1
+    },
+    {
+      "index": 317,
+      "label": "toothbrush",
+      "count": 1
+    },
+    {
+      "index": 318,
+      "label": "toothpaste",
+      "count": 1
+    },
+    {
+      "index": 320,
+      "label": "tractor",
+      "count": 1
+    },
+    {
+      "index": 321,
+      "label": "traffic light",
+      "count": 1
+    },
+    {
+      "index": 322,
+      "label": "train",
+      "count": 1
+    },
+    {
+      "index": 323,
+      "label": "tree",
+      "count": 2
+    },
+    {
+      "index": 324,
+      "label": "triangle",
+      "count": 1
+    },
+    {
+      "index": 325,
+      "label": "trombone",
+      "count": 1
+    },
+    {
+      "index": 326,
+      "label": "truck",
+      "count": 1
+    },
+    {
+      "index": 327,
+      "label": "trumpet",
+      "count": 1
+    },
+    {
+      "index": 328,
+      "label": "t-shirt",
+      "count": 1
+    },
+    {
+      "index": 329,
+      "label": "umbrella",
+      "count": 1
+    },
+    {
+      "index": 330,
+      "label": "underwear",
+      "count": 1
+    },
+    {
+      "index": 331,
+      "label": "van",
+      "count": 1
+    },
+    {
+      "index": 332,
+      "label": "vase",
+      "count": 1
+    },
+    {
+      "index": 334,
+      "label": "washing machine",
+      "count": 1
+    },
+    {
+      "index": 335,
+      "label": "watermelon",
+      "count": 2
+    },
+    {
+      "index": 336,
+      "label": "waterslide",
+      "count": 0
+    },
+    {
+      "index": 337,
+      "label": "whale",
+      "count": 2
+    },
+    {
+      "index": 338,
+      "label": "wheel",
+      "count": 1
+    },
+    {
+      "index": 339,
+      "label": "windmill",
+      "count": 1
+    },
+    {
+      "index": 340,
+      "label": "wine bottle",
+      "count": 1
+    },
+    {
+      "index": 341,
+      "label": "wine glass",
+      "count": 1
+    },
+    {
+      "index": 342,
+      "label": "wristwatch",
+      "count": 1
+    },
+    {
+      "index": 344,
+      "label": "zebra",
+      "count": 1
+    },
+    {
+      "index": 345,
+      "label": "zigzag",
+      "count": 0
+    }
+  ],
+  "pages": 15,
+  "rows": [
+    {
+      "index": 201,
+      "label": "octagon",
+      "counted": [
+        {
+          "id": "octagon-imported",
+          "origin": "imported",
+          "source": "Tabler/octagon"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "octagon-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 202,
+      "label": "octopus",
+      "counted": [
+        {
+          "id": "octopus-imported",
+          "origin": "imported",
+          "source": "Game Icons/octopus"
+        },
+        {
+          "id": "octopus-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "octopus-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 203,
+      "label": "onion",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "onion-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 204,
+      "label": "oven",
+      "counted": [
+        {
+          "id": "oven-imported",
+          "origin": "imported",
+          "source": "MDI/toaster-oven"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "oven-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 205,
+      "label": "owl",
+      "counted": [
+        {
+          "id": "owl-imported",
+          "origin": "imported",
+          "source": "Game Icons/owl"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "owl-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing owl depiction as the primary",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "owl-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 206,
+      "label": "paintbrush",
+      "counted": [
+        {
+          "id": "paintbrush-imported",
+          "origin": "imported",
+          "source": "Lucide/paintbrush"
+        },
+        {
+          "id": "paintbrush-source-2",
+          "origin": "imported-variant",
+          "source": "Font Awesome/paintbrush"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "paintbrush-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 207,
+      "label": "paint can",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "text-only"
+    },
+    {
+      "index": 208,
+      "label": "palm tree",
+      "counted": [
+        {
+          "id": "palm tree-imported",
+          "origin": "imported",
+          "source": "MDI/palm-tree"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "palm tree-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 209,
+      "label": "panda",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "panda-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 210,
+      "label": "pants",
+      "counted": [
+        {
+          "id": "pants-imported",
+          "origin": "imported",
+          "source": "Iconoir/pants"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "pants-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing trousers silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "pants-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 211,
+      "label": "paper clip",
+      "counted": [
+        {
+          "id": "paper clip-imported",
+          "origin": "imported",
+          "source": "Tabler/paperclip"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "paper clip-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 212,
+      "label": "parachute",
+      "counted": [
+        {
+          "id": "parachute-imported",
+          "origin": "imported",
+          "source": "Tabler/parachute"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "parachute-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 213,
+      "label": "parrot",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "parrot-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 214,
+      "label": "passport",
+      "counted": [
+        {
+          "id": "passport-imported",
+          "origin": "imported",
+          "source": "Game Icons/passport"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "passport-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 215,
+      "label": "peanut",
+      "counted": [
+        {
+          "id": "peanut-imported",
+          "origin": "imported",
+          "source": "MDI/peanut"
+        },
+        {
+          "id": "peanut-source-2",
+          "origin": "imported-variant",
+          "source": "Game Icons/peanut"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "peanut-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 216,
+      "label": "pear",
+      "counted": [
+        {
+          "id": "pear-imported",
+          "origin": "imported",
+          "source": "MDI/fruit-pear"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "pear-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 217,
+      "label": "peas",
+      "counted": [
+        {
+          "id": "peas-imported",
+          "origin": "imported",
+          "source": "Game Icons/peas"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "peas-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 218,
+      "label": "pencil",
+      "counted": [
+        {
+          "id": "pencil-imported",
+          "origin": "imported",
+          "source": "Tabler/pencil"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "pencil-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same diagonal pencil silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "pencil-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 219,
+      "label": "penguin",
+      "counted": [
+        {
+          "id": "penguin-imported",
+          "origin": "imported",
+          "source": "MDI/penguin"
+        },
+        {
+          "id": "penguin-source-2",
+          "origin": "imported-variant",
+          "source": "Game Icons/penguin"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "penguin-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing penguin pose as the primary",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "penguin-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 220,
+      "label": "piano",
+      "counted": [
+        {
+          "id": "piano-imported",
+          "origin": "imported",
+          "source": "Tabler/piano"
+        },
+        {
+          "id": "piano-source-2",
+          "origin": "imported-variant",
+          "source": "Lucide/piano"
+        },
+        {
+          "id": "piano-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "piano-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 221,
+      "label": "pickup truck",
+      "counted": [
+        {
+          "id": "pickup truck-imported",
+          "origin": "imported",
+          "source": "Font Awesome/truck-pickup"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "pickup truck-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 222,
+      "label": "picture frame",
+      "counted": [
+        {
+          "id": "picture frame-imported",
+          "origin": "imported",
+          "source": "Tabler/photo"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "picture frame-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 223,
+      "label": "pig",
+      "counted": [
+        {
+          "id": "pig-imported",
+          "origin": "imported",
+          "source": "MDI/pig-variant"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "pig-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile pig pose as the primary",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "pig-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 224,
+      "label": "pillow",
+      "counted": [
+        {
+          "id": "pillow-imported",
+          "origin": "imported",
+          "source": "Tabler/pillow"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "pillow-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 225,
+      "label": "pineapple",
+      "counted": [
+        {
+          "id": "pineapple-imported",
+          "origin": "imported",
+          "source": "MDI/fruit-pineapple"
+        },
+        {
+          "id": "pineapple-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "pineapple-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 226,
+      "label": "pizza",
+      "counted": [
+        {
+          "id": "pizza-imported",
+          "origin": "imported",
+          "source": "Tabler/pizza"
+        },
+        {
+          "id": "pizza-source-2",
+          "origin": "imported-variant",
+          "source": "Lucide/pizza"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "pizza-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same top-down triangular pizza slice as the primary",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "pizza-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 227,
+      "label": "pliers",
+      "counted": [
+        {
+          "id": "pliers-imported",
+          "origin": "imported",
+          "source": "MDI/pliers"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "pliers-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 228,
+      "label": "police car",
+      "counted": [
+        {
+          "id": "police car-imported",
+          "origin": "imported",
+          "source": "Game Icons/police-car"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "police car-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "generic taxi/car sketch, not a distinct police-car view",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "police car-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 229,
+      "label": "pond",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "pond-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 230,
+      "label": "pool",
+      "counted": [
+        {
+          "id": "pool-imported",
+          "origin": "imported",
+          "source": "Tabler/pool"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "pool-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 231,
+      "label": "popsicle",
+      "counted": [
+        {
+          "id": "popsicle-imported",
+          "origin": "imported",
+          "source": "Lucide/popsicle"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "popsicle-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 232,
+      "label": "postcard",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "postcard-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 233,
+      "label": "potato",
+      "counted": [
+        {
+          "id": "potato-imported",
+          "origin": "imported",
+          "source": "Game Icons/potato"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "potato-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same single-potato outline; blemish detail only",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "potato-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 234,
+      "label": "power outlet",
+      "counted": [
+        {
+          "id": "power outlet-imported",
+          "origin": "imported",
+          "source": "Tabler/outlet"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "power outlet-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 235,
+      "label": "purse",
+      "counted": [
+        {
+          "id": "purse-imported",
+          "origin": "imported",
+          "source": "MDI/purse"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "purse-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 236,
+      "label": "rabbit",
+      "counted": [
+        {
+          "id": "rabbit-imported",
+          "origin": "imported",
+          "source": "MDI/rabbit"
+        },
+        {
+          "id": "rabbit-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "rabbit-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 237,
+      "label": "raccoon",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "raccoon-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 238,
+      "label": "radio",
+      "counted": [
+        {
+          "id": "radio-imported",
+          "origin": "imported",
+          "source": "Tabler/radio"
+        },
+        {
+          "id": "radio-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "radio-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 239,
+      "label": "rain",
+      "counted": [
+        {
+          "id": "rain-imported",
+          "origin": "imported",
+          "source": "Iconoir/rain"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "rain-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 240,
+      "label": "rainbow",
+      "counted": [
+        {
+          "id": "rainbow-imported",
+          "origin": "imported",
+          "source": "Tabler/rainbow"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "rainbow-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same nested rainbow arcs",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "rainbow-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 241,
+      "label": "rake",
+      "counted": [
+        {
+          "id": "rake-imported",
+          "origin": "imported",
+          "source": "MDI/rake"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "rake-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 242,
+      "label": "remote control",
+      "counted": [
+        {
+          "id": "remote control-imported",
+          "origin": "imported",
+          "source": "Tabler/remote-control"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "remote control-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 243,
+      "label": "rhinoceros",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "rhinoceros-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 244,
+      "label": "rifle",
+      "counted": [
+        {
+          "id": "rifle-imported",
+          "origin": "imported",
+          "source": "Game Icons/rifle"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "rifle-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 245,
+      "label": "river",
+      "counted": [
+        {
+          "id": "river-imported",
+          "origin": "imported",
+          "source": "Lucide/waves"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "river-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 246,
+      "label": "roller coaster",
+      "counted": [
+        {
+          "id": "roller coaster-imported",
+          "origin": "imported",
+          "source": "Lucide/roller-coaster"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "roller coaster-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 247,
+      "label": "rollerskates",
+      "counted": [
+        {
+          "id": "rollerskates-imported",
+          "origin": "imported",
+          "source": "Tabler/roller-skating"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "rollerskates-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 248,
+      "label": "sailboat",
+      "counted": [
+        {
+          "id": "sailboat-imported",
+          "origin": "imported",
+          "source": "Tabler/sailboat"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "sailboat-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same simple side-profile sailboat silhouette",
+          "comparedTo": null,
+          "overlap": null
+        },
+        {
+          "id": "sailboat-variant-2",
+          "origin": "variant",
+          "source": "SketchAI original",
+          "reason": "same side-profile sailboat; sail/rigging detail only",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "sailboat-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 249,
+      "label": "sandwich",
+      "counted": [
+        {
+          "id": "sandwich-imported",
+          "origin": "imported",
+          "source": "Lucide/sandwich"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "sandwich-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 250,
+      "label": "saw",
+      "counted": [
+        {
+          "id": "saw-imported",
+          "origin": "imported",
+          "source": "MDI/hand-saw"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "saw-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 251,
+      "label": "saxophone",
+      "counted": [
+        {
+          "id": "saxophone-imported",
+          "origin": "imported",
+          "source": "MDI/saxophone"
+        },
+        {
+          "id": "saxophone-source-2",
+          "origin": "imported-variant",
+          "source": "Game Icons/saxophone"
+        },
+        {
+          "id": "saxophone-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "saxophone-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 252,
+      "label": "school bus",
+      "counted": [
+        {
+          "id": "school bus-imported",
+          "origin": "imported",
+          "source": "MDI/bus-school"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "school bus-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 253,
+      "label": "scissors",
+      "counted": [
+        {
+          "id": "scissors-imported",
+          "origin": "imported",
+          "source": "Tabler/scissors"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "scissors-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same crossed scissor-blade silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "scissors-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 254,
+      "label": "scorpion",
+      "counted": [
+        {
+          "id": "scorpion-imported",
+          "origin": "imported",
+          "source": "Game Icons/scorpion"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "scorpion-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 255,
+      "label": "screwdriver",
+      "counted": [
+        {
+          "id": "screwdriver-imported",
+          "origin": "imported",
+          "source": "MDI/screwdriver"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "screwdriver-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 256,
+      "label": "sea turtle",
+      "counted": [
+        {
+          "id": "sea turtle-imported",
+          "origin": "imported",
+          "source": "MDI/turtle"
+        },
+        {
+          "id": "sea turtle-source-2",
+          "origin": "imported-variant",
+          "source": "Game Icons/sea-turtle"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "sea turtle-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 257,
+      "label": "see saw",
+      "counted": [
+        {
+          "id": "see saw-imported",
+          "origin": "imported",
+          "source": "MDI/seesaw"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "see saw-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 258,
+      "label": "shark",
+      "counted": [
+        {
+          "id": "shark-imported",
+          "origin": "imported",
+          "source": "MDI/shark"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "shark-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile shark silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "shark-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 259,
+      "label": "sheep",
+      "counted": [
+        {
+          "id": "sheep-imported",
+          "origin": "imported",
+          "source": "Game Icons/sheep"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "sheep-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "front-facing sketch touches the frame edge and is clipped; whole-body Game Icons drawing is preferred",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "sheep-icon",
+          "origin": "icon",
+          "source": "noto fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 260,
+      "label": "shoe",
+      "counted": [
+        {
+          "id": "shoe-imported",
+          "origin": "imported",
+          "source": "Tabler/shoe"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "shoe-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile shoe/sneaker silhouette",
+          "comparedTo": null,
+          "overlap": null
+        },
+        {
+          "id": "shoe-variant-2",
+          "origin": "variant",
+          "source": "SketchAI original",
+          "reason": "same side-profile shoe/sneaker silhouette; sole detail only",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "shoe-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 261,
+      "label": "shorts",
+      "counted": [
+        {
+          "id": "shorts-imported",
+          "origin": "imported",
+          "source": "Game Icons/underwear-shorts"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "shorts-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 262,
+      "label": "shovel",
+      "counted": [
+        {
+          "id": "shovel-imported",
+          "origin": "imported",
+          "source": "Tabler/shovel"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "shovel-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 263,
+      "label": "sink",
+      "counted": [
+        {
+          "id": "sink-imported",
+          "origin": "imported",
+          "source": "Font Awesome/sink"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "sink-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 264,
+      "label": "skateboard",
+      "counted": [
+        {
+          "id": "skateboard-imported",
+          "origin": "imported",
+          "source": "Tabler/skateboard"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "skateboard-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 265,
+      "label": "skull",
+      "counted": [
+        {
+          "id": "skull-imported",
+          "origin": "imported",
+          "source": "Tabler/skull"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "skull-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 266,
+      "label": "skyscraper",
+      "counted": [
+        {
+          "id": "skyscraper-imported",
+          "origin": "imported",
+          "source": "Lucide/building-2"
+        },
+        {
+          "id": "skyscraper-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "skyscraper-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 267,
+      "label": "sleeping bag",
+      "counted": [
+        {
+          "id": "sleeping bag-imported",
+          "origin": "imported",
+          "source": "Game Icons/sleeping-bag"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "sleeping bag-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 268,
+      "label": "smiley face",
+      "counted": [
+        {
+          "id": "smiley face-imported",
+          "origin": "imported",
+          "source": "Tabler/mood-smile"
+        },
+        {
+          "id": "smiley face-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "smiley face-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 269,
+      "label": "snail",
+      "counted": [
+        {
+          "id": "snail-imported",
+          "origin": "imported",
+          "source": "MDI/snail"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "snail-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile snail with spiral shell",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "snail-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 270,
+      "label": "snake",
+      "counted": [
+        {
+          "id": "snake-imported",
+          "origin": "imported",
+          "source": "MDI/snake"
+        },
+        {
+          "id": "snake-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "snake-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 271,
+      "label": "snorkel",
+      "counted": [
+        {
+          "id": "snorkel-imported",
+          "origin": "imported",
+          "source": "Game Icons/snorkel"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "snorkel-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 272,
+      "label": "snowflake",
+      "counted": [
+        {
+          "id": "snowflake-imported",
+          "origin": "imported",
+          "source": "Tabler/snowflake"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "snowflake-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same radial snowflake symbol",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "snowflake-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 273,
+      "label": "snowman",
+      "counted": [
+        {
+          "id": "snowman-imported",
+          "origin": "imported",
+          "source": "Tabler/snowman"
+        },
+        {
+          "id": "snowman-source-2",
+          "origin": "imported-variant",
+          "source": "MDI/snowman"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "snowman-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing stacked-sphere snowman",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "snowman-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 274,
+      "label": "soccer ball",
+      "counted": [
+        {
+          "id": "soccer ball-imported",
+          "origin": "imported",
+          "source": "Iconoir/soccer-ball"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "soccer ball-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 275,
+      "label": "sock",
+      "counted": [
+        {
+          "id": "sock-imported",
+          "origin": "imported",
+          "source": "Tabler/sock"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "sock-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same single sock profile",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "sock-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 276,
+      "label": "speedboat",
+      "counted": [
+        {
+          "id": "speedboat-imported",
+          "origin": "imported",
+          "source": "Tabler/speedboat"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "speedboat-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile speedboat hull",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "speedboat-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 277,
+      "label": "spider",
+      "counted": [
+        {
+          "id": "spider-imported",
+          "origin": "imported",
+          "source": "MDI/spider"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "spider-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing spider silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "spider-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 278,
+      "label": "spoon",
+      "counted": [
+        {
+          "id": "spoon-imported",
+          "origin": "imported",
+          "source": "Font Awesome/spoon"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "spoon-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same single spoon profile",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "spoon-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 279,
+      "label": "spreadsheet",
+      "counted": [
+        {
+          "id": "spreadsheet-imported",
+          "origin": "imported",
+          "source": "Tabler/table"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "spreadsheet-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 280,
+      "label": "square",
+      "counted": [
+        {
+          "id": "square-imported",
+          "origin": "imported",
+          "source": "Tabler/square"
+        },
+        {
+          "id": "square-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "square-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 281,
+      "label": "squiggle",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "text-only"
+    },
+    {
+      "index": 282,
+      "label": "squirrel",
+      "counted": [
+        {
+          "id": "squirrel-imported",
+          "origin": "imported",
+          "source": "Lucide/squirrel"
+        },
+        {
+          "id": "squirrel-source-2",
+          "origin": "imported-variant",
+          "source": "Game Icons/squirrel"
+        },
+        {
+          "id": "squirrel-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "not-applicable"
+    },
+    {
+      "index": 283,
+      "label": "stairs",
+      "counted": [
+        {
+          "id": "stairs-imported",
+          "origin": "imported",
+          "source": "Tabler/stairs"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "stairs-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 284,
+      "label": "star",
+      "counted": [
+        {
+          "id": "star-imported",
+          "origin": "imported",
+          "source": "Tabler/star"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "star-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same plain five-point star outline",
+          "comparedTo": null,
+          "overlap": null
+        },
+        {
+          "id": "star-variant-2",
+          "origin": "variant",
+          "source": "SketchAI original",
+          "reason": "same five-point star silhouette; stroke weight only",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "star-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 285,
+      "label": "steak",
+      "counted": [
+        {
+          "id": "steak-imported",
+          "origin": "imported",
+          "source": "Game Icons/steak"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "steak-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 286,
+      "label": "stereo",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "stereo-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 287,
+      "label": "stethoscope",
+      "counted": [
+        {
+          "id": "stethoscope-imported",
+          "origin": "imported",
+          "source": "Tabler/stethoscope"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "stethoscope-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 288,
+      "label": "stitches",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "stitches-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 289,
+      "label": "stop sign",
+      "counted": [
+        {
+          "id": "stop sign-derived",
+          "origin": "derived",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "stop sign-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 290,
+      "label": "stove",
+      "counted": [
+        {
+          "id": "stove-imported",
+          "origin": "imported",
+          "source": "Game Icons/gas-stove"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "stove-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 291,
+      "label": "strawberry",
+      "counted": [
+        {
+          "id": "strawberry-imported",
+          "origin": "imported",
+          "source": "Game Icons/strawberry"
+        },
+        {
+          "id": "strawberry-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "strawberry-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 292,
+      "label": "streetlight",
+      "counted": [
+        {
+          "id": "streetlight-imported",
+          "origin": "imported",
+          "source": "Game Icons/street-light"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "streetlight-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 293,
+      "label": "string bean",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "text-only"
+    },
+    {
+      "index": 294,
+      "label": "submarine",
+      "counted": [
+        {
+          "id": "submarine-imported",
+          "origin": "imported",
+          "source": "Tabler/submarine"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "submarine-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 295,
+      "label": "suitcase",
+      "counted": [
+        {
+          "id": "suitcase-imported",
+          "origin": "imported",
+          "source": "Iconoir/suitcase"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "suitcase-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 296,
+      "label": "sun",
+      "counted": [
+        {
+          "id": "sun-imported",
+          "origin": "imported",
+          "source": "Tabler/sun"
+        },
+        {
+          "id": "sun-variant-3",
+          "origin": "variant",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "sun-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same full sun with radial rays",
+          "comparedTo": null,
+          "overlap": null
+        },
+        {
+          "id": "sun-variant-2",
+          "origin": "variant",
+          "source": "SketchAI original",
+          "reason": "same full sun with radial rays; ray length only",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [],
+      "fallbackState": "not-applicable"
+    },
+    {
+      "index": 297,
+      "label": "swan",
+      "counted": [
+        {
+          "id": "swan-imported",
+          "origin": "imported",
+          "source": "Game Icons/swan"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "swan-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 298,
+      "label": "sweater",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "text-only"
+    },
+    {
+      "index": 299,
+      "label": "swing set",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "text-only"
+    },
+    {
+      "index": 300,
+      "label": "sword",
+      "counted": [
+        {
+          "id": "sword-imported",
+          "origin": "imported",
+          "source": "Tabler/sword"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "sword-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 301,
+      "label": "syringe",
+      "counted": [
+        {
+          "id": "syringe-imported",
+          "origin": "imported",
+          "source": "Lucide/syringe"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "syringe-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 302,
+      "label": "table",
+      "counted": [
+        {
+          "id": "table-imported",
+          "origin": "imported",
+          "source": "MDI/table-furniture"
+        },
+        {
+          "id": "table-variant-2",
+          "origin": "variant",
+          "source": "SketchAI original"
+        },
+        {
+          "id": "table-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "table-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 303,
+      "label": "teapot",
+      "counted": [
+        {
+          "id": "teapot-imported",
+          "origin": "imported",
+          "source": "Tabler/teapot"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "teapot-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 304,
+      "label": "teddy-bear",
+      "counted": [
+        {
+          "id": "teddy-bear-imported",
+          "origin": "imported",
+          "source": "MDI/teddy-bear"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "teddy-bear-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 305,
+      "label": "telephone",
+      "counted": [
+        {
+          "id": "telephone-imported",
+          "origin": "imported",
+          "source": "Tabler/phone"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "telephone-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same telephone handset profile",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "telephone-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 306,
+      "label": "television",
+      "counted": [
+        {
+          "id": "television-imported",
+          "origin": "imported",
+          "source": "MDI/television"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "television-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing television screen",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "television-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 307,
+      "label": "tennis racquet",
+      "counted": [
+        {
+          "id": "tennis racquet-imported",
+          "origin": "imported",
+          "source": "Game Icons/tennis-racket"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "tennis racquet-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 308,
+      "label": "tent",
+      "counted": [
+        {
+          "id": "tent-imported",
+          "origin": "imported",
+          "source": "Tabler/tent"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "tent-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same triangular tent-front outline",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "tent-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 309,
+      "label": "the eiffel tower",
+      "counted": [
+        {
+          "id": "the eiffel tower-imported",
+          "origin": "imported",
+          "source": "Tabler/building-eiffel-tower"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "the eiffel tower-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 310,
+      "label": "the great wall of china",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "text-only"
+    },
+    {
+      "index": 311,
+      "label": "the mona lisa",
+      "counted": [
+        {
+          "id": "the mona lisa-imported",
+          "origin": "imported",
+          "source": "Game Icons/mona-lisa"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "the mona lisa-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 312,
+      "label": "tiger",
+      "counted": [
+        {
+          "id": "tiger-imported",
+          "origin": "imported",
+          "source": "Game Icons/tiger"
+        },
+        {
+          "id": "tiger-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "tiger-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 313,
+      "label": "toaster",
+      "counted": [
+        {
+          "id": "toaster-imported",
+          "origin": "imported",
+          "source": "MDI/toaster"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "toaster-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 314,
+      "label": "toe",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "toe-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 315,
+      "label": "toilet",
+      "counted": [
+        {
+          "id": "toilet-imported",
+          "origin": "imported",
+          "source": "Lucide/toilet"
+        },
+        {
+          "id": "toilet-source-2",
+          "origin": "imported-variant",
+          "source": "MDI/toilet"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "toilet-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 316,
+      "label": "tooth",
+      "counted": [
+        {
+          "id": "tooth-imported",
+          "origin": "imported",
+          "source": "MDI/tooth"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "tooth-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same single molar outline",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "tooth-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 317,
+      "label": "toothbrush",
+      "counted": [
+        {
+          "id": "toothbrush-imported",
+          "origin": "imported",
+          "source": "MDI/toothbrush"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "toothbrush-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 318,
+      "label": "toothpaste",
+      "counted": [
+        {
+          "id": "toothpaste-imported",
+          "origin": "imported",
+          "source": "MDI/toothbrush-paste"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "toothpaste-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 319,
+      "label": "tornado",
+      "counted": [
+        {
+          "id": "tornado-imported",
+          "origin": "imported",
+          "source": "Tabler/tornado"
+        },
+        {
+          "id": "tornado-source-2",
+          "origin": "imported-variant",
+          "source": "Font Awesome/tornado"
+        },
+        {
+          "id": "tornado-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "tornado-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 320,
+      "label": "tractor",
+      "counted": [
+        {
+          "id": "tractor-imported",
+          "origin": "imported",
+          "source": "Tabler/tractor"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "tractor-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile farm tractor view",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "tractor-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 321,
+      "label": "traffic light",
+      "counted": [
+        {
+          "id": "traffic light-imported",
+          "origin": "imported",
+          "source": "MDI/traffic-light"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "traffic light-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 322,
+      "label": "train",
+      "counted": [
+        {
+          "id": "train-imported",
+          "origin": "imported",
+          "source": "Tabler/train"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "train-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile train/locomotive view",
+          "comparedTo": null,
+          "overlap": null
+        },
+        {
+          "id": "train-variant-2",
+          "origin": "variant",
+          "source": "SketchAI original",
+          "reason": "same side-profile locomotive; carriage detail only",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "train-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 323,
+      "label": "tree",
+      "counted": [
+        {
+          "id": "tree-imported",
+          "origin": "imported",
+          "source": "Tabler/tree"
+        },
+        {
+          "id": "tree-variant-3",
+          "origin": "variant",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "tree-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same round-canopy tree silhouette as the legacy variant",
+          "comparedTo": null,
+          "overlap": null
+        },
+        {
+          "id": "tree-variant-2",
+          "origin": "variant",
+          "source": "SketchAI original",
+          "reason": "same round-canopy tree silhouette as the line-art drawing",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [],
+      "fallbackState": "not-applicable"
+    },
+    {
+      "index": 324,
+      "label": "triangle",
+      "counted": [
+        {
+          "id": "triangle-imported",
+          "origin": "imported",
+          "source": "Tabler/triangle"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "triangle-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same plain upright triangle outline",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "triangle-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 325,
+      "label": "trombone",
+      "counted": [
+        {
+          "id": "trombone-imported",
+          "origin": "imported",
+          "source": "Game Icons/trombone"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "trombone-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 326,
+      "label": "truck",
+      "counted": [
+        {
+          "id": "truck-imported",
+          "origin": "imported",
+          "source": "Tabler/truck"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "truck-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile box-truck silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "truck-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 327,
+      "label": "trumpet",
+      "counted": [
+        {
+          "id": "trumpet-imported",
+          "origin": "imported",
+          "source": "MDI/trumpet"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "trumpet-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-view trumpet silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "trumpet-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 328,
+      "label": "t-shirt",
+      "counted": [
+        {
+          "id": "t-shirt-imported",
+          "origin": "imported",
+          "source": "Tabler/shirt"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "t-shirt-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing short-sleeve T-shirt silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "t-shirt-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 329,
+      "label": "umbrella",
+      "counted": [
+        {
+          "id": "umbrella-imported",
+          "origin": "imported",
+          "source": "Tabler/umbrella"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "umbrella-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing umbrella canopy and hook handle",
+          "comparedTo": null,
+          "overlap": null
+        },
+        {
+          "id": "umbrella-variant-2",
+          "origin": "variant",
+          "source": "SketchAI original",
+          "reason": "same umbrella silhouette; canopy panel detail only",
+          "comparedTo": null,
+          "overlap": null
+        },
+        {
+          "id": "umbrella-variant-3",
+          "origin": "variant",
+          "source": "SketchAI original",
+          "reason": "same umbrella silhouette; scallop/detail changes only",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [],
+      "fallbackState": "not-applicable"
+    },
+    {
+      "index": 330,
+      "label": "underwear",
+      "counted": [
+        {
+          "id": "underwear-imported",
+          "origin": "imported",
+          "source": "Game Icons/underwear"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "underwear-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 331,
+      "label": "van",
+      "counted": [
+        {
+          "id": "van-imported",
+          "origin": "imported",
+          "source": "Lucide/van"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "van-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 332,
+      "label": "vase",
+      "counted": [
+        {
+          "id": "vase-imported",
+          "origin": "imported",
+          "source": "Game Icons/porcelain-vase"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "vase-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 333,
+      "label": "violin",
+      "counted": [
+        {
+          "id": "violin-imported",
+          "origin": "imported",
+          "source": "MDI/violin"
+        },
+        {
+          "id": "violin-source-2",
+          "origin": "imported-variant",
+          "source": "Game Icons/violin"
+        },
+        {
+          "id": "violin-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "violin-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 334,
+      "label": "washing machine",
+      "counted": [
+        {
+          "id": "washing machine-imported",
+          "origin": "imported",
+          "source": "Lucide/washing-machine"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "washing machine-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 335,
+      "label": "watermelon",
+      "counted": [
+        {
+          "id": "watermelon-imported",
+          "origin": "imported",
+          "source": "MDI/fruit-watermelon"
+        },
+        {
+          "id": "watermelon-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "watermelon-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 336,
+      "label": "waterslide",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "text-only"
+    },
+    {
+      "index": 337,
+      "label": "whale",
+      "counted": [
+        {
+          "id": "whale-imported",
+          "origin": "imported",
+          "source": "Game Icons/sperm-whale"
+        },
+        {
+          "id": "whale-line",
+          "origin": "lineart",
+          "source": "SketchAI original"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "whale-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 338,
+      "label": "wheel",
+      "counted": [
+        {
+          "id": "wheel-imported",
+          "origin": "imported",
+          "source": "Tabler/wheel"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "wheel-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 339,
+      "label": "windmill",
+      "counted": [
+        {
+          "id": "windmill-imported",
+          "origin": "imported",
+          "source": "Game Icons/windmill"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "windmill-icon",
+          "origin": "icon",
+          "source": "mdi fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 340,
+      "label": "wine bottle",
+      "counted": [
+        {
+          "id": "wine bottle-imported",
+          "origin": "imported",
+          "source": "MDI/bottle-wine"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "wine bottle-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same single upright wine-bottle outline",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "wine bottle-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 341,
+      "label": "wine glass",
+      "counted": [
+        {
+          "id": "wine glass-imported",
+          "origin": "imported",
+          "source": "MDI/glass-wine"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "wine glass-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same upright stemmed wine-glass silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "wine glass-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 342,
+      "label": "wristwatch",
+      "counted": [
+        {
+          "id": "wristwatch-imported",
+          "origin": "imported",
+          "source": "Iconoir/wristwatch"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "wristwatch-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same front-facing wristwatch silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "wristwatch-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 343,
+      "label": "yoga",
+      "counted": [
+        {
+          "id": "yoga-imported",
+          "origin": "imported",
+          "source": "Tabler/yoga"
+        },
+        {
+          "id": "yoga-source-2",
+          "origin": "imported-variant",
+          "source": "Iconoir/yoga"
+        },
+        {
+          "id": "yoga-source-3",
+          "origin": "imported-variant",
+          "source": "MDI/yoga"
+        }
+      ],
+      "notCounted": [],
+      "fallback": [
+        {
+          "id": "yoga-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 344,
+      "label": "zebra",
+      "counted": [
+        {
+          "id": "zebra-imported",
+          "origin": "imported",
+          "source": "MDI/horse"
+        }
+      ],
+      "notCounted": [
+        {
+          "id": "zebra-line",
+          "origin": "lineart",
+          "source": "SketchAI original",
+          "reason": "same side-profile horse-shaped zebra silhouette",
+          "comparedTo": null,
+          "overlap": null
+        }
+      ],
+      "fallback": [
+        {
+          "id": "zebra-icon",
+          "origin": "icon",
+          "source": "fluent fallback"
+        }
+      ],
+      "fallbackState": "legacy-artwork-preserved-not-counted"
+    },
+    {
+      "index": 345,
+      "label": "zigzag",
+      "counted": [],
+      "notCounted": [],
+      "fallback": [],
+      "fallbackState": "text-only"
+    }
+  ]
+}
