@@ -1,4 +1,5 @@
 import { cloneSceneObjects } from './scene.js';
+import { DEFAULT_BACKGROUND_COLOR, normalizeHexColor } from './color-utils.js';
 
 /** Bounded history of editor snapshots; a snapshot is one completed action. */
 export class EditorHistory {
@@ -48,9 +49,16 @@ export class EditorHistory {
 }
 
 export function cloneEditorSnapshot(snapshot) {
+  const selectedObjectIds = Array.isArray(snapshot.selectedObjectIds)
+    ? [...new Set(snapshot.selectedObjectIds)]
+    : snapshot.selectedObjectId ? [snapshot.selectedObjectId] : [];
   return {
     objects: cloneSceneObjects(snapshot.objects ?? []),
     sketch: snapshot.sketch ?? null,
-    selectedObjectId: snapshot.selectedObjectId ?? null,
+    fill: snapshot.fill ?? null,
+    hasFill: Boolean(snapshot.hasFill),
+    canvasBackgroundColor: normalizeHexColor(snapshot.canvasBackgroundColor) ?? DEFAULT_BACKGROUND_COLOR,
+    selectedObjectIds,
+    selectedObjectId: selectedObjectIds.length === 1 ? selectedObjectIds[0] : null,
   };
 }

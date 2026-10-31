@@ -37,7 +37,7 @@ const ART = {
   b: '<path fill="STROKE" d="M8 12h28v44H8z"/><circle fill="STROKE" cx="73" cy="24" r="11"/>',
 };
 const INITIAL_COLOR = '#242422';
-const RED = '#e26755';
+const RED = '#E26755';
 
 function object(id, patch = {}) {
   return createSceneObject({

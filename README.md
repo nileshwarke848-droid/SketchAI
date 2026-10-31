@@ -7,7 +7,10 @@ API key, or paid service is required. Your drawing stays in your browser.
 
 ## Features
 
-- Mouse, trackpad, stylus and touch input with separate select, pencil and eraser tools, colors and brush size.
+- Mouse, trackpad, stylus and touch input with select, pencil, text, fill, eraser and pan tools; fill, background and object colors include custom pickers.
+- Text is a structured scene object: add it inline, edit by double-clicking, then move, resize, rotate, recolor, change its safe font family, size, weight and alignment, duplicate, reorder or delete it.
+- Zoom from 25% to 400% with pointer-anchored wheel zoom, step controls and reset. Pan with Space + drag or the Hand tool; view navigation never changes document coordinates.
+- Flood-fill enclosed regions on a dedicated raster layer beneath editable scene objects. Set the entire canvas background separately, with one-step undo/redo and Reset to White.
 - Local AI recognition after a 600 ms pause; the top 10 probabilities drive a
   horizontally scrollable strip of up to 10 clean suggestion cards.
 - "AI thinks you might be drawing…" framing: the panel reports the model's
@@ -16,9 +19,10 @@ API key, or paid service is required. Your drawing stays in your browser.
 - Accepted illustrations are structured scene objects, not flattened pixels:
   select, move, proportionally resize, rotate, recolor, duplicate, flip, reorder
   one layer at a time, and delete them independently.
-- Undo/redo covers sketching, erasing, object edits and clear. History keeps the
-  most recent 24 completed actions. Use Ctrl/Cmd+Z to undo and Ctrl/Cmd+Shift+Z
-  or Ctrl/Cmd+Y to redo.
+- Undo/redo covers sketching, erasing, text and artwork edits, flood fills,
+  background changes and clear. History keeps the most recent 24 completed
+  actions. Zoom and pan are view-only. Use Ctrl/Cmd+Z to undo and
+  Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y to redo.
 - PNG download/export is intentionally not part of the product. The workspace
   prioritizes keeping clean artwork editable instead of flattening it into a file.
 - A short “How it works” explanation for a school demonstration.
@@ -280,11 +284,20 @@ changes accepted artwork.
 
 ## Editable workspace and export decision
 
-Accepted suggestions become structured objects with their artwork variant,
-position, size, rotation, color, flip state and layer order. The scene-object
-list is the source of truth; the clean-art canvas is only a deterministic render
-of that list. The rough sketch remains on a separate temporary layer, and each
-completed pointer gesture is one undoable action.
+Accepted illustrations and text become structured scene objects. Artwork stores
+its immutable variant and transforms; text stores its content, safe font settings,
+size, alignment, position and transforms. The scene-object list is the source of
+truth, and the clean-art canvas is only a deterministic render of that list.
+Rough sketch ink and flood-fill pixels live on separate raster canvases. Flood
+analysis temporarily composites visible layers for boundary detection but never
+flattens or mutates scene objects. The entire canvas background is a separate
+undoable color value.
+
+The document remains in one 1200 × 720 logical coordinate space. A CSS view
+transform provides zoom and pan; pointer conversion inverts that transform for
+all tools and selection handles. Changing the view does not move or scale scene
+data. Completed content actions—including text edits, fills and background
+changes—are one undo step each; view navigation is not in document history.
 
 PNG download/export was intentionally removed as a product decision. SketchAI's
 workspace is focused on editable scene objects rather than flattening the current
