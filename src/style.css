@@ -68,6 +68,10 @@
 .resize-hit-area circle:first-child{fill:transparent;stroke:none;pointer-events:all}
 .resize-hit-area .resize-handle{fill:#fff;stroke:#cf7659;stroke-width:2;pointer-events:none;vector-effect:non-scaling-stroke}
 .resize-hit-area:hover .resize-handle,.rotation-hit-area:hover+.rotation-handle{fill:#f8e9e2}
+.marquee-selection{fill:#cf76591a;stroke:#bd6b50;stroke-width:1.5;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;pointer-events:none}
+.group-selection-box{fill:#cf765908;stroke:#bd6b50}
+.multi-object-toolbar{background:#fafbf7}
+.multi-object-toolbar .object-toolbar-title strong{color:#596751}
 .object-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid #eeefe9;padding:10px 15px;background:#fdfdfb;min-height:54px}
 .object-toolbar-title{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
 .object-toolbar-title .control-label{margin:0;font-size:8px}

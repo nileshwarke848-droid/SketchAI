@@ -34,7 +34,17 @@ import {
   MIN_TEXT_FONT_SIZE,
   SAFE_TEXT_FAMILIES,
   deleteSceneObject,
-  duplicateSceneObject,
+  deleteSceneObjects,
+  duplicateSceneObjects,
+  flipSceneObjects,
+  getGroupBounds,
+  getSelectedSceneObjects,
+  moveSceneObjects,
+  recolorSceneObjects,
+  reorderSceneObjects,
+  resizeSceneObjectsGroup,
+  selectObjectsInMarquee,
+  rotateSceneObjectsGroup,
   getObjectCenter,
   getRotationFromPointer,
   getRotationHandle,
@@ -44,8 +54,8 @@ import {
   objectLocalToWorld,
   renderScene,
   resizeSceneObject,
-  shiftSceneObject,
   updateSceneObject,
+  updateSelectionForClick,
 } from './lib/scene';
 import DebugPanel from './dev/DebugPanel';
 
@@ -75,7 +85,7 @@ function App() {
   const pointerRef = useRef(null);
   const historyRef = useRef(new EditorHistory(24));
   const sceneObjectsRef = useRef([]);
-  const selectedObjectIdRef = useRef(null);
+  const selectedObjectIdsRef = useRef([]);
   const sketchSnapshotRef = useRef(null);
   const revisionRef = useRef(0);
   const imageCacheRef = useRef(null);
@@ -88,7 +98,8 @@ function App() {
   const [textDraft, setTextDraft] = useState(null);
   const [size, setSize] = useState(7);
   const [sceneObjects, setSceneObjects] = useState([]);
-  const [selectedObjectId, setSelectedObjectId] = useState(null);
+  const [selectedObjectIds, setSelectedObjectIds] = useState([]);
+  const [marquee, setMarquee] = useState(null);
   const [status, setStatus] = useState('loading');
   const [recognition, setRecognition] = useState(IDLE);
   const [hasInk, setHasInk] = useState(false);
@@ -106,11 +117,21 @@ function App() {
   const syncScene = (next) => {
     sceneObjectsRef.current = next;
     setSceneObjects(next);
+    const selected = new Set(selectedObjectIdsRef.current);
+    const retained = next.filter((object) => selected.has(object.id)).map((object) => object.id);
+    if (retained.length !== selectedObjectIdsRef.current.length
+      || retained.some((id, index) => id !== selectedObjectIdsRef.current[index])) {
+      selectedObjectIdsRef.current = retained;
+      setSelectedObjectIds(retained);
+    }
   };
-  const chooseObject = (id) => {
-    selectedObjectIdRef.current = id;
-    setSelectedObjectId(id);
+  const chooseObjects = (ids) => {
+    const selected = new Set(ids ?? []);
+    const ordered = sceneObjectsRef.current.filter((object) => selected.has(object.id)).map((object) => object.id);
+    selectedObjectIdsRef.current = ordered;
+    setSelectedObjectIds(ordered);
   };
+  const chooseObject = (id) => chooseObjects(id ? [id] : []);
   const updateHistoryButtons = () => {
     setCanUndo(historyRef.current.canUndo);
     setCanRedo(historyRef.current.canRedo);
@@ -132,7 +153,7 @@ function App() {
         fill: fillSnapshotRef.current,
         hasFill: hasFillRef.current,
         canvasBackgroundColor: backgroundColorRef.current,
-        selectedObjectId: selectedObjectIdRef.current,
+        selectedObjectIds: selectedObjectIdsRef.current,
       });
       updateHistoryButtons();
     } catch (error) {
@@ -206,11 +227,12 @@ function App() {
   const restore = useCallback((direction) => {
     clearTimeout(timerRef.current);
     pointerRef.current = null;
+    setMarquee(null);
     revisionRef.current += 1;
     const snapshot = direction < 0 ? historyRef.current.undo() : historyRef.current.redo();
     if (!snapshot) return;
     syncScene(snapshot.objects);
-    chooseObject(snapshot.selectedObjectId);
+    chooseObjects(snapshot.selectedObjectIds ?? (snapshot.selectedObjectId ? [snapshot.selectedObjectId] : []));
     if (snapshot.sketch && sketchRef.current) {
       sketchRef.current.getContext('2d').putImageData(snapshot.sketch, 0, 0);
       sketchSnapshotRef.current = snapshot.sketch;
@@ -234,12 +256,12 @@ function App() {
   }, [schedulePrediction]);
 
   const deleteSelected = useCallback(() => {
-    const id = selectedObjectIdRef.current;
-    if (!id) return;
-    const next = deleteSceneObject(sceneObjectsRef.current, id);
+    const ids = selectedObjectIdsRef.current;
+    if (!ids.length) return;
+    const next = deleteSceneObjects(sceneObjectsRef.current, ids);
     if (next === sceneObjectsRef.current) return;
     syncScene(next);
-    chooseObject(null);
+    chooseObjects([]);
     pushHistory();
   }, [pushHistory]);
 
@@ -249,8 +271,15 @@ function App() {
       if (event.defaultPrevented) return;
       const typing = isTyping(event.target);
       if (event.key === 'Escape') {
-        if (textDraft) setTextDraft(null);
-        else setShowHelp(false);
+        if (textDraft) setTextDraft(cancelTextDraft());
+        else {
+          if (pointerRef.current?.kind === 'marquee') {
+            pointerRef.current = null;
+            setMarquee(null);
+          }
+          if (selectedObjectIdsRef.current.length) chooseObjects([]);
+          else setShowHelp(false);
+        }
         return;
       }
       if (event.code === 'Space' && !typing) {
@@ -258,12 +287,19 @@ function App() {
         event.preventDefault();
         return;
       }
-      if ((event.key === 'Delete' || event.key === 'Backspace') && !typing && selectedObjectIdRef.current) {
+      if ((event.key === 'Delete' || event.key === 'Backspace') && !typing && selectedObjectIdsRef.current.length) {
         event.preventDefault();
         deleteSelected();
         return;
       }
       if (!(event.ctrlKey || event.metaKey) || typing) return;
+      if (event.key.toLowerCase() === 'a') {
+        if (sceneObjectsRef.current.length) {
+          event.preventDefault();
+          chooseObjects(sceneObjectsRef.current.map((object) => object.id));
+        }
+        return;
+      }
       if (event.key.toLowerCase() === 'z') {
         event.preventDefault();
         restore(event.shiftKey ? 1 : -1);
@@ -361,7 +397,9 @@ function App() {
       const hit = hitTestScene(sceneObjectsRef.current, pointOnSegment, size * 1.5);
       if (!hit) continue;
       syncScene(deleteSceneObject(sceneObjectsRef.current, hit.id));
-      if (selectedObjectIdRef.current === hit.id) chooseObject(null);
+      if (selectedObjectIdsRef.current.includes(hit.id)) {
+        chooseObjects(selectedObjectIdsRef.current.filter((id) => id !== hit.id));
+      }
       changed = true;
     }
     if (changed && pointerRef.current) pointerRef.current.changed = true;
@@ -447,7 +485,8 @@ function App() {
   };
 
   const changeSelectedText = (patch) => {
-    const id = selectedObjectIdRef.current;
+    if (selectedObjectIdsRef.current.length !== 1) return;
+    const id = selectedObjectIdsRef.current[0];
     const object = sceneObjectsRef.current.find((candidate) => candidate.id === id && candidate.type === 'text');
     if (!object) return;
     let update = patch;
@@ -469,9 +508,9 @@ function App() {
   };
 
   const beginTransform = (event, kind, handle = null) => {
-    const id = selectedObjectIdRef.current;
-    const object = sceneObjectsRef.current.find((candidate) => candidate.id === id);
-    if (!object) return;
+    const objects = getSelectedSceneObjects(sceneObjectsRef.current, selectedObjectIdsRef.current);
+    if (!objects.length) return;
+    const grouped = objects.length > 1;
     revisionRef.current += 1;
     event.preventDefault();
     event.stopPropagation();
@@ -480,7 +519,9 @@ function App() {
       id: event.pointerId ?? 1,
       kind,
       startPoint: p,
-      startObject: { ...object },
+      startObject: objects[0],
+      startObjects: objects.map((object) => ({ ...object })),
+      startBounds: grouped ? getGroupBounds(objects) : null,
       handle,
       changed: false,
     };
@@ -532,9 +573,49 @@ function App() {
     if (tool === 'select') {
       revisionRef.current += 1;
       const hit = hitTestScene(sceneObjectsRef.current, p);
-      if (!hit) { chooseObject(null); return; }
-      chooseObject(hit.id);
-      pointerRef.current = { id: pointerId, kind: 'move', startPoint: p, startObject: { ...hit }, changed: false };
+      const currentIds = selectedObjectIdsRef.current;
+      if (event.shiftKey && hit) {
+        chooseObjects(updateSelectionForClick(sceneObjectsRef.current, currentIds, hit.id, { shiftKey: true }));
+        return;
+      }
+      if (hit) {
+        chooseObjects(updateSelectionForClick(sceneObjectsRef.current, currentIds, hit.id));
+        const selected = getSelectedSceneObjects(sceneObjectsRef.current, selectedObjectIdsRef.current);
+        pointerRef.current = {
+          id: pointerId,
+          kind: 'move',
+          startPoint: p,
+          startObject: selected[0],
+          startObjects: selected.map((object) => ({ ...object })),
+          startBounds: selected.length > 1 ? getGroupBounds(selected) : null,
+          changed: false,
+        };
+      } else {
+        const selected = getSelectedSceneObjects(sceneObjectsRef.current, currentIds);
+        const bounds = selected.length > 1 ? getGroupBounds(selected) : null;
+        const insideGroup = !event.shiftKey && bounds && p.x >= bounds.x && p.x <= bounds.right && p.y >= bounds.y && p.y <= bounds.bottom;
+        if (insideGroup) {
+          pointerRef.current = {
+            id: pointerId,
+            kind: 'move',
+            startPoint: p,
+            startObject: selected[0],
+            startObjects: selected.map((object) => ({ ...object })),
+            startBounds: bounds,
+            clearOnClick: true,
+            changed: false,
+          };
+        } else {
+          pointerRef.current = {
+            id: pointerId,
+            kind: 'marquee',
+            startPoint: p,
+            additive: Boolean(event.shiftKey),
+            changed: false,
+          };
+          setMarquee({ x: p.x, y: p.y, width: 0, height: 0 });
+        }
+      }
     } else if (tool === 'eraser') {
       revisionRef.current += 1;
       clearTimeout(timerRef.current);
@@ -564,7 +645,17 @@ function App() {
       return;
     }
     const p = point(event);
-    if (gesture.kind === 'sketch') {
+    if (gesture.kind === 'marquee') {
+      const dx = p.x - gesture.startPoint.x;
+      const dy = p.y - gesture.startPoint.y;
+      if (Math.hypot(dx, dy) >= 3) gesture.changed = true;
+      setMarquee({
+        x: Math.min(gesture.startPoint.x, p.x),
+        y: Math.min(gesture.startPoint.y, p.y),
+        width: Math.abs(dx),
+        height: Math.abs(dy),
+      });
+    } else if (gesture.kind === 'sketch') {
       drawSketchSegment(gesture.previousPoint, p);
       gesture.previousPoint = p;
       gesture.changed = true;
@@ -578,24 +669,23 @@ function App() {
       const dy = p.y - gesture.startPoint.y;
       if (Math.hypot(dx, dy) < 2) return;
       gesture.changed = true;
-      syncScene(updateSceneObject(sceneObjectsRef.current, gesture.startObject.id, {
-        x: gesture.startObject.x + dx,
-        y: gesture.startObject.y + dy,
-      }));
+      syncScene(moveSceneObjects(sceneObjectsRef.current, gesture.startObjects, dx, dy));
     } else if (gesture.kind === 'resize') {
       gesture.changed = true;
-      syncScene(updateSceneObject(sceneObjectsRef.current, gesture.startObject.id,
-        () => resizeSceneObject(gesture.startObject, gesture.handle, p)));
+      const next = gesture.startBounds
+        ? resizeSceneObjectsGroup(sceneObjectsRef.current, gesture.startObjects, gesture.startBounds, gesture.handle, p)
+        : updateSceneObject(sceneObjectsRef.current, gesture.startObject.id,
+          () => resizeSceneObject(gesture.startObject, gesture.handle, p));
+      syncScene(next);
     } else if (gesture.kind === 'rotate') {
       if (Math.hypot(p.x - gesture.startPoint.x, p.y - gesture.startPoint.y) < 2) return;
       gesture.changed = true;
-      const rotation = getRotationFromPointer(
-        gesture.startObject,
-        gesture.startObject.rotation,
-        gesture.startPoint,
-        p,
-      );
-      syncScene(updateSceneObject(sceneObjectsRef.current, gesture.startObject.id, { rotation }));
+      const next = gesture.startBounds
+        ? rotateSceneObjectsGroup(sceneObjectsRef.current, gesture.startObjects, gesture.startBounds, gesture.startPoint, p)
+        : updateSceneObject(sceneObjectsRef.current, gesture.startObject.id, {
+          rotation: getRotationFromPointer(gesture.startObject, gesture.startObject.rotation, gesture.startPoint, p),
+        });
+      syncScene(next);
     }
   };
 
@@ -603,13 +693,32 @@ function App() {
     const gesture = pointerRef.current;
     if (!gesture || gesture.id !== (event.pointerId ?? 1)) return;
     pointerRef.current = null;
-    if (gesture.kind === 'sketch' || gesture.kind === 'eraser') {
+    if (gesture.kind === 'marquee') {
+      const p = point(event);
+      const dx = p.x - gesture.startPoint.x;
+      const dy = p.y - gesture.startPoint.y;
+      const moved = gesture.changed || Math.hypot(dx, dy) >= 3;
+      if (moved) {
+        const rect = {
+          x: Math.min(gesture.startPoint.x, p.x),
+          y: Math.min(gesture.startPoint.y, p.y),
+          width: Math.abs(dx),
+          height: Math.abs(dy),
+        };
+        chooseObjects(selectObjectsInMarquee(sceneObjectsRef.current, selectedObjectIdsRef.current, rect, {
+          additive: gesture.additive,
+        }));
+      } else if (!gesture.additive) chooseObjects([]);
+      setMarquee(null);
+    } else if (gesture.kind === 'sketch' || gesture.kind === 'eraser') {
       sketchSnapshotRef.current = sketchRef.current.getContext('2d').getImageData(0, 0, W, H);
       const bounds = getSketchBounds(sketchRef.current);
       setHasInk(Boolean(bounds.width));
       setRecognition(IDLE);
       pushHistory();
       schedulePrediction();
+    } else if (gesture.kind === 'move' && gesture.clearOnClick && !gesture.changed) {
+      chooseObjects([]);
     } else if (gesture.changed) {
       pushHistory();
     }
@@ -632,6 +741,8 @@ function App() {
     if (!hasContent) return;
     if (historyRef.current.cursor > 5 && !window.confirm('Clear the entire canvas? You can still undo this action.')) return;
     revisionRef.current += 1;
+    pointerRef.current = null;
+    setMarquee(null);
     clearTimeout(timerRef.current);
     syncScene([]);
     chooseObject(null);
@@ -693,65 +804,85 @@ function App() {
   };
 
   const duplicateSelected = () => {
-    const id = selectedObjectIdRef.current;
-    if (!id) return;
-    const result = duplicateSceneObject(sceneObjectsRef.current, id);
-    if (!result.duplicate) return;
+    const ids = selectedObjectIdsRef.current;
+    if (!ids.length) return;
+    const result = duplicateSceneObjects(sceneObjectsRef.current, ids);
+    if (!result.duplicates.length) return;
     syncScene(result.objects);
-    chooseObject(result.duplicate.id);
+    chooseObjects(result.duplicates.map((object) => object.id));
     pushHistory();
   };
 
   const reorderSelected = (direction) => {
-    const id = selectedObjectIdRef.current;
-    if (!id) return;
-    const next = shiftSceneObject(sceneObjectsRef.current, id, direction);
+    const ids = selectedObjectIdsRef.current;
+    if (!ids.length) return;
+    const next = reorderSceneObjects(sceneObjectsRef.current, ids, direction);
     if (next === sceneObjectsRef.current) return;
     syncScene(next);
+    chooseObjects(ids);
     pushHistory();
   };
 
   const flipSelected = () => {
-    const id = selectedObjectIdRef.current;
-    if (!id) return;
-    const next = updateSceneObject(sceneObjectsRef.current, id, (object) => ({ flipX: !object.flipX }));
+    const ids = selectedObjectIdsRef.current;
+    if (!ids.length) return;
+    const next = flipSceneObjects(sceneObjectsRef.current, ids);
+    if (next === sceneObjectsRef.current) return;
     syncScene(next);
-    // Redraw synchronously from the new scene snapshot so a flipped image is
-    // visible immediately; the scene effect will then deterministically render it again.
+    // Redraw synchronously so artwork reflects a flip without waiting for the
+    // scene effect; the cached source artwork remains untouched.
     renderScene(next, canvasRef.current, imageCacheRef.current);
     pushHistory();
   };
 
   const recolorSelected = async (nextColor) => {
     const normalizedColor = normalizeHexColor(nextColor);
-    const id = selectedObjectIdRef.current;
-    const object = sceneObjectsRef.current.find((candidate) => candidate.id === id);
-    if (!object || !normalizedColor || object.color === normalizedColor) return;
-    if (object.type === 'text') {
-      changeSelectedText({ color: normalizedColor });
-      return;
-    }
+    const ids = [...selectedObjectIdsRef.current];
+    const objects = getSelectedSceneObjects(sceneObjectsRef.current, ids);
+    if (!objects.length || !normalizedColor || objects.every((object) => object.color === normalizedColor)) return;
     try {
-      await imageCacheRef.current.ensure(object.artwork, normalizedColor);
-      if (selectedObjectIdRef.current !== id) return;
-      syncScene(updateSceneObject(sceneObjectsRef.current, id, { color: normalizedColor }));
+      await Promise.all(objects
+        .filter((object) => object.type === 'artwork')
+        .map((object) => imageCacheRef.current.ensure(object.artwork, normalizedColor)));
+      const currentIds = selectedObjectIdsRef.current;
+      if (currentIds.length !== ids.length || !ids.every((id) => currentIds.includes(id))) return;
+      const next = recolorSceneObjects(sceneObjectsRef.current, ids, normalizedColor);
+      if (next === sceneObjectsRef.current) return;
+      syncScene(next);
       pushHistory();
     } catch (error) {
-      console.error('Could not recolor artwork:', error);
-      setMessage('Could not change that object’s color. Please try again.');
+      console.error('Could not recolor selected objects:', error);
+      setMessage('Could not change the selected objects’ color. Please try again.');
     }
   };
 
-  const selectedObject = sceneObjects.find((object) => object.id === selectedObjectId) ?? null;
+  const selectedObjects = getSelectedSceneObjects(sceneObjects, selectedObjectIds);
+  const selectedObject = selectedObjects.length === 1 ? selectedObjects[0] : null;
+  const selectedObjectId = selectedObjectIds[0] ?? null;
   const selectedIndex = selectedObject ? sceneObjects.findIndex((object) => object.id === selectedObject.id) : -1;
-  const selectionCorners = selectedObject ? getTransformedCorners(selectedObject) : [];
+  const groupBounds = selectedObjects.length > 1 ? getGroupBounds(selectedObjects) : null;
+  const selectionCorners = selectedObject
+    ? getTransformedCorners(selectedObject)
+    : groupBounds ? [
+      { x: groupBounds.x, y: groupBounds.y, signX: -1, signY: -1 },
+      { x: groupBounds.right, y: groupBounds.y, signX: 1, signY: -1 },
+      { x: groupBounds.right, y: groupBounds.bottom, signX: 1, signY: 1 },
+      { x: groupBounds.x, y: groupBounds.bottom, signX: -1, signY: 1 },
+    ] : [];
   const canvasRect = canvasWrapRef.current?.getBoundingClientRect();
   const displayScale = Math.max(0.01, (canvasRect?.width ?? W) / W * view.zoom);
   const handleRadius = 6 / displayScale;
   const handleHitRadius = 17 / displayScale;
-  const rotationHandle = selectedObject ? getRotationHandle(selectedObject, 30 / displayScale) : null;
-  const rotationStem = selectedObject ? objectLocalToWorld(selectedObject, { x: 0, y: -selectedObject.height / 2 }) : null;
+  const transformBounds = groupBounds
+    ? { ...groupBounds, rotation: 0, flipX: false }
+    : selectedObject;
+  const rotationHandle = transformBounds ? getRotationHandle(transformBounds, 30 / displayScale) : null;
+  const rotationStem = selectedObject
+    ? objectLocalToWorld(selectedObject, { x: 0, y: -selectedObject.height / 2 })
+    : groupBounds ? { x: groupBounds.x + groupBounds.width / 2, y: groupBounds.y } : null;
   const selectedObjectLabel = selectedObject?.type === 'text' ? selectedObject.text : displayName(selectedObject?.label ?? '');
+  const canMoveSelectionForward = selectedObjects.length > 0 && reorderSceneObjects(sceneObjects, selectedObjectIds, 1) !== sceneObjects;
+  const canMoveSelectionBackward = selectedObjects.length > 0 && reorderSceneObjects(sceneObjects, selectedObjectIds, -1) !== sceneObjects;
   const entryClientPoint = textDraft && canvasWrapRef.current
     ? canvasToClientPoint(textDraft.x, textDraft.y, canvasWrapRef.current, W, H, view)
     : null;
@@ -824,17 +955,31 @@ function App() {
             <div className={`canvas-wrap tool-${tool}`} ref={canvasWrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onDoubleClick={onCanvasDoubleClick}>
               <div className="canvas-stage" style={{ transform: viewportTransformCss(view), backgroundColor }} data-view-zoom={view.zoom} data-view-pan-x={view.panX} data-view-pan-y={view.panY} data-background-color={backgroundColor}>
                 <canvas ref={fillRef} className="fill-canvas" width={W} height={H} aria-hidden="true"/>
-                <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil, text, fill or eraser tools." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''}/>
+                <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil, text, fill or eraser tools." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''} data-selected-object-ids={selectedObjectIds.join(',')}/>
                 <canvas ref={sketchRef} className="sketch-overlay" width={W} height={H} aria-hidden="true"/>
-                {tool === 'select' && selectedObject && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label={`Selected ${selectedObjectLabel}`} data-selected-object-id={selectedObject.id} data-object-type={selectedObject.type} data-object-x={selectedObject.x} data-object-y={selectedObject.y} data-object-width={selectedObject.width} data-object-height={selectedObject.height} data-object-rotation={selectedObject.rotation} data-object-flip-x={selectedObject.flipX} data-object-font-size={selectedObject.fontSize ?? ''} data-object-font-family={selectedObject.fontFamily ?? ''} data-object-font-weight={selectedObject.fontWeight ?? ''} data-object-text-align={selectedObject.textAlign ?? ''} data-object-color={selectedObject.color}>
-                  <polygon className="selection-box" strokeWidth={1.5 / displayScale} points={selectionCorners.map(({ x, y }) => `${x},${y}`).join(' ')}/>
-                  <line className="rotation-stem" strokeWidth={1.25 / displayScale} x1={rotationStem.x} y1={rotationStem.y} x2={rotationHandle.x} y2={rotationHandle.y}/>
-                  <circle className="rotation-hit-area" cx={rotationHandle.x} cy={rotationHandle.y} r={handleHitRadius} data-transform-handle="rotate" aria-label="Rotate selected object" role="button" tabIndex="0"/>
-                  <circle className="rotation-handle" cx={rotationHandle.x} cy={rotationHandle.y} r={handleRadius} strokeWidth={1.5 / displayScale} aria-hidden="true"/>
-                  {selectionCorners.map((corner) => <g key={`${corner.signX}:${corner.signY}`} className="resize-hit-area" data-transform-handle="resize" data-sign-x={corner.signX} data-sign-y={corner.signY} aria-label="Resize selected object" role="button" tabIndex="0">
-                    <circle cx={corner.x} cy={corner.y} r={handleHitRadius}/>
-                    <circle className="resize-handle" cx={corner.x} cy={corner.y} r={handleRadius} strokeWidth={1.5 / displayScale}/>
-                  </g>)}
+                {tool === 'select' && (selectedObjects.length > 0 || marquee) && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+                  aria-label={selectedObjects.length > 1 ? `${selectedObjects.length} objects selected` : selectedObject ? `Selected ${selectedObjectLabel}` : 'Selection marquee'}
+                  data-selected-object-id={selectedObject?.id ?? ''} data-selected-object-ids={selectedObjectIds.join(',')} data-selection-count={selectedObjects.length}
+                  data-object-type={selectedObject?.type ?? (selectedObjects.length > 1 ? 'group' : '')}
+                  data-object-x={selectedObject?.x ?? groupBounds?.x ?? ''} data-object-y={selectedObject?.y ?? groupBounds?.y ?? ''}
+                  data-object-width={selectedObject?.width ?? groupBounds?.width ?? ''} data-object-height={selectedObject?.height ?? groupBounds?.height ?? ''}
+                  data-object-rotation={selectedObject?.rotation ?? ''} data-object-flip-x={selectedObject?.flipX ?? ''}
+                  data-object-font-size={selectedObject?.fontSize ?? ''} data-object-font-family={selectedObject?.fontFamily ?? ''}
+                  data-object-font-weight={selectedObject?.fontWeight ?? ''} data-object-text-align={selectedObject?.textAlign ?? ''}
+                  data-object-color={selectedObject?.color ?? ''}>
+                  {marquee && <rect className="marquee-selection" x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height}/>}
+                  {selectedObjects.length > 0 && <>
+                    {groupBounds
+                      ? <rect className="selection-box group-selection-box" strokeWidth={1.5 / displayScale} x={groupBounds.x} y={groupBounds.y} width={groupBounds.width} height={groupBounds.height}/>
+                      : <polygon className="selection-box" strokeWidth={1.5 / displayScale} points={selectionCorners.map(({ x, y }) => `${x},${y}`).join(' ')}/>}
+                    <line className="rotation-stem" strokeWidth={1.25 / displayScale} x1={rotationStem.x} y1={rotationStem.y} x2={rotationHandle.x} y2={rotationHandle.y}/>
+                    <circle className="rotation-hit-area" cx={rotationHandle.x} cy={rotationHandle.y} r={handleHitRadius} data-transform-handle="rotate" aria-label={groupBounds ? 'Rotate selected objects' : 'Rotate selected object'} role="button" tabIndex="0"/>
+                    <circle className="rotation-handle" cx={rotationHandle.x} cy={rotationHandle.y} r={handleRadius} strokeWidth={1.5 / displayScale} aria-hidden="true"/>
+                    {selectionCorners.map((corner) => <g key={`${corner.signX}:${corner.signY}`} className="resize-hit-area" data-transform-handle="resize" data-sign-x={corner.signX} data-sign-y={corner.signY} aria-label={groupBounds ? 'Resize selected objects' : 'Resize selected object'} role="button" tabIndex="0">
+                      <circle cx={corner.x} cy={corner.y} r={handleHitRadius}/>
+                      <circle className="resize-handle" cx={corner.x} cy={corner.y} r={handleRadius} strokeWidth={1.5 / displayScale}/>
+                    </g>)}
+                  </>}
                 </svg>}
                 {sceneObjects.length === 0 && !hasInk && !hasFill && <div className="canvas-hint"><div className="hint-icon"><Pencil size={20}/></div><strong>Your next idea starts here</strong><span>Pick a tool and start drawing</span></div>}
                 <div className="canvas-corner">✳ &nbsp; MAKE SOMETHING WONDERFUL</div>
@@ -884,6 +1029,22 @@ function App() {
               <button className="object-action danger" onClick={deleteSelected} aria-label="Delete selected object" title="Delete"><Trash2 size={15}/> Delete</button>
             </div>
             <span className="object-edit-hint">Drag to move · corners resize proportionally · upper handle rotates · double-click text to edit</span>
+          </div>}
+          {selectedObjects.length > 1 && <div className="object-toolbar multi-object-toolbar" aria-label="Multiple selection toolbar" data-selection-count={selectedObjects.length}>
+            <div className="object-toolbar-title"><span className="control-label">GROUP</span><strong>{selectedObjects.length} objects selected</strong><span className="object-position">Artwork and text</span></div>
+            <div className="object-toolbar-actions">
+              <button className="object-action" onClick={() => recolorSelected(activeColor)}
+                disabled={selectedObjects.every((object) => object.color === activeColor)} aria-label="Apply Active Color" title={`Apply ${activeColor} to selected objects`}>
+                <Check size={14}/> Apply Active Color
+              </button>
+              <span className="object-toolbar-divider"/>
+              <button className="object-action" onClick={duplicateSelected} aria-label="Duplicate selected objects" title="Duplicate selected objects"><Copy size={15}/> Duplicate</button>
+              <button className="object-action" onClick={() => reorderSelected(1)} disabled={!canMoveSelectionForward} aria-label="Bring selected objects forward" title="Bring selected set forward one step"><ArrowUp size={15}/> Forward</button>
+              <button className="object-action" onClick={() => reorderSelected(-1)} disabled={!canMoveSelectionBackward} aria-label="Send selected objects backward" title="Send selected set backward one step"><ArrowDown size={15}/> Back</button>
+              <button className="object-action" onClick={flipSelected} aria-label="Flip selected objects horizontally" title="Flip each selected object horizontally"><FlipHorizontal2 size={15}/> Flip</button>
+              <button className="object-action danger" onClick={deleteSelected} aria-label="Delete selected objects" title="Delete selected objects"><Trash2 size={15}/> Delete</button>
+            </div>
+            <span className="object-edit-hint">Drag to move · corner handles resize proportionally · upper handle rotates · each object flips around its own center</span>
           </div>}
           {tool === 'fill' && <div className="fill-controls" aria-label="Paint bucket and canvas background controls">
             <div className="fill-active-color">

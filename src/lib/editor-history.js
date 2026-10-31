@@ -49,12 +49,16 @@ export class EditorHistory {
 }
 
 export function cloneEditorSnapshot(snapshot) {
+  const selectedObjectIds = Array.isArray(snapshot.selectedObjectIds)
+    ? [...new Set(snapshot.selectedObjectIds)]
+    : snapshot.selectedObjectId ? [snapshot.selectedObjectId] : [];
   return {
     objects: cloneSceneObjects(snapshot.objects ?? []),
     sketch: snapshot.sketch ?? null,
     fill: snapshot.fill ?? null,
     hasFill: Boolean(snapshot.hasFill),
     canvasBackgroundColor: normalizeHexColor(snapshot.canvasBackgroundColor) ?? DEFAULT_BACKGROUND_COLOR,
-    selectedObjectId: snapshot.selectedObjectId ?? null,
+    selectedObjectIds,
+    selectedObjectId: selectedObjectIds.length === 1 ? selectedObjectIds[0] : null,
   };
 }

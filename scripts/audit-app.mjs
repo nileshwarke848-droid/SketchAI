@@ -193,13 +193,24 @@ function createWindow(code) {
   return dom;
 }
 
-function pointer(window, target, type, x, y) {
+function pointer(window, target, type, x, y, modifiers = {}) {
   const event = new window.MouseEvent(type, {
     bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0,
+    shiftKey: Boolean(modifiers.shiftKey), ctrlKey: Boolean(modifiers.ctrlKey), metaKey: Boolean(modifiers.metaKey),
   });
   Object.defineProperty(event, 'pointerId', { value: 1 });
   Object.defineProperty(event, 'pointerType', { value: 'mouse' });
   target.dispatchEvent(event);
+}
+
+function keyboard(window, target, key, modifiers = {}) {
+  const event = new window.KeyboardEvent('keydown', {
+    bubbles: true, cancelable: true, key,
+    ctrlKey: Boolean(modifiers.ctrlKey), metaKey: Boolean(modifiers.metaKey),
+    shiftKey: Boolean(modifiers.shiftKey),
+  });
+  target.dispatchEvent(event);
+  return event;
 }
 
 function drawCircle(window, canvas, centerX, centerY, radius, steps = 48) {
@@ -644,6 +655,213 @@ async function main() {
   click(window, 'button[aria-label="Redo"]');
   await sleep(100);
   check('redo reapplies the object deletion', countObjects(canvas) === 1);
+
+  section('Multiple selection and group editing');
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(40);
+  click(window, 'button[aria-label="Duplicate selected object"]');
+  await sleep(100);
+  check('two editable objects are available for multi-selection', countObjects(canvas) === 2);
+  let multiGeometry = selectedGeometry(document);
+  const selectedBeforeToggle = Number(multiGeometry?.svg.dataset.selectionCount ?? 0);
+  const toggleX = multiGeometry ? multiGeometry.x + multiGeometry.width / 2 : 0;
+  const toggleY = multiGeometry ? multiGeometry.y + multiGeometry.height / 2 : 0;
+  pointer(window, canvas, 'pointerdown', toggleX, toggleY, { shiftKey: true });
+  pointer(window, canvas, 'pointerup', toggleX, toggleY, { shiftKey: true });
+  await sleep(60);
+  check('Shift-click toggles a topmost selected object off', selectedBeforeToggle === 1
+    && Number(document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0) === 0);
+  pointer(window, canvas, 'pointerdown', toggleX, toggleY, { shiftKey: true });
+  pointer(window, canvas, 'pointerup', toggleX, toggleY, { shiftKey: true });
+  await sleep(60);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(60);
+  multiGeometry = selectedGeometry(document);
+  check('Ctrl+A selects the complete scene and shows the selection-count toolbar',
+    Number(multiGeometry?.svg.dataset.selectionCount ?? 0) === 2
+      && Boolean(document.querySelector('.multi-object-toolbar[data-selection-count="2"]')));
+  check('multi-selection uses one combined group bounding box',
+    multiGeometry?.svg.dataset.objectType === 'group'
+      && multiGeometry.width > 0 && multiGeometry.height > 0
+      && !document.querySelector('button[aria-label="Text font size"]'));
+
+  // A plain empty click clears; a marquee over both objects selects them again.
+  pointer(window, canvas, 'pointerdown', 20, 20);
+  pointer(window, canvas, 'pointerup', 20, 20);
+  await sleep(50);
+  check('plain empty-canvas click clears the group selection', !document.querySelector('.selection-overlay'));
+  pointer(window, canvas, 'pointerdown', 20, 20);
+  pointer(window, canvas, 'pointermove', 1180, 700);
+  pointer(window, canvas, 'pointerup', 1180, 700);
+  await sleep(60);
+  check('marquee selection recovers both object bounds',
+    Number(document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0) === 2);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(40);
+
+  multiGeometry = selectedGeometry(document);
+  const beforeGroupMove = { x: multiGeometry.x, y: multiGeometry.y, width: multiGeometry.width, height: multiGeometry.height };
+  drawLine(window, canvas, multiGeometry.x + multiGeometry.width / 2, multiGeometry.y + multiGeometry.height / 2,
+    multiGeometry.x + multiGeometry.width / 2 + 28, multiGeometry.y + multiGeometry.height / 2 + 16);
+  await sleep(70);
+  let afterGroupMove = selectedGeometry(document);
+  check('dragging the selected set moves both objects together', Number(afterGroupMove?.svg.dataset.selectionCount ?? 0) === 2
+    && Math.abs(afterGroupMove.x - beforeGroupMove.x - 28) < 1
+    && Math.abs(afterGroupMove.y - beforeGroupMove.y - 16) < 1);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(70);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(30);
+  multiGeometry = selectedGeometry(document);
+  check('one undo reverses the complete group move', Number(multiGeometry?.svg.dataset.selectionCount ?? 0) === 2
+    && Math.abs(multiGeometry.x - beforeGroupMove.x) < 1 && Math.abs(multiGeometry.y - beforeGroupMove.y) < 1);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(70);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(30);
+
+  multiGeometry = selectedGeometry(document);
+  const beforeGroupResize = { x: multiGeometry.x, y: multiGeometry.y, width: multiGeometry.width, height: multiGeometry.height };
+  const groupResizeHandle = multiGeometry.svg.querySelector('[data-transform-handle="resize"]');
+  pointer(window, groupResizeHandle, 'pointerdown', beforeGroupResize.x, beforeGroupResize.y);
+  pointer(window, canvas, 'pointermove', beforeGroupResize.x - 32, beforeGroupResize.y - 24);
+  pointer(window, canvas, 'pointerup', beforeGroupResize.x - 32, beforeGroupResize.y - 24);
+  await sleep(80);
+  let afterGroupResize = selectedGeometry(document);
+  check('combined corner handle proportionally resizes the group', Number(afterGroupResize?.svg.dataset.selectionCount ?? 0) === 2
+    && afterGroupResize.width > beforeGroupResize.width && afterGroupResize.height > beforeGroupResize.height);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(70);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(30);
+  multiGeometry = selectedGeometry(document);
+  check('one undo reverses the complete group resize', Number(multiGeometry?.svg.dataset.selectionCount ?? 0) === 2
+    && Math.abs(multiGeometry.width - beforeGroupResize.width) < 1);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(70);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(30);
+
+  multiGeometry = selectedGeometry(document);
+  const beforeGroupRotation = { x: multiGeometry.x, y: multiGeometry.y, width: multiGeometry.width, height: multiGeometry.height };
+  const groupRotationHandle = multiGeometry.svg.querySelector('[data-transform-handle="rotate"]');
+  const handleX = Number(groupRotationHandle.getAttribute('cx'));
+  const handleY = Number(groupRotationHandle.getAttribute('cy'));
+  const groupCenterX = multiGeometry.x + multiGeometry.width / 2;
+  const groupCenterY = multiGeometry.y + multiGeometry.height / 2;
+  const groupPixelsBeforeRotation = canvasHash(canvas);
+  pointer(window, groupRotationHandle, 'pointerdown', handleX, handleY);
+  pointer(window, canvas, 'pointermove', groupCenterX + 96, groupCenterY);
+  pointer(window, canvas, 'pointerup', groupCenterX + 96, groupCenterY);
+  await sleep(80);
+  let afterGroupRotation = selectedGeometry(document);
+  check('rotation handle rotates the selected group around its center', Number(afterGroupRotation?.svg.dataset.selectionCount ?? 0) === 2
+    && canvasHash(canvas) !== groupPixelsBeforeRotation,
+  `${JSON.stringify(beforeGroupRotation)}; hash ${groupPixelsBeforeRotation} -> ${canvasHash(canvas)}`);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(70);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(30);
+  multiGeometry = selectedGeometry(document);
+  check('one undo reverses the complete group rotation', Number(multiGeometry?.svg.dataset.selectionCount ?? 0) === 2
+    && Math.abs(multiGeometry.x - beforeGroupRotation.x) < 1);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(70);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(30);
+
+  const multiColor = await setActiveHex(window, '#0A77CF');
+  click(window, 'button[aria-label="Apply Active Color"]');
+  await sleep(180);
+  check('Apply Active Color recolors every selected artwork object in one action', multiColor === '#0A77CF'
+    && countRgbPixels(canvas, [10, 119, 207]) > 0);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(70);
+  check('one undo restores pre-group color across the selected artwork', countRgbPixels(canvas, [10, 119, 207]) === 0);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(70);
+
+  const groupPixelsBeforeFlip = Buffer.from(pixels(canvas));
+  click(window, 'button[aria-label="Flip selected objects horizontally"]');
+  await sleep(80);
+  check('horizontal flip visibly updates all selected artwork', !Buffer.from(pixels(canvas)).equals(groupPixelsBeforeFlip));
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(70);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(70);
+
+  click(window, 'button[aria-label="Duplicate selected objects"]');
+  await sleep(90);
+  check('group duplicate creates and selects all copies', countObjects(canvas) === 4
+    && Number(document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0) === 2);
+  const groupSendBack = document.querySelector('button[aria-label="Send selected objects backward"]');
+  check('selected-set layer order is available for the duplicated group', Boolean(groupSendBack && !groupSendBack.disabled));
+  groupSendBack?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(50);
+  check('moving the selected set backward preserves group ordering',
+    document.querySelector('button[aria-label="Bring selected objects forward"]')?.disabled === false);
+  click(window, 'button[aria-label="Bring selected objects forward"]');
+  await sleep(50);
+  click(window, 'button[aria-label="Delete selected objects"]');
+  await sleep(90);
+  check('multi-delete removes every selected copy', countObjects(canvas) === 2);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(90);
+  check('one undo restores the complete duplicated group', countObjects(canvas) === 4);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(90);
+  check('redo reapplies the complete multi-delete', countObjects(canvas) === 2);
+
+  // Add text and confirm mixed selections use group actions but not text-only settings.
+  await setActiveHex(window, '#18A4F7');
+  click(window, 'button[aria-label="Text tool"]');
+  await sleep(30);
+  pointer(window, canvas, 'pointerdown', 1010, 120);
+  pointer(window, canvas, 'pointerup', 1010, 120);
+  await sleep(60);
+  const multiTextInput = document.querySelector('input[aria-label="Enter canvas text"]');
+  check('text entry remains available after group operations', Boolean(multiTextInput),
+    `tool=${document.querySelector('.canvas-wrap')?.className}; objects=${countObjects(canvas)}`);
+  if (multiTextInput) {
+    keyboard(window, multiTextInput, 'a', { ctrlKey: true });
+    check('Ctrl+A typing guard does not select artwork while editing text', !document.querySelector('.multi-object-toolbar'));
+    setControlValue(window, multiTextInput, 'Mixed group');
+    keyboard(window, multiTextInput, 'Enter');
+  }
+  await sleep(90);
+  check('text inserts as a third independent scene object', countObjects(canvas) === 3);
+  const multiCreatedTextGeometry = selectedGeometry(document);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(60);
+  check('Ctrl+A selects mixed artwork and text together without text-specific settings',
+    Number(document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0) === 3
+      && Boolean(document.querySelector('.multi-object-toolbar'))
+      && !document.querySelector('[aria-label="Text font size"]'));
+  if (multiCreatedTextGeometry) {
+    keyboard(window, window, 'Escape');
+    await sleep(30);
+    const textX = multiCreatedTextGeometry.x + multiCreatedTextGeometry.width / 2;
+    const textY = multiCreatedTextGeometry.y + multiCreatedTextGeometry.height / 2;
+    pointer(window, canvas, 'pointerdown', textX, textY);
+    pointer(window, canvas, 'pointerup', textX, textY);
+  }
+  await sleep(50);
+  click(window, 'button[aria-label="Delete selected object"]');
+  await sleep(80);
+  check('single-text cleanup leaves the artwork objects intact', countObjects(canvas) === 2,
+    `objects=${countObjects(canvas)} selection=${document.querySelector('.selection-overlay')?.dataset.objectType ?? 'none'} toolbar=${document.querySelector('.object-toolbar')?.getAttribute('aria-label') ?? 'none'} saved=${JSON.stringify(multiCreatedTextGeometry && { x: multiCreatedTextGeometry.x, y: multiCreatedTextGeometry.y, width: multiCreatedTextGeometry.width, height: multiCreatedTextGeometry.height })}`);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  await sleep(40);
+  const remainingGroup = selectedGeometry(document);
+  if (remainingGroup) {
+    const onlyOnePoint = { x: remainingGroup.x + remainingGroup.width / 2, y: remainingGroup.y + remainingGroup.height / 2 };
+    pointer(window, canvas, 'pointerdown', onlyOnePoint.x, onlyOnePoint.y, { shiftKey: true });
+    pointer(window, canvas, 'pointerup', onlyOnePoint.x, onlyOnePoint.y, { shiftKey: true });
+  }
+  await sleep(40);
+  click(window, 'button[aria-label="Delete selected object"]');
+  await sleep(80);
+  check('multi-select audit restores the one-artwork baseline for later tests', countObjects(canvas) === 1);
 
   section('Layer safety, multiple objects and eraser');
   click(window, 'button[aria-label="Pencil"]');

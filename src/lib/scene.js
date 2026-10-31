@@ -202,6 +202,42 @@ export function deleteSceneObject(objects, id) {
   return next.length === objects.length ? objects : renumberSceneObjects(next);
 }
 
+export function deleteSceneObjects(objects, ids) {
+  const selected = new Set(ids);
+  if (!selected.size) return objects;
+  const next = objects.filter((object) => !selected.has(object.id));
+  return next.length === objects.length ? objects : renumberSceneObjects(next);
+}
+
+/** A stable selection-order list based on authoritative back-to-front scene order. */
+export function getSelectedSceneObjects(objects, ids) {
+  const selected = new Set(ids);
+  return objects.filter((object) => selected.has(object.id));
+}
+
+export function duplicateSceneObjects(objects, ids, { offset = 20, idFactory = createSceneObjectId } = {}) {
+  const selectedObjects = getSelectedSceneObjects(objects, ids);
+  if (!selectedObjects.length) return { objects, duplicates: [] };
+  const usedIds = new Set(objects.map((object) => object.id));
+  const nextId = () => {
+    let id = idFactory();
+    if (!id || usedIds.has(id)) {
+      do { id = createSceneObjectId(); } while (usedIds.has(id));
+    }
+    usedIds.add(id);
+    return id;
+  };
+  const duplicates = selectedObjects.map((object, index) => ({
+    ...object,
+    id: nextId(),
+    x: object.x + offset,
+    y: object.y + offset,
+    artwork: object.artwork,
+    zIndex: objects.length + index,
+  }));
+  return { objects: renumberSceneObjects([...objects, ...duplicates]), duplicates };
+}
+
 export function duplicateSceneObject(objects, id, { offset = 20, idFactory = createSceneObjectId } = {}) {
   const original = objects.find((object) => object.id === id);
   if (!original) return { objects, duplicate: null };
@@ -224,6 +260,30 @@ export function shiftSceneObject(objects, id, direction) {
   const next = [...objects];
   [next[index], next[target]] = [next[target], next[index]];
   return renumberSceneObjects(next);
+}
+
+/** Move a selected set by one stack step while retaining selected relative order. */
+export function reorderSceneObjects(objects, ids, direction) {
+  const selected = new Set(ids);
+  if (!selected.size || !direction) return objects;
+  const next = [...objects];
+  let changed = false;
+  if (direction > 0) {
+    for (let index = next.length - 2; index >= 0; index -= 1) {
+      if (selected.has(next[index].id) && !selected.has(next[index + 1].id)) {
+        [next[index], next[index + 1]] = [next[index + 1], next[index]];
+        changed = true;
+      }
+    }
+  } else {
+    for (let index = 1; index < next.length; index += 1) {
+      if (selected.has(next[index].id) && !selected.has(next[index - 1].id)) {
+        [next[index], next[index - 1]] = [next[index - 1], next[index]];
+        changed = true;
+      }
+    }
+  }
+  return changed ? renumberSceneObjects(next) : objects;
 }
 
 export function getObjectCenter(object) {
@@ -288,6 +348,61 @@ export function getTransformedCorners(object) {
   }));
 }
 
+export function getObjectAxisAlignedBounds(object) {
+  const corners = getTransformedCorners(object);
+  const xs = corners.map(({ x }) => x);
+  const ys = corners.map(({ y }) => y);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  const right = Math.max(...xs);
+  const bottom = Math.max(...ys);
+  return { x, y, width: right - x, height: bottom - y, right, bottom };
+}
+
+/** Axis-aligned union of each selected object's transformed local-space bounds. */
+export function getGroupBounds(objects) {
+  if (!objects.length) return null;
+  const bounds = objects.map(getObjectAxisAlignedBounds);
+  const x = Math.min(...bounds.map((item) => item.x));
+  const y = Math.min(...bounds.map((item) => item.y));
+  const right = Math.max(...bounds.map((item) => item.right));
+  const bottom = Math.max(...bounds.map((item) => item.bottom));
+  return { x, y, width: right - x, height: bottom - y, right, bottom };
+}
+
+/** Select objects whose rotated/flipped axis-aligned bounds intersect a marquee. */
+export function getObjectsIntersectingRect(objects, rect) {
+  if (!rect) return [];
+  const left = Math.min(rect.x, rect.x + rect.width);
+  const right = Math.max(rect.x, rect.x + rect.width);
+  const top = Math.min(rect.y, rect.y + rect.height);
+  const bottom = Math.max(rect.y, rect.y + rect.height);
+  return objects.filter((object) => {
+    const bounds = getObjectAxisAlignedBounds(object);
+    return bounds.x <= right && bounds.right >= left && bounds.y <= bottom && bounds.bottom >= top;
+  });
+}
+
+/** Click semantics for object selection, including Shift toggling and group drag. */
+export function updateSelectionForClick(objects, currentIds, hitId, { shiftKey = false } = {}) {
+  const current = getSelectedSceneObjects(objects, currentIds).map((object) => object.id);
+  if (shiftKey) {
+    if (!hitId) return current;
+    return getSelectedSceneObjects(objects, current.includes(hitId)
+      ? current.filter((id) => id !== hitId)
+      : [...current, hitId]).map((object) => object.id);
+  }
+  if (!hitId) return [];
+  return current.includes(hitId) ? current : [hitId];
+}
+
+/** Replace a selection with marquee hits, or union the hits when Shift is held. */
+export function selectObjectsInMarquee(objects, currentIds, rect, { additive = false } = {}) {
+  const selected = new Set(additive ? currentIds : []);
+  for (const object of getObjectsIntersectingRect(objects, rect)) selected.add(object.id);
+  return objects.filter((object) => selected.has(object.id)).map((object) => object.id);
+}
+
 export function getRotationHandle(object, gap = 32) {
   return objectLocalToWorld(object, { x: 0, y: -object.height / 2 - gap });
 }
@@ -339,6 +454,127 @@ export function getRotationFromPointer(object, startRotation, startPointer, poin
   while (delta < -Math.PI) delta += Math.PI * 2;
   const degrees = startRotation + delta * 180 / Math.PI;
   return snap ? Math.round(degrees / 15) * 15 : degrees;
+}
+
+/** Move every selected object from its gesture-start snapshot by one logical delta. */
+export function moveSceneObjects(objects, startObjects, dx, dy) {
+  const starts = new Map(startObjects.map((object) => [object.id, object]));
+  let changed = false;
+  const next = objects.map((object) => {
+    const start = starts.get(object.id);
+    if (!start) return object;
+    changed = true;
+    return { ...object, x: start.x + dx, y: start.y + dy };
+  });
+  return changed ? next : objects;
+}
+
+/** Proportionally resize a selection around the opposite corner of its group AABB. */
+export function resizeSceneObjectsGroup(objects, startObjects, bounds, handle, pointer, {
+  minObjectSize = MIN_OBJECT_SIZE,
+  maxObjectSize = MAX_OBJECT_SIZE,
+} = {}) {
+  if (!startObjects.length || !bounds || !handle?.signX || !handle?.signY) return objects;
+  const anchor = {
+    x: handle.signX > 0 ? bounds.x : bounds.right,
+    y: handle.signY > 0 ? bounds.y : bounds.bottom,
+  };
+  const dragWidth = handle.signX * (pointer.x - anchor.x);
+  const dragHeight = handle.signY * (pointer.y - anchor.y);
+  const requestedScale = Math.max(dragWidth / bounds.width, dragHeight / bounds.height);
+  const minScale = Math.max(...startObjects.map((object) => Math.max(
+    minObjectSize / object.width,
+    minObjectSize / object.height,
+    object.type === 'text' ? MIN_TEXT_FONT_SIZE / object.fontSize : 0,
+  )));
+  const maxScale = Math.min(...startObjects.map((object) => Math.min(
+    maxObjectSize / Math.max(object.width, object.height),
+    object.type === 'text' ? MAX_TEXT_FONT_SIZE / object.fontSize : Infinity,
+  )));
+  const scale = clamp(requestedScale, minScale, Math.max(minScale, maxScale));
+  const starts = new Map(startObjects.map((object) => [object.id, object]));
+  let changed = false;
+  const next = objects.map((object) => {
+    const start = starts.get(object.id);
+    if (!start) return object;
+    changed = true;
+    const width = start.width * scale;
+    const height = start.height * scale;
+    const center = getObjectCenter(start);
+    const scaledCenter = {
+      x: anchor.x + (center.x - anchor.x) * scale,
+      y: anchor.y + (center.y - anchor.y) * scale,
+    };
+    return {
+      ...object,
+      x: scaledCenter.x - width / 2,
+      y: scaledCenter.y - height / 2,
+      width,
+      height,
+      ...(start.type === 'text' ? {
+        fontSize: clamp(start.fontSize * scale, MIN_TEXT_FONT_SIZE, MAX_TEXT_FONT_SIZE),
+      } : {}),
+    };
+  });
+  return changed ? next : objects;
+}
+
+/** Rotate each selected object's center around the group center and add a shared angle. */
+export function rotateSceneObjectsGroup(objects, startObjects, bounds, startPointer, pointer) {
+  if (!startObjects.length || !bounds) return objects;
+  const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  const startAngle = Math.atan2(startPointer.y - center.y, startPointer.x - center.x);
+  const currentAngle = Math.atan2(pointer.y - center.y, pointer.x - center.x);
+  let delta = currentAngle - startAngle;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  const cos = Math.cos(delta);
+  const sin = Math.sin(delta);
+  const starts = new Map(startObjects.map((object) => [object.id, object]));
+  let changed = false;
+  const next = objects.map((object) => {
+    const start = starts.get(object.id);
+    if (!start) return object;
+    changed = true;
+    const objectCenter = getObjectCenter(start);
+    const dx = objectCenter.x - center.x;
+    const dy = objectCenter.y - center.y;
+    const rotatedCenter = {
+      x: center.x + cos * dx - sin * dy,
+      y: center.y + sin * dx + cos * dy,
+    };
+    return {
+      ...object,
+      x: rotatedCenter.x - start.width / 2,
+      y: rotatedCenter.y - start.height / 2,
+      rotation: start.rotation + delta * 180 / Math.PI,
+    };
+  });
+  return changed ? next : objects;
+}
+
+export function flipSceneObjects(objects, ids) {
+  const selected = new Set(ids);
+  let changed = false;
+  const next = objects.map((object) => {
+    if (!selected.has(object.id)) return object;
+    changed = true;
+    return { ...object, flipX: !object.flipX };
+  });
+  return changed ? next : objects;
+}
+
+export function recolorSceneObjects(objects, ids, color) {
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor) return objects;
+  const selected = new Set(ids);
+  let changed = false;
+  const next = objects.map((object) => {
+    if (!selected.has(object.id) || !['artwork', 'text'].includes(object.type) || object.color === normalizedColor) return object;
+    changed = true;
+    return { ...object, color: normalizedColor };
+  });
+  return changed ? next : objects;
 }
 
 export function artworkImageKey(artworkId, color) {
