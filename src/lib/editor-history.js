@@ -51,6 +51,9 @@ export function cloneEditorSnapshot(snapshot) {
   return {
     objects: cloneSceneObjects(snapshot.objects ?? []),
     sketch: snapshot.sketch ?? null,
+    fill: snapshot.fill ?? null,
+    hasFill: Boolean(snapshot.hasFill),
+    canvasBackgroundColor: snapshot.canvasBackgroundColor ?? '#ffffff',
     selectedObjectId: snapshot.selectedObjectId ?? null,
   };
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // End-to-end audit of the real SketchAI React app in jsdom with a skia-backed
 // canvas and SVG rasterisation. Exercises prediction, suggestions, editable
-// scene objects, layered sketch safety, and undo/redo/eraser/clear behaviour.
+// artwork/text objects, transformed pointer input, fills/background, and history.
 //
 //   node scripts/audit-app.mjs                 # 345-class model
 //   node scripts/audit-app.mjs --force-fallback # model missing -> 100-class fallback
@@ -91,7 +91,7 @@ function makeCanvasShim(window) {
   proto.getBoundingClientRect = canvasRect;
   window.Element.prototype.getBoundingClientRect = function getElementRect() {
     const layer = this.classList;
-    return layer && ['canvas-wrap', 'art-canvas', 'sketch-overlay', 'selection-overlay']
+    return layer && ['canvas-wrap', 'fill-canvas', 'art-canvas', 'sketch-overlay', 'selection-overlay']
       .some((name) => layer.contains(name)) ? canvasRect() : {
         x: 0, y: 0, left: 0, top: 0, right: 0, bottom: 0,
         width: 0, height: 0, toJSON() { return this; },
@@ -218,6 +218,18 @@ function drawLine(window, canvas, x1, y1, x2, y2) {
   pointer(window, canvas, 'pointerup', x2, y2);
 }
 
+function drawPolyline(window, target, points) {
+  if (points.length < 2) return;
+  pointer(window, target, 'pointerdown', points[0].x, points[0].y);
+  for (const pointValue of points.slice(1)) pointer(window, target, 'pointermove', pointValue.x, pointValue.y);
+  const last = points[points.length - 1];
+  pointer(window, target, 'pointerup', last.x, last.y);
+}
+
+function pixelAt(canvas, x, y) {
+  return [...canvas.getContext('2d').getImageData(Math.round(x), Math.round(y), 1, 1).data];
+}
+
 function pixels(canvas) {
   return new Uint8ClampedArray(canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data);
 }
@@ -264,6 +276,36 @@ function click(window, selector) {
   if (!element) return null;
   element.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   return element;
+}
+
+function setControlValue(window, element, value) {
+  if (!element) return false;
+  const prototype = element.tagName === 'SELECT' ? window.HTMLSelectElement.prototype : window.HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+  setter?.call(element, String(value));
+  element.dispatchEvent(new window.Event('input', { bubbles: true }));
+  element.dispatchEvent(new window.Event('change', { bubbles: true }));
+  return true;
+}
+
+function logicalToClient(window, x, y) {
+  const rect = window.__auditCanvasRect ?? { left: 0, top: 0, width: CANVAS_W, height: CANVAS_H };
+  const stage = window.document.querySelector('.canvas-stage');
+  const zoom = Number(stage?.dataset.viewZoom ?? 1);
+  const panX = Number(stage?.dataset.viewPanX ?? 0);
+  const panY = Number(stage?.dataset.viewPanY ?? 0);
+  return {
+    x: rect.left + panX + (x / CANVAS_W) * rect.width * zoom,
+    y: rect.top + panY + (y / CANVAS_H) * rect.height * zoom,
+  };
+}
+
+async function setTextAndConfirm(window, input, value) {
+  setControlValue(window, input, value);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  input?.dispatchEvent(new window.KeyboardEvent('keydown', {
+    key: 'Enter', code: 'Enter', bubbles: true, cancelable: true,
+  }));
 }
 
 function countObjects(canvas) {
@@ -626,6 +668,362 @@ async function main() {
     check(`${label}: safe interior y=718 is drawable`, hasInkNear(sketch, logicalX, logicalY),
       `logical y=${logicalY}`);
   }
+
+  section('Editable text-tool interaction');
+  clearButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(80);
+  click(window, 'button[aria-label="Text tool"]');
+  await sleep(30);
+  check('Text tool can be selected', document.querySelector('button[aria-label="Text tool"]')?.getAttribute('aria-pressed') === 'true');
+  let textClient = logicalToClient(window, 350, 220);
+  pointer(window, wrapper, 'pointerdown', textClient.x, textClient.y);
+  pointer(window, wrapper, 'pointerup', textClient.x, textClient.y);
+  await sleep(30);
+  let textInput = document.querySelector('input[aria-label="Enter canvas text"]');
+  check('Text mode opens a compact contextual input at the canvas click', Boolean(textInput),
+    `tool=${document.querySelector('.canvas-wrap')?.className}; draft=${Boolean(document.querySelector('.text-entry'))}; point=${textClient.x},${textClient.y}`);
+  textInput?.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
+  await sleep(20);
+  check('Escape cancels text creation without adding an object', countObjects(canvas) === 0 && !document.querySelector('.text-entry'));
+
+  click(window, 'button[aria-label="Text tool"]');
+  await sleep(20);
+  textClient = logicalToClient(window, 350, 220);
+  pointer(window, wrapper, 'pointerdown', textClient.x, textClient.y);
+  pointer(window, wrapper, 'pointerup', textClient.x, textClient.y);
+  await sleep(30);
+  textInput = document.querySelector('input[aria-label="Enter canvas text"]');
+  setControlValue(window, textInput, 'Canvas title');
+  await sleep(20);
+  check('inline text input updates its draft', document.querySelector('.text-entry')?.dataset.draftValue === 'Canvas title',
+    `input=${textInput?.value ?? 'missing'} draft=${document.querySelector('.text-entry')?.dataset.draftValue ?? 'missing'}`);
+  textInput?.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }));
+  await sleep(60);
+  let textGeometry = selectedGeometry(document);
+  check('Enter creates a structured text object and selects it', countObjects(canvas) === 1
+    && textGeometry?.svg.dataset.objectType === 'text' && textGeometry.svg.getAttribute('aria-label') === 'Selected Canvas title',
+    `objects=${countObjects(canvas)} type=${textGeometry?.svg.dataset.objectType ?? 'none'} label=${textGeometry?.svg.getAttribute('aria-label') ?? 'none'} draft=${document.querySelector('.text-entry')?.dataset.draftValue ?? 'closed'}`);
+  check('selected text exposes compact editing and style controls', Boolean(document.querySelector('button[aria-label="Edit text content"]'))
+    && Boolean(document.querySelector('select[aria-label="Text font size"]'))
+    && Boolean(document.querySelector('select[aria-label="Text font family"]')));
+
+  click(window, 'button[aria-label="Toggle bold text"]');
+  setControlValue(window, document.querySelector('select[aria-label="Text font family"]'), 'Georgia, serif');
+  setControlValue(window, document.querySelector('select[aria-label="Text font size"]'), '64');
+  click(window, 'button[aria-label="Align text center"]');
+  click(window, 'button[aria-label="Recolor selected object #e26755"]');
+  await sleep(30);
+  textGeometry = selectedGeometry(document);
+  check('bold, font family, font size, alignment and recolor controls update text data',
+    textGeometry?.svg.dataset.objectFontWeight === 'bold'
+      && textGeometry.svg.dataset.objectFontFamily === 'Georgia, serif'
+      && Number(textGeometry.svg.dataset.objectFontSize) >= 64
+      && textGeometry.svg.dataset.objectTextAlign === 'center'
+      && document.querySelector('button[aria-label="Recolor selected object #e26755"]')?.getAttribute('aria-pressed') === 'true');
+
+  if (textGeometry) {
+    const centerX = textGeometry.x + textGeometry.width / 2;
+    const centerY = textGeometry.y + textGeometry.height / 2;
+    const centerClient = logicalToClient(window, centerX, centerY);
+    wrapper.dispatchEvent(new window.MouseEvent('dblclick', {
+      bubbles: true, cancelable: true, clientX: centerClient.x, clientY: centerClient.y, detail: 2,
+    }));
+    await sleep(25);
+    let editInput = document.querySelector('input[aria-label="Edit text content"]');
+    const doubleClickOpened = Boolean(editInput);
+    check('double-click opens inline text editing', doubleClickOpened);
+    if (!editInput) {
+      click(window, 'button[aria-label="Edit text content"]');
+      await sleep(20);
+      editInput = document.querySelector('input[aria-label="Edit text content"]');
+    }
+    await setTextAndConfirm(window, editInput, 'Edited title');
+    await sleep(40);
+    check('inline text editing updates wording without recreating the object', countObjects(canvas) === 1
+      && document.querySelector('.object-toolbar strong')?.textContent === 'Edited title',
+      `input=${Boolean(editInput)} title=${document.querySelector('.object-toolbar strong')?.textContent ?? 'missing'}`);
+  }
+
+  textGeometry = selectedGeometry(document);
+  if (textGeometry) {
+    const oldX = textGeometry.x;
+    const oldY = textGeometry.y;
+    const centerClient = logicalToClient(window, textGeometry.x + textGeometry.width / 2, textGeometry.y + textGeometry.height / 2);
+    const movedClient = logicalToClient(window, textGeometry.x + textGeometry.width / 2 + 14, textGeometry.y + textGeometry.height / 2 + 9);
+    pointer(window, wrapper, 'pointerdown', centerClient.x, centerClient.y);
+    pointer(window, wrapper, 'pointermove', movedClient.x, movedClient.y);
+    pointer(window, wrapper, 'pointerup', movedClient.x, movedClient.y);
+    await sleep(25);
+    textGeometry = selectedGeometry(document);
+    check('text can be moved with the shared select gesture', Boolean(textGeometry)
+      && Math.abs(textGeometry.x - oldX - 14) < 1 && Math.abs(textGeometry.y - oldY - 9) < 1);
+  }
+
+  textGeometry = selectedGeometry(document);
+  if (textGeometry) {
+    const resize = document.querySelector('.resize-hit-area[data-sign-x="1"][data-sign-y="1"]');
+    const circle = resize?.querySelector('circle');
+    const startX = Number(circle?.getAttribute('cx'));
+    const startY = Number(circle?.getAttribute('cy'));
+    const startClient = logicalToClient(window, startX, startY);
+    const endClient = logicalToClient(window, startX + 36, startY + 24);
+    const oldWidth = textGeometry.width;
+    pointer(window, resize, 'pointerdown', startClient.x, startClient.y);
+    pointer(window, wrapper, 'pointermove', endClient.x, endClient.y);
+    pointer(window, wrapper, 'pointerup', endClient.x, endClient.y);
+    await sleep(25);
+    textGeometry = selectedGeometry(document);
+    check('text corner resize scales its editable bounds and font together', Boolean(textGeometry)
+      && textGeometry.width > oldWidth && Number(textGeometry.svg.dataset.objectFontSize) >= 10);
+  }
+
+  textGeometry = selectedGeometry(document);
+  if (textGeometry) {
+    const rotate = document.querySelector('.rotation-hit-area');
+    const handleX = Number(rotate?.getAttribute('cx'));
+    const handleY = Number(rotate?.getAttribute('cy'));
+    const centerX = textGeometry.x + textGeometry.width / 2;
+    const centerY = textGeometry.y + textGeometry.height / 2;
+    const radius = Math.hypot(handleX - centerX, handleY - centerY);
+    const startClient = logicalToClient(window, handleX, handleY);
+    const endClient = logicalToClient(window, centerX + radius, centerY);
+    pointer(window, rotate, 'pointerdown', startClient.x, startClient.y);
+    pointer(window, wrapper, 'pointermove', endClient.x, endClient.y);
+    pointer(window, wrapper, 'pointerup', endClient.x, endClient.y);
+    await sleep(25);
+    textGeometry = selectedGeometry(document);
+    check('text rotation handle updates scene rotation', Boolean(textGeometry)
+      && Math.abs(Number(textGeometry.svg.dataset.objectRotation)) > 5);
+  }
+
+  click(window, 'button[aria-label="Duplicate selected object"]');
+  await sleep(30);
+  check('text duplicates through the shared object toolbar', countObjects(canvas) === 2);
+  click(window, 'button[aria-label="Send selected object backward"]');
+  await sleep(25);
+  check('text layer order uses the shared one-step stack controls',
+    Boolean(document.querySelector('button[aria-label="Bring selected object forward"]'))
+      && !document.querySelector('button[aria-label="Bring selected object forward"]').disabled);
+  click(window, 'button[aria-label="Delete selected object"]');
+  await sleep(30);
+  check('text delete removes only the selected duplicate', countObjects(canvas) === 1);
+
+  section('Fill layer and canvas background interaction');
+  clearButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(80);
+  const fillCanvas = document.querySelector('.fill-canvas');
+  click(window, 'button[aria-label="Pencil"]');
+  await sleep(20);
+  const rectangle = [{ x: 200, y: 160 }, { x: 500, y: 160 }, { x: 500, y: 390 }, { x: 200, y: 390 }, { x: 200, y: 160 }]
+    .map(({ x, y }) => logicalToClient(window, x, y));
+  drawPolyline(window, wrapper, rectangle);
+  await sleep(30);
+  const closedSketchInk = inkPixels(sketch);
+  click(window, 'button[aria-label="Text tool"]');
+  await sleep(20);
+  textClient = logicalToClient(window, 230, 230);
+  pointer(window, wrapper, 'pointerdown', textClient.x, textClient.y);
+  pointer(window, wrapper, 'pointerup', textClient.x, textClient.y);
+  await sleep(30);
+  await setTextAndConfirm(window, document.querySelector('input[aria-label="Enter canvas text"]'), 'Editable');
+  await sleep(40);
+  click(window, 'button[aria-label="Fill tool"]');
+  await sleep(20);
+  click(window, 'button[aria-label="Fill color #e26755"]');
+  const fillInside = logicalToClient(window, 450, 350);
+  const cleanBeforeFill = canvasHash(canvas);
+  pointer(window, wrapper, 'pointerdown', fillInside.x, fillInside.y);
+  pointer(window, wrapper, 'pointerup', fillInside.x, fillInside.y);
+  await sleep(40);
+  check('bucket fills the connected interior on a dedicated layer', inkPixels(fillCanvas) > 1000
+    && pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '226,103,85');
+  check('fill leaves rough sketch, editable text and clean-art pixels independent',
+    inkPixels(sketch) === closedSketchInk && countObjects(canvas) === 1 && canvasHash(canvas) === cleanBeforeFill,
+    `sketch=${inkPixels(sketch)}/${closedSketchInk} objects=${countObjects(canvas)} artStable=${canvasHash(canvas) === cleanBeforeFill}`);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(40);
+  check('one undo removes the completed bucket operation without deleting text', inkPixels(fillCanvas) === 0 && countObjects(canvas) === 1,
+    `fill=${inkPixels(fillCanvas)} objects=${countObjects(canvas)}`);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(40);
+  check('redo restores the raster fill while the text remains editable', inkPixels(fillCanvas) > 1000 && countObjects(canvas) === 1,
+    `fill=${inkPixels(fillCanvas)} objects=${countObjects(canvas)}`);
+
+  setControlValue(window, document.querySelector('input[aria-label="Custom fill color"]'), '#6590bd');
+  const fillAgain = logicalToClient(window, 450, 350);
+  pointer(window, wrapper, 'pointerdown', fillAgain.x, fillAgain.y);
+  pointer(window, wrapper, 'pointerup', fillAgain.x, fillAgain.y);
+  await sleep(35);
+  check('fill color picker changes the bucket color', pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '101,144,189');
+
+  setControlValue(window, document.querySelector('input[aria-label="Canvas Background"]'), '#123456');
+  await sleep(25);
+  check('canvas background changes independently from raster fills', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#123456');
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(25);
+  check('canvas background change is undoable', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#ffffff');
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(25);
+  check('canvas background change is redoable', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#123456');
+  click(window, 'button[aria-label="Reset canvas background to white"]');
+  await sleep(20);
+  check('Reset to White restores the default background', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#ffffff');
+  check('scene object remains selected and editable after fill operations',
+    countObjects(canvas) === 1 && document.querySelector('.object-toolbar strong')?.textContent === 'Editable',
+    `objects=${countObjects(canvas)} toolbar=${document.querySelector('.object-toolbar strong')?.textContent ?? 'missing'}`);
+
+  section('Zoom, pan and transformed pointer input');
+  clearButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(70);
+  click(window, 'button[aria-label="Zoom out"]');
+  await sleep(15);
+  click(window, 'button[aria-label="Zoom out"]');
+  await sleep(15);
+  check('zoom controls reach 50%', document.querySelector('[data-zoom-level]')?.textContent === '50%',
+    document.querySelector('[data-zoom-level]')?.textContent ?? 'missing');
+  click(window, 'button[aria-label="Reset view"]');
+  await sleep(15);
+  check('reset view returns to 100%', document.querySelector('[data-zoom-level]')?.textContent === '100%'
+    && Number(document.querySelector('.canvas-stage')?.dataset.viewPanX) === 0
+    && Number(document.querySelector('.canvas-stage')?.dataset.viewPanY) === 0);
+
+  click(window, 'button[aria-label="Pencil"]');
+  await sleep(20);
+  for (const [logicalX, logicalY, label] of [[600, 80, 'top'], [600, 360, 'center'], [600, 680, 'bottom']]) {
+    const pointValue = logicalToClient(window, logicalX, logicalY);
+    pointer(window, wrapper, 'pointerdown', pointValue.x, pointValue.y);
+    pointer(window, wrapper, 'pointerup', pointValue.x, pointValue.y);
+    check(`100% ${label} pointer remains aligned`, hasInkNear(sketch, logicalX, logicalY));
+  }
+  for (const [expected, increments] of [['100%', 0], ['200%', 3], ['400%', 2]]) {
+    for (let step = 0; step < increments; step += 1) {
+      click(window, 'button[aria-label="Zoom in"]');
+      await sleep(15);
+    }
+    check(`zoom controls reach ${expected}`, document.querySelector('[data-zoom-level]')?.textContent === expected,
+      document.querySelector('[data-zoom-level]')?.textContent ?? 'missing');
+    const logicalX = 600;
+    const logicalY = 360;
+    const pointValue = logicalToClient(window, logicalX, logicalY);
+    pointer(window, wrapper, 'pointerdown', pointValue.x, pointValue.y);
+    pointer(window, wrapper, 'pointerup', pointValue.x, pointValue.y);
+    await sleep(15);
+    check(`${expected} center pointer remains aligned`, hasInkNear(sketch, logicalX, logicalY));
+  }
+
+  click(window, 'button[aria-label="Reset view"]');
+  await sleep(15);
+  for (let step = 0; step < 3; step += 1) {
+    click(window, 'button[aria-label="Zoom out"]');
+    await sleep(10);
+  }
+  click(window, 'button[aria-label="Text tool"]');
+  await sleep(20);
+  const outsideCanvas = { x: window.__auditCanvasRect.left + 2, y: window.__auditCanvasRect.top + 2 };
+  pointer(window, wrapper, 'pointerdown', outsideCanvas.x, outsideCanvas.y);
+  pointer(window, wrapper, 'pointerup', outsideCanvas.x, outsideCanvas.y);
+  await sleep(15);
+  check('text tool ignores blank viewport margins outside the zoomed document',
+    countObjects(canvas) === 0 && !document.querySelector('input[aria-label="Enter canvas text"]'));
+  let handleSeed = logicalToClient(window, 550, 330);
+  pointer(window, wrapper, 'pointerdown', handleSeed.x, handleSeed.y);
+  pointer(window, wrapper, 'pointerup', handleSeed.x, handleSeed.y);
+  await sleep(25);
+  await setTextAndConfirm(window, document.querySelector('input[aria-label="Enter canvas text"]'), 'Handle');
+  await sleep(35);
+  check('selection-handle probe creates an editable text object', selectedGeometry(document)?.svg.dataset.objectType === 'text');
+
+  for (const [zoom, direction, steps] of [[0.25, 'out', 3], [0.5, 'out', 2], [1, 'reset', 0], [2, 'in', 3], [4, 'in', 5]]) {
+    click(window, 'button[aria-label="Reset view"]');
+    await sleep(10);
+    if (direction !== 'reset') {
+      for (let step = 0; step < steps; step += 1) {
+        click(window, `button[aria-label="Zoom ${direction}"]`);
+        await sleep(10);
+      }
+    }
+    const stageAtScale = document.querySelector('.canvas-stage');
+    const hitCircle = document.querySelector('.resize-hit-area circle:first-child');
+    const visibleHandle = document.querySelector('.resize-handle');
+    const cssScale = (window.__auditCanvasRect.width / CANVAS_W) * Number(stageAtScale.dataset.viewZoom);
+    const hitTargetPixels = Number(hitCircle?.getAttribute('r')) * cssScale;
+    const handlePixels = Number(visibleHandle?.getAttribute('r')) * cssScale;
+    check(`${zoom * 100}% selection handles retain usable screen size`,
+      Number(stageAtScale.dataset.viewZoom) === zoom && Math.abs(hitTargetPixels - 17) < 1e-6
+        && Math.abs(handlePixels - 6) < 1e-6,
+      `hit radius=${hitTargetPixels.toFixed(1)}px handle radius=${handlePixels.toFixed(1)}px`);
+
+    if (zoom === 0.25 || zoom === 4) {
+      const geometryBefore = selectedGeometry(document);
+      const resizeHandle = document.querySelector('.resize-hit-area[data-sign-x="1"][data-sign-y="1"]');
+      const circle = resizeHandle?.querySelector('circle');
+      const startX = Number(circle?.getAttribute('cx'));
+      const startY = Number(circle?.getAttribute('cy'));
+      const startClient = logicalToClient(window, startX, startY);
+      const step = zoom === 0.25 ? 18 : 8;
+      const endClient = logicalToClient(window, startX + step, startY + step);
+      pointer(window, resizeHandle, 'pointerdown', startClient.x, startClient.y);
+      pointer(window, wrapper, 'pointermove', endClient.x, endClient.y);
+      pointer(window, wrapper, 'pointerup', endClient.x, endClient.y);
+      await sleep(20);
+      const geometryAfter = selectedGeometry(document);
+      check(`${zoom * 100}% resize handle still transforms the selected text`,
+        Boolean(geometryBefore && geometryAfter) && geometryAfter.width > geometryBefore.width);
+      if (zoom === 0.25) {
+        click(window, 'button[aria-label="Undo"]');
+        await sleep(20);
+        check('one undo restores text size after low-zoom handle use',
+          Math.abs((selectedGeometry(document)?.width ?? 0) - geometryBefore.width) < 1e-6);
+      }
+    }
+  }
+
+  click(window, 'button[aria-label="Reset view"]');
+  await sleep(15);
+  click(window, 'button[aria-label="Zoom in"]');
+  await sleep(15);
+  click(window, 'button[aria-label="Zoom in"]');
+  await sleep(15);
+  const stage = document.querySelector('.canvas-stage');
+  const oldPanX = Number(stage.dataset.viewPanX);
+  const oldPanY = Number(stage.dataset.viewPanY);
+  window.dispatchEvent(new window.KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true }));
+  const centerPoint = logicalToClient(window, 600, 360);
+  pointer(window, wrapper, 'pointerdown', centerPoint.x, centerPoint.y);
+  pointer(window, wrapper, 'pointermove', centerPoint.x + 25, centerPoint.y + 13);
+  pointer(window, wrapper, 'pointerup', centerPoint.x + 25, centerPoint.y + 13);
+  window.dispatchEvent(new window.KeyboardEvent('keyup', { key: ' ', code: 'Space', bubbles: true }));
+  await sleep(20);
+  check('Space + drag pans without entering document history',
+    Number(stage.dataset.viewPanX) === oldPanX + 25 && Number(stage.dataset.viewPanY) === oldPanY + 13);
+
+  const wheelAnchor = logicalToClient(window, 600, 360);
+  const beforeWheel = Number(stage.dataset.viewZoom);
+  const beforeWheelPan = { x: Number(stage.dataset.viewPanX), y: Number(stage.dataset.viewPanY) };
+  const wheelRect = window.__auditCanvasRect;
+  const expectedWorldPoint = {
+    x: ((wheelAnchor.x - wheelRect.left) - beforeWheelPan.x) / beforeWheel * CANVAS_W / wheelRect.width,
+    y: ((wheelAnchor.y - wheelRect.top) - beforeWheelPan.y) / beforeWheel * CANVAS_H / wheelRect.height,
+  };
+  const wheelEvent = new window.WheelEvent('wheel', {
+    bubbles: true, cancelable: true, clientX: wheelAnchor.x, clientY: wheelAnchor.y, deltaY: -180,
+  });
+  wrapper.dispatchEvent(wheelEvent);
+  await sleep(20);
+  const afterWheel = Number(stage.dataset.viewZoom);
+  const stationaryAfterWheel = {
+    x: ((wheelAnchor.x - wheelRect.left) - Number(stage.dataset.viewPanX)) / afterWheel * CANVAS_W / wheelRect.width,
+    y: ((wheelAnchor.y - wheelRect.top) - Number(stage.dataset.viewPanY)) / afterWheel * CANVAS_H / wheelRect.height,
+  };
+  check('wheel zoom is non-passive, pointer-anchored and does not change scene coordinates',
+    wheelEvent.defaultPrevented && afterWheel > beforeWheel
+      && Math.abs(stationaryAfterWheel.x - expectedWorldPoint.x) < 1e-6
+      && Math.abs(stationaryAfterWheel.y - expectedWorldPoint.y) < 1e-6,
+    `anchored world point ${stationaryAfterWheel.x.toFixed(2)},${stationaryAfterWheel.y.toFixed(2)}`);
+  click(window, 'button[aria-label="Reset view"]');
+  await sleep(15);
+  check('final view reset clears zoom and pan', document.querySelector('[data-zoom-level]')?.textContent === '100%'
+    && Number(stage.dataset.viewPanX) === 0 && Number(stage.dataset.viewPanY) === 0);
 
   dom.window.close();
   console.log('\n' + '='.repeat(60));

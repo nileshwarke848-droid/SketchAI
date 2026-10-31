@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createCanvas } from '@napi-rs/canvas';
-import { clientToCanvasPoint } from '../src/lib/canvas-coordinates.js';
+import { canvasToClientPoint, clientToCanvasPoint } from '../src/lib/canvas-coordinates.js';
 
 const LOGICAL_WIDTH = 1200;
 const LOGICAL_HEIGHT = 720;
@@ -76,6 +76,15 @@ function assertSharedLayerCssContract() {
     height: '100%',
     'pointer-events': 'none',
   });
+  assertLayerRule('.canvas-stage', {
+    position: 'absolute',
+    inset: '0',
+    'transform-origin': '0 0',
+  });
+  assertLayerRule('.canvas-wrap canvas.fill-canvas', { 'z-index': '1', 'pointer-events': 'none' });
+  assertLayerRule('.canvas-wrap canvas.art-canvas', { 'z-index': '2', 'pointer-events': 'none' });
+  assertLayerRule('.canvas-wrap canvas.sketch-overlay', { 'z-index': '3', 'pointer-events': 'none' });
+  assert.ok(stylesheet.includes('.canvas-wrap{overflow:hidden'), 'zoom stage is clipped by the stationary pointer viewport');
 }
 
 function runGrid(displayWidth, displayHeight) {
@@ -178,5 +187,8 @@ console.log('raw CSS pixels are rejected at center (expected 600×360, not 450×
 
 const zeroSize = clientToCanvasPoint(100, 100, viewport(0, 0, 0, 0), LOGICAL_WIDTH, LOGICAL_HEIGHT);
 assert.deepEqual(zeroSize, { x: 0, y: 0 });
-console.log('zero-sized/hidden viewport is handled safely');
+const visibleViewport = viewport(0, 0, 100, 100);
+assert.deepEqual(clientToCanvasPoint(50, 50, visibleViewport, 0, LOGICAL_HEIGHT), { x: 0, y: 0 });
+assert.deepEqual(canvasToClientPoint(50, 50, visibleViewport, LOGICAL_WIDTH, 0), { x: 0, y: 0 });
+console.log('zero-sized viewport and invalid logical dimensions are handled safely');
 console.log('PASS');

@@ -3,6 +3,13 @@ import { variantToEditableSvgString } from '../data/artwork.js';
 export const DEFAULT_SCENE_COLOR = '#242422';
 export const MIN_OBJECT_SIZE = 40;
 export const MAX_OBJECT_SIZE = 1100;
+export const MIN_TEXT_FONT_SIZE = 10;
+export const MAX_TEXT_FONT_SIZE = 300;
+export const SAFE_TEXT_FAMILIES = Object.freeze([
+  'Arial, sans-serif',
+  'Georgia, serif',
+  'monospace',
+]);
 
 let sceneIdCounter = 0;
 
@@ -48,6 +55,7 @@ export function createSceneObject({
   };
   return {
     id,
+    type: 'artwork',
     artworkId: artwork.id,
     artwork: artworkData,
     label: String(label ?? ''),
@@ -59,6 +67,74 @@ export function createSceneObject({
     color,
     flipX: Boolean(flipX),
     zIndex,
+  };
+}
+
+/** Create a single-line text object using the shared editable-scene model. */
+export function createTextSceneObject({
+  id = createSceneObjectId(),
+  text,
+  x,
+  y,
+  fontSize = 48,
+  fontFamily = SAFE_TEXT_FAMILIES[0],
+  fontWeight = 'normal',
+  textAlign = 'left',
+  color = DEFAULT_SCENE_COLOR,
+  rotation = 0,
+  flipX = false,
+  zIndex = 0,
+  width,
+  height,
+}) {
+  const value = String(text ?? '').replace(/[\r\n]+/g, ' ').trim();
+  const size = clamp(Number(fontSize) || 48, MIN_TEXT_FONT_SIZE, MAX_TEXT_FONT_SIZE);
+  if (!value) throw new TypeError('A text scene object requires non-empty text.');
+  if (![x, y, rotation].every(Number.isFinite)) {
+    throw new TypeError('Text object position and rotation must be finite.');
+  }
+  const family = SAFE_TEXT_FAMILIES.includes(fontFamily) ? fontFamily : SAFE_TEXT_FAMILIES[0];
+  const weight = fontWeight === 'bold' ? 'bold' : 'normal';
+  const align = ['left', 'center', 'right'].includes(textAlign) ? textAlign : 'left';
+  const bounds = getEstimatedTextBounds(value, size, weight);
+  const objectWidth = Number.isFinite(width) && width > 0 ? width : bounds.width;
+  const objectHeight = Number.isFinite(height) && height > 0 ? height : bounds.height;
+  return {
+    id,
+    type: 'text',
+    artworkId: null,
+    artwork: null,
+    label: value,
+    x,
+    y,
+    width: objectWidth,
+    height: objectHeight,
+    rotation,
+    color,
+    flipX: Boolean(flipX),
+    zIndex,
+    text: value,
+    fontSize: size,
+    fontFamily: family,
+    fontWeight: weight,
+    textAlign: align,
+  };
+}
+
+/** Conservative canvas-independent width estimate for the inline editor. */
+export function getEstimatedTextBounds(text, fontSize, fontWeight = 'normal') {
+  const value = String(text ?? '');
+  const units = Array.from(value).reduce((total, character) => {
+    if (/[ilI.,'`!:;|]/.test(character)) return total + 0.32;
+    if (/[MW@#%&]/.test(character)) return total + 0.88;
+    if (/\s/.test(character)) return total + 0.34;
+    if (/[A-Z0-9]/.test(character)) return total + 0.63;
+    return total + 0.55;
+  }, 0);
+  const weightFactor = fontWeight === 'bold' ? 1.06 : 1;
+  return {
+    width: Math.max(48, units * fontSize * weightFactor + 20),
+    height: Math.max(24, fontSize * 1.45),
   };
 }
 
@@ -232,6 +308,9 @@ export function resizeSceneObject(object, handle, pointer, {
     y: centerY - height / 2,
     width,
     height,
+    ...(object.type === 'text' ? {
+      fontSize: clamp(object.fontSize * scale, MIN_TEXT_FONT_SIZE, MAX_TEXT_FONT_SIZE),
+    } : {}),
   };
 }
 
@@ -306,17 +385,27 @@ export function renderScene(objects, canvas, imageCache) {
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = 'high';
   for (const object of objects) {
-    const image = imageCache instanceof Map
-      ? imageCache.get(artworkImageKey(object.artworkId, object.color))
-      : imageCache?.get(object.artworkId, object.color);
-    if (!image) continue;
     const center = getObjectCenter(object);
     context.save();
     context.globalCompositeOperation = 'source-over';
     context.translate(center.x, center.y);
     context.rotate(degreesToRadians(object.rotation));
     context.scale(object.flipX ? -1 : 1, 1);
-    context.drawImage(image, -object.width / 2, -object.height / 2, object.width, object.height);
+    if (object.type === 'text') {
+      context.fillStyle = object.color;
+      context.font = `${object.fontWeight === 'bold' ? 'bold' : 'normal'} ${object.fontSize}px ${object.fontFamily}`;
+      context.textAlign = object.textAlign;
+      context.textBaseline = 'middle';
+      const padding = Math.min(10, object.width / 8);
+      const textX = object.textAlign === 'left' ? -object.width / 2 + padding
+        : object.textAlign === 'right' ? object.width / 2 - padding : 0;
+      context.fillText(object.text, textX, 0, Math.max(1, object.width - padding * 2));
+    } else {
+      const image = imageCache instanceof Map
+        ? imageCache.get(artworkImageKey(object.artworkId, object.color))
+        : imageCache?.get(object.artworkId, object.color);
+      if (image) context.drawImage(image, -object.width / 2, -object.height / 2, object.width, object.height);
+    }
     context.restore();
   }
 }

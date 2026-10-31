@@ -1,18 +1,35 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, ArrowUp, Check, CircleHelp, Copy, Eraser, FlipHorizontal2, Info, LockKeyhole, MousePointer2, Pencil, RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, Bold, Check, CircleHelp, Copy, Eraser, FlipHorizontal2, Hand, Info, LockKeyhole, Maximize2, MousePointer2, PaintBucket, Pencil, RotateCcw, Sparkles, Trash2, Type, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { loadModel, predict } from './ai/model';
 import { getSketchBounds } from './ai/preprocess';
 import SuggestionBar from './components/SuggestionBar';
 import { displayName, getArtworkVariants } from './data/artwork';
 import { buildSuggestions } from './lib/suggestions';
-import { clientToCanvasPoint } from './lib/canvas-coordinates';
+import {
+  DEFAULT_VIEWPORT,
+  MAX_VIEW_ZOOM,
+  MIN_VIEW_ZOOM,
+  canvasToClientPoint,
+  clampViewZoom,
+  clientToCanvasPoint,
+  clientToViewportPoint,
+  zoomViewportAroundPoint,
+  viewportTransformCss,
+} from './lib/canvas-coordinates';
+import { composeFillBoundary, fillCanvasRegion } from './lib/raster-fill';
+import { beginTextCreation, beginTextEditing, cancelTextDraft, confirmTextDraft, updateTextDraftValue } from './lib/text-editor';
 import { EditorHistory } from './lib/editor-history';
 import {
   addSceneObject,
   createArtworkImageCache,
   createSceneObject,
   createSceneObjectId,
+  createTextSceneObject,
   defaultSceneObjectColor,
+  getEstimatedTextBounds,
+  MAX_TEXT_FONT_SIZE,
+  MIN_TEXT_FONT_SIZE,
+  SAFE_TEXT_FAMILIES,
   deleteSceneObject,
   duplicateSceneObject,
   getObjectCenter,
@@ -31,6 +48,8 @@ import DebugPanel from './dev/DebugPanel';
 
 const W = 1200, H = 720;
 const colors = ['#242422', '#e26755', '#e9ab45', '#799b79', '#6590bd', '#a282b5'];
+const fillColors = ['#242422', '#ffffff', '#e26755', '#e98342', '#e9ab45', '#f0d84f', '#799b79', '#6590bd', '#a282b5'];
+const zoomSteps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
 // The preprocessing inspector is a development tool. It opens automatically in
 // dev builds and can be forced on a deployed build with ?debug=ai.
@@ -41,8 +60,15 @@ const formatScore = (score) => (score < 0.005 ? '<1%' : `${Math.round(score * 10
 
 function App() {
   const canvasRef = useRef(null);
+  const fillRef = useRef(null);
   const sketchRef = useRef(null);
   const canvasWrapRef = useRef(null);
+  const referenceCanvasRef = useRef(null);
+  const fillSnapshotRef = useRef(null);
+  const hasFillRef = useRef(false);
+  const backgroundColorRef = useRef('#ffffff');
+  const viewRef = useRef({ ...DEFAULT_VIEWPORT });
+  const spacePressedRef = useRef(false);
   const modelRef = useRef(null);
   const timerRef = useRef(null);
   const pointerRef = useRef(null);
@@ -56,12 +82,17 @@ function App() {
 
   const [tool, setTool] = useState('pencil');
   const [color, setColor] = useState(colors[0]);
+  const [fillColor, setFillColor] = useState('#e26755');
+  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [view, setView] = useState({ ...DEFAULT_VIEWPORT });
+  const [textDraft, setTextDraft] = useState(null);
   const [size, setSize] = useState(7);
   const [sceneObjects, setSceneObjects] = useState([]);
   const [selectedObjectId, setSelectedObjectId] = useState(null);
   const [status, setStatus] = useState('loading');
   const [recognition, setRecognition] = useState(IDLE);
   const [hasInk, setHasInk] = useState(false);
+  const [hasFill, setHasFill] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -84,16 +115,23 @@ function App() {
     setCanUndo(historyRef.current.canUndo);
     setCanRedo(historyRef.current.canRedo);
   };
-  const pushHistory = useCallback(({ captureSketch = false } = {}) => {
+  const pushHistory = useCallback(({ captureSketch = false, captureFill = false } = {}) => {
     const sketch = sketchRef.current;
-    if (!sketch) return;
+    const fill = fillRef.current;
+    if (!sketch || !fill) return;
     try {
       if (captureSketch || !sketchSnapshotRef.current) {
         sketchSnapshotRef.current = sketch.getContext('2d').getImageData(0, 0, W, H);
       }
+      if (captureFill || !fillSnapshotRef.current) {
+        fillSnapshotRef.current = fill.getContext('2d').getImageData(0, 0, W, H);
+      }
       historyRef.current.push({
         objects: sceneObjectsRef.current,
         sketch: sketchSnapshotRef.current,
+        fill: fillSnapshotRef.current,
+        hasFill: hasFillRef.current,
+        canvasBackgroundColor: backgroundColorRef.current,
         selectedObjectId: selectedObjectIdRef.current,
       });
       updateHistoryButtons();
@@ -128,6 +166,8 @@ function App() {
     if (sketch) {
       sketch.getContext('2d').clearRect(0, 0, W, H);
       sketchSnapshotRef.current = sketch.getContext('2d').getImageData(0, 0, W, H);
+      fillRef.current?.getContext('2d').clearRect(0, 0, W, H);
+      fillSnapshotRef.current = fillRef.current?.getContext('2d').getImageData(0, 0, W, H) ?? null;
       pushHistory();
     }
     let active = true;
@@ -175,6 +215,15 @@ function App() {
       sketchRef.current.getContext('2d').putImageData(snapshot.sketch, 0, 0);
       sketchSnapshotRef.current = snapshot.sketch;
     }
+    if (snapshot.fill && fillRef.current) {
+      fillRef.current.getContext('2d').putImageData(snapshot.fill, 0, 0);
+      fillSnapshotRef.current = snapshot.fill;
+    }
+    hasFillRef.current = Boolean(snapshot.hasFill);
+    setHasFill(Boolean(snapshot.hasFill));
+    const restoredBackground = snapshot.canvasBackgroundColor ?? '#ffffff';
+    backgroundColorRef.current = restoredBackground;
+    setBackgroundColor(restoredBackground);
     const bounds = getSketchBounds(sketchRef.current);
     const sketchHasInk = Boolean(bounds.width);
     setHasInk(sketchHasInk);
@@ -195,10 +244,20 @@ function App() {
   }, [pushHistory]);
 
   useEffect(() => {
+    const isTyping = (target) => target && (/INPUT|TEXTAREA|SELECT/.test(target.tagName) || target.isContentEditable);
     const onKey = (event) => {
-      if (event.key === 'Escape') setShowHelp(false);
-      const target = event.target;
-      const typing = target && (/INPUT|TEXTAREA|SELECT/.test(target.tagName) || target.isContentEditable);
+      if (event.defaultPrevented) return;
+      const typing = isTyping(event.target);
+      if (event.key === 'Escape') {
+        if (textDraft) setTextDraft(null);
+        else setShowHelp(false);
+        return;
+      }
+      if (event.code === 'Space' && !typing) {
+        spacePressedRef.current = true;
+        event.preventDefault();
+        return;
+      }
       if ((event.key === 'Delete' || event.key === 'Backspace') && !typing && selectedObjectIdRef.current) {
         event.preventDefault();
         deleteSelected();
@@ -213,9 +272,39 @@ function App() {
         restore(1);
       }
     };
+    const onKeyUp = (event) => {
+      if (event.code === 'Space') spacePressedRef.current = false;
+    };
+    const onBlur = () => { spacePressedRef.current = false; };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [deleteSelected, restore]);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [deleteSelected, restore, textDraft]);
+
+  // React installs wheel listeners as passive in several browsers, which makes
+  // preventDefault ineffective and lets the page scroll during canvas zoom.
+  useEffect(() => {
+    const viewport = canvasWrapRef.current;
+    if (!viewport) return undefined;
+    const handleWheel = (event) => {
+      event.preventDefault();
+      const anchor = clientToViewportPoint(event.clientX, event.clientY, viewport);
+      const next = zoomViewportAroundPoint(
+        viewRef.current,
+        viewRef.current.zoom * Math.exp(-event.deltaY * 0.0015),
+        anchor,
+      );
+      viewRef.current = next;
+      setView(next);
+    };
+    viewport.addEventListener('wheel', handleWheel, { passive: false });
+    return () => viewport.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // One mapping for sketching, erasing, selection and every transform handle.
   // The wrapper is the exact shared viewport of both canvases and the SVG overlay.
@@ -225,7 +314,37 @@ function App() {
     canvasWrapRef.current,
     canvasRef.current.width,
     canvasRef.current.height,
+    viewRef.current,
   );
+  const viewportPoint = (event) => clientToViewportPoint(
+    event.clientX,
+    event.clientY,
+    canvasWrapRef.current,
+  );
+
+  const updateView = (next) => {
+    const normalized = { ...next, zoom: clampViewZoom(next.zoom) };
+    viewRef.current = normalized;
+    setView(normalized);
+  };
+
+  const zoomAtClientPoint = (clientX, clientY, nextZoom) => {
+    const anchor = clientToViewportPoint(clientX, clientY, canvasWrapRef.current);
+    updateView(zoomViewportAroundPoint(viewRef.current, nextZoom, anchor));
+  };
+
+  const changeZoom = (direction) => {
+    const current = viewRef.current.zoom;
+    const target = direction > 0
+      ? zoomSteps.find((step) => step > current + 0.001) ?? MAX_VIEW_ZOOM
+      : [...zoomSteps].reverse().find((step) => step < current - 0.001) ?? MIN_VIEW_ZOOM;
+    const rect = canvasWrapRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    zoomAtClientPoint(rect.left + rect.width / 2, rect.top + rect.height / 2, target);
+  };
+
+  const resetView = () => updateView({ ...DEFAULT_VIEWPORT });
+
 
   const drawSketchSegment = (from, to, erase = false) => {
     const context = sketchRef.current.getContext('2d');
@@ -258,6 +377,106 @@ function App() {
     if (changed && pointerRef.current) pointerRef.current.changed = true;
   };
 
+  const setCanvasBackground = (nextColor) => {
+    if (nextColor === backgroundColorRef.current) return;
+    backgroundColorRef.current = nextColor;
+    setBackgroundColor(nextColor);
+    pushHistory();
+  };
+
+  const performFill = (seed) => {
+    if (!fillRef.current || !canvasRef.current || !sketchRef.current) return;
+    if (!referenceCanvasRef.current) {
+      referenceCanvasRef.current = document.createElement('canvas');
+      referenceCanvasRef.current.width = W;
+      referenceCanvasRef.current.height = H;
+    }
+    composeFillBoundary(referenceCanvasRef.current, {
+      backgroundColor: backgroundColorRef.current,
+      fillCanvas: fillRef.current,
+      sceneCanvas: canvasRef.current,
+      sketchCanvas: sketchRef.current,
+    });
+    const result = fillCanvasRegion({
+      referenceCanvas: referenceCanvasRef.current,
+      fillCanvas: fillRef.current,
+      seed,
+      color: fillColor,
+    });
+    if (!result.changed) return;
+    hasFillRef.current = true;
+    setHasFill(true);
+    fillSnapshotRef.current = fillRef.current.getContext('2d').getImageData(0, 0, W, H);
+    pushHistory({ captureFill: true });
+    setMessage(`Filled ${result.count.toLocaleString()} connected pixels.`);
+  };
+
+  const editTextObject = (object) => {
+    const draft = beginTextEditing(object);
+    if (draft) setTextDraft(draft);
+  };
+
+  const commitTextDraft = () => {
+    const confirmed = confirmTextDraft(textDraft);
+    if (!confirmed) { setTextDraft(cancelTextDraft()); return; }
+    const draft = confirmed;
+    const value = confirmed.text;
+    setTextDraft(cancelTextDraft());
+    if (draft.mode === 'create') {
+      const object = createTextSceneObject({
+        text: value,
+        x: draft.x,
+        y: draft.y,
+        color,
+        zIndex: sceneObjectsRef.current.length,
+      });
+      object.x = Math.min(Math.max(0, object.x), Math.max(0, W - object.width));
+      object.y = Math.min(Math.max(0, object.y), Math.max(0, H - object.height));
+      syncScene(addSceneObject(sceneObjectsRef.current, object));
+      chooseObject(object.id);
+      setTool('select');
+      pushHistory();
+      setMessage('Text added. Select it to move, resize, rotate or style it.');
+      return;
+    }
+    const existing = sceneObjectsRef.current.find((object) => object.id === draft.id && object.type === 'text');
+    if (!existing || existing.text === value) return;
+    const bounds = getEstimatedTextBounds(value, existing.fontSize, existing.fontWeight);
+    const center = getObjectCenter(existing);
+    syncScene(updateSceneObject(sceneObjectsRef.current, existing.id, {
+      text: value,
+      label: value,
+      x: center.x - bounds.width / 2,
+      y: center.y - bounds.height / 2,
+      width: bounds.width,
+      height: bounds.height,
+    }));
+    chooseObject(existing.id);
+    pushHistory();
+  };
+
+  const changeSelectedText = (patch) => {
+    const id = selectedObjectIdRef.current;
+    const object = sceneObjectsRef.current.find((candidate) => candidate.id === id && candidate.type === 'text');
+    if (!object) return;
+    let update = patch;
+    if (Number.isFinite(patch.fontSize) && patch.fontSize !== object.fontSize) {
+      const fontSize = Math.max(MIN_TEXT_FONT_SIZE, Math.min(MAX_TEXT_FONT_SIZE, patch.fontSize));
+      const scale = fontSize / object.fontSize;
+      const center = getObjectCenter(object);
+      update = {
+        ...patch,
+        fontSize,
+        width: object.width * scale,
+        height: object.height * scale,
+        x: center.x - object.width * scale / 2,
+        y: center.y - object.height * scale / 2,
+      };
+    }
+    syncScene(updateSceneObject(sceneObjectsRef.current, id, update));
+    pushHistory();
+  };
+
   const beginTransform = (event, kind, handle = null) => {
     const id = selectedObjectIdRef.current;
     const object = sceneObjectsRef.current.find((candidate) => candidate.id === id);
@@ -278,7 +497,24 @@ function App() {
   };
 
   const onPointerDown = (event) => {
-    if (pointerRef.current || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    if (pointerRef.current) return;
+    const pointerId = event.pointerId ?? 1;
+    const isPrimaryButton = event.button === undefined || event.button === 0;
+    const wantsPan = (event.pointerType === 'mouse' && event.button === 1)
+      || (isPrimaryButton && (spacePressedRef.current || tool === 'pan'));
+    if (wantsPan) {
+      event.preventDefault();
+      const startPoint = viewportPoint(event);
+      pointerRef.current = {
+        id: pointerId,
+        kind: 'pan',
+        startPoint,
+        startView: { ...viewRef.current },
+      };
+      try { event.currentTarget?.setPointerCapture?.(pointerId); } catch { /* synthetic or unsupported pointer capture */ }
+      return;
+    }
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
     const handleElement = event.target?.closest?.('[data-transform-handle]');
     if (handleElement && tool === 'select') {
       const kind = handleElement.dataset.transformHandle;
@@ -293,7 +529,15 @@ function App() {
     // child-layer hit target or sub-pixel rectangle rounding.
     event.preventDefault();
     const p = point(event);
-    const pointerId = event.pointerId ?? 1;
+    if (tool === 'text') {
+      if (p.x < 0 || p.y < 0 || p.x > W || p.y > H) return;
+      setTextDraft(beginTextCreation(p));
+      return;
+    }
+    if (tool === 'fill') {
+      performFill(p);
+      return;
+    }
     if (tool === 'select') {
       revisionRef.current += 1;
       const hit = hitTestScene(sceneObjectsRef.current, p);
@@ -319,6 +563,15 @@ function App() {
   const onPointerMove = (event) => {
     const gesture = pointerRef.current;
     if (!gesture || gesture.id !== (event.pointerId ?? 1)) return;
+    if (gesture.kind === 'pan') {
+      const currentPoint = viewportPoint(event);
+      updateView({
+        ...gesture.startView,
+        panX: gesture.startView.panX + currentPoint.x - gesture.startPoint.x,
+        panY: gesture.startView.panY + currentPoint.y - gesture.startPoint.y,
+      });
+      return;
+    }
     const p = point(event);
     if (gesture.kind === 'sketch') {
       drawSketchSegment(gesture.previousPoint, p);
@@ -371,8 +624,20 @@ function App() {
     }
   };
 
+  const onCanvasDoubleClick = (event) => {
+    if (tool !== 'select') return;
+    const hit = hitTestScene(sceneObjectsRef.current, point(event));
+    if (hit?.type !== 'text') return;
+    event.preventDefault();
+    chooseObject(hit.id);
+    editTextObject(hit);
+  };
+
   const clear = () => {
-    const hasContent = sceneObjectsRef.current.length > 0 || Boolean(getSketchBounds(sketchRef.current).width);
+    const hasContent = sceneObjectsRef.current.length > 0
+      || Boolean(getSketchBounds(sketchRef.current).width)
+      || hasFillRef.current
+      || backgroundColorRef.current !== '#ffffff';
     if (!hasContent) return;
     if (historyRef.current.cursor > 5 && !window.confirm('Clear the entire canvas? You can still undo this action.')) return;
     revisionRef.current += 1;
@@ -381,6 +646,12 @@ function App() {
     chooseObject(null);
     sketchRef.current.getContext('2d').clearRect(0, 0, W, H);
     sketchSnapshotRef.current = sketchRef.current.getContext('2d').getImageData(0, 0, W, H);
+    fillRef.current.getContext('2d').clearRect(0, 0, W, H);
+    fillSnapshotRef.current = fillRef.current.getContext('2d').getImageData(0, 0, W, H);
+    hasFillRef.current = false;
+    setHasFill(false);
+    backgroundColorRef.current = '#ffffff';
+    setBackgroundColor('#ffffff');
     setRecognition(IDLE);
     setHasInk(false);
     setMessage('');
@@ -464,6 +735,10 @@ function App() {
     const id = selectedObjectIdRef.current;
     const object = sceneObjectsRef.current.find((candidate) => candidate.id === id);
     if (!object || object.color === nextColor) return;
+    if (object.type === 'text') {
+      changeSelectedText({ color: nextColor });
+      return;
+    }
     try {
       await imageCacheRef.current.ensure(object.artwork, nextColor);
       if (selectedObjectIdRef.current !== id) return;
@@ -483,8 +758,20 @@ function App() {
   const selectedObject = sceneObjects.find((object) => object.id === selectedObjectId) ?? null;
   const selectedIndex = selectedObject ? sceneObjects.findIndex((object) => object.id === selectedObject.id) : -1;
   const selectionCorners = selectedObject ? getTransformedCorners(selectedObject) : [];
-  const rotationHandle = selectedObject ? getRotationHandle(selectedObject) : null;
+  const canvasRect = canvasWrapRef.current?.getBoundingClientRect();
+  const displayScale = Math.max(0.01, (canvasRect?.width ?? W) / W * view.zoom);
+  const handleRadius = 6 / displayScale;
+  const handleHitRadius = 17 / displayScale;
+  const rotationHandle = selectedObject ? getRotationHandle(selectedObject, 30 / displayScale) : null;
   const rotationStem = selectedObject ? objectLocalToWorld(selectedObject, { x: 0, y: -selectedObject.height / 2 }) : null;
+  const selectedObjectLabel = selectedObject?.type === 'text' ? selectedObject.text : displayName(selectedObject?.label ?? '');
+  const entryClientPoint = textDraft && canvasWrapRef.current
+    ? canvasToClientPoint(textDraft.x, textDraft.y, canvasWrapRef.current, W, H, view)
+    : null;
+  const textEntryPosition = entryClientPoint && canvasRect ? {
+    left: Math.max(4, Math.min(canvasRect.width - 230, entryClientPoint.x - canvasRect.left)),
+    top: Math.max(4, Math.min(canvasRect.height - 44, entryClientPoint.y - canvasRect.top)),
+  } : null;
   const predictions = recognition.predictions;
   const emptyState = status === 'loading' ? { title: 'Getting things ready', copy: 'Preparing the drawing categories…' }
     : status === 'error' ? { title: 'AI is taking a break', copy: 'The model could not load. You can still draw and edit objects.' }
@@ -519,50 +806,108 @@ function App() {
       <div className="workspace-heading"><div><span className="section-number">01 /</span><h2>Your canvas</h2><span className="heading-sub">A space to make your mark.</span></div><div className="workspace-actions"><button className="text-button" onClick={clear}><Trash2 size={16}/> Clear canvas</button></div></div>
       <div className="workspace">
         <div className="editor">
-          <div className="editor-top"><div className="file-name"><span className="file-dot"/> Untitled sketch <span className="file-label">/ EDITING</span></div><div className="editor-top-right"><span><LockKeyhole size={13}/> PRIVATE BY DESIGN</span><span className="canvas-dim">1200 × 720</span></div></div>
+          <div className="editor-top">
+            <div className="file-name"><span className="file-dot"/> Untitled sketch <span className="file-label">/ EDITING</span></div>
+            <div className="editor-top-right">
+              <span><LockKeyhole size={13}/> PRIVATE BY DESIGN</span>
+              <span className="canvas-dim">1200 × 720</span>
+              <div className="zoom-controls" role="group" aria-label="Canvas zoom controls">
+                <button className="zoom-button" onClick={() => changeZoom(-1)} disabled={view.zoom <= MIN_VIEW_ZOOM} aria-label="Zoom out" title="Zoom out"><ZoomOut size={15}/></button>
+                <span className="zoom-readout" data-zoom-level>{Math.round(view.zoom * 100)}%</span>
+                <button className="zoom-button" onClick={() => changeZoom(1)} disabled={view.zoom >= MAX_VIEW_ZOOM} aria-label="Zoom in" title="Zoom in"><ZoomIn size={15}/></button>
+                <button className="zoom-button reset-view" onClick={resetView} aria-label="Reset view" title="Reset view to 100%"><Maximize2 size={14}/></button>
+              </div>
+            </div>
+          </div>
           <SuggestionBar cards={cards} onInsert={insert} emptyCopy={barEmptyCopy} phase={status === 'loading' ? 'loading' : 'idle'}/>
           <div className="drawing-area">
             <div className="tool-rail" aria-label="Drawing and object tools">
               <span className="rail-label">TOOLS</span>
               <button className={`rail-button ${tool === 'select' ? 'selected' : ''}`} onClick={() => setTool('select')} aria-pressed={tool === 'select'} aria-label="Select tool" title="Select and edit objects"><MousePointer2 size={19}/></button>
               <button className={`rail-button ${tool === 'pencil' ? 'selected' : ''}`} onClick={() => setTool('pencil')} aria-pressed={tool === 'pencil'} aria-label="Pencil" title="Draw a rough sketch"><Pencil size={19}/></button>
+              <button className={`rail-button ${tool === 'text' ? 'selected' : ''}`} onClick={() => setTool('text')} aria-pressed={tool === 'text'} aria-label="Text tool" title="Add editable text"><Type size={19}/></button>
+              <button className={`rail-button ${tool === 'fill' ? 'selected' : ''}`} onClick={() => setTool('fill')} aria-pressed={tool === 'fill'} aria-label="Fill tool" title="Fill a connected region"><PaintBucket size={19}/></button>
               <button className={`rail-button ${tool === 'eraser' ? 'selected' : ''}`} onClick={() => setTool('eraser')} aria-pressed={tool === 'eraser'} aria-label="Eraser" title="Erase sketch marks or remove an object"><Eraser size={19}/></button>
+              <button className={`rail-button ${tool === 'pan' ? 'selected' : ''}`} onClick={() => setTool('pan')} aria-pressed={tool === 'pan'} aria-label="Pan tool" title="Pan the canvas"><Hand size={19}/></button>
               <div className="rail-divider"/>
               <button className="rail-button" disabled={!canUndo} onClick={() => restore(-1)} aria-label="Undo" title="Undo (Ctrl or Cmd + Z)"><RotateCcw size={19}/></button>
               <button className="rail-button flip" disabled={!canRedo} onClick={() => restore(1)} aria-label="Redo" title="Redo (Ctrl or Cmd + Shift + Z)"><RotateCcw size={19}/></button>
               <div className="rail-spacer"/><span className="rail-label bottom-label">SKETCH<br/>AWAY</span>
             </div>
-            <div className={`canvas-wrap tool-${tool}`} ref={canvasWrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd}>
-              <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil or eraser tools." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''}/>
-              <canvas ref={sketchRef} className="sketch-overlay" width={W} height={H} aria-hidden="true"/>
-              {tool === 'select' && selectedObject && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label={`Selected ${displayName(selectedObject.label)}`} data-selected-object-id={selectedObject.id} data-object-x={selectedObject.x} data-object-y={selectedObject.y} data-object-width={selectedObject.width} data-object-height={selectedObject.height} data-object-rotation={selectedObject.rotation} data-object-flip-x={selectedObject.flipX}>
-                <polygon className="selection-box" points={selectionCorners.map(({ x, y }) => `${x},${y}`).join(' ')}/>
-                <line className="rotation-stem" x1={rotationStem.x} y1={rotationStem.y} x2={rotationHandle.x} y2={rotationHandle.y}/>
-                <circle className="rotation-hit-area" cx={rotationHandle.x} cy={rotationHandle.y} r="18" data-transform-handle="rotate" aria-label="Rotate selected object" role="button" tabIndex="0"/>
-                <circle className="rotation-handle" cx={rotationHandle.x} cy={rotationHandle.y} r="6" aria-hidden="true"/>
-                {selectionCorners.map((corner) => <g key={`${corner.signX}:${corner.signY}`} className="resize-hit-area" data-transform-handle="resize" data-sign-x={corner.signX} data-sign-y={corner.signY} aria-label="Resize selected object" role="button" tabIndex="0">
-                  <circle cx={corner.x} cy={corner.y} r="16"/>
-                  <circle className="resize-handle" cx={corner.x} cy={corner.y} r="6"/>
-                </g>)}
-              </svg>}
-              {sceneObjects.length === 0 && !hasInk && <div className="canvas-hint"><div className="hint-icon"><Pencil size={20}/></div><strong>Your next idea starts here</strong><span>Pick a tool and start drawing</span></div>}
-              <div className="canvas-corner">✳ &nbsp; MAKE SOMETHING WONDERFUL</div>
+            <div className={`canvas-wrap tool-${tool}`} ref={canvasWrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onDoubleClick={onCanvasDoubleClick}>
+              <div className="canvas-stage" style={{ transform: viewportTransformCss(view), backgroundColor }} data-view-zoom={view.zoom} data-view-pan-x={view.panX} data-view-pan-y={view.panY} data-background-color={backgroundColor}>
+                <canvas ref={fillRef} className="fill-canvas" width={W} height={H} aria-hidden="true"/>
+                <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil, text, fill or eraser tools." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''}/>
+                <canvas ref={sketchRef} className="sketch-overlay" width={W} height={H} aria-hidden="true"/>
+                {tool === 'select' && selectedObject && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label={`Selected ${selectedObjectLabel}`} data-selected-object-id={selectedObject.id} data-object-type={selectedObject.type} data-object-x={selectedObject.x} data-object-y={selectedObject.y} data-object-width={selectedObject.width} data-object-height={selectedObject.height} data-object-rotation={selectedObject.rotation} data-object-flip-x={selectedObject.flipX} data-object-font-size={selectedObject.fontSize ?? ''} data-object-font-family={selectedObject.fontFamily ?? ''} data-object-font-weight={selectedObject.fontWeight ?? ''} data-object-text-align={selectedObject.textAlign ?? ''}>
+                  <polygon className="selection-box" strokeWidth={1.5 / displayScale} points={selectionCorners.map(({ x, y }) => `${x},${y}`).join(' ')}/>
+                  <line className="rotation-stem" strokeWidth={1.25 / displayScale} x1={rotationStem.x} y1={rotationStem.y} x2={rotationHandle.x} y2={rotationHandle.y}/>
+                  <circle className="rotation-hit-area" cx={rotationHandle.x} cy={rotationHandle.y} r={handleHitRadius} data-transform-handle="rotate" aria-label="Rotate selected object" role="button" tabIndex="0"/>
+                  <circle className="rotation-handle" cx={rotationHandle.x} cy={rotationHandle.y} r={handleRadius} strokeWidth={1.5 / displayScale} aria-hidden="true"/>
+                  {selectionCorners.map((corner) => <g key={`${corner.signX}:${corner.signY}`} className="resize-hit-area" data-transform-handle="resize" data-sign-x={corner.signX} data-sign-y={corner.signY} aria-label="Resize selected object" role="button" tabIndex="0">
+                    <circle cx={corner.x} cy={corner.y} r={handleHitRadius}/>
+                    <circle className="resize-handle" cx={corner.x} cy={corner.y} r={handleRadius} strokeWidth={1.5 / displayScale}/>
+                  </g>)}
+                </svg>}
+                {sceneObjects.length === 0 && !hasInk && !hasFill && <div className="canvas-hint"><div className="hint-icon"><Pencil size={20}/></div><strong>Your next idea starts here</strong><span>Pick a tool and start drawing</span></div>}
+                <div className="canvas-corner">✳ &nbsp; MAKE SOMETHING WONDERFUL</div>
+              </div>
+              {textDraft && textEntryPosition && <div className="text-entry" style={textEntryPosition} data-draft-value={textDraft.value} onPointerDown={(event) => event.stopPropagation()}>
+                <input autoFocus maxLength={120} spellCheck="false" aria-label={textDraft.mode === 'create' ? 'Enter canvas text' : 'Edit text content'} placeholder="Type something…" value={textDraft.value} onChange={(event) => setTextDraft(updateTextDraftValue(textDraft, event.target.value))} onKeyDown={(event) => {
+                  if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); commitTextDraft(); }
+                  else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setTextDraft(cancelTextDraft()); }
+                }}/>
+                <button className="text-entry-confirm" onClick={commitTextDraft} aria-label="Confirm text"><Check size={15}/></button>
+                <button className="text-entry-cancel" onClick={() => setTextDraft(cancelTextDraft())} aria-label="Cancel text"><X size={15}/></button>
+              </div>}
             </div>
           </div>
           {selectedObject && <div className="object-toolbar" aria-label="Selected object editor">
-            <div className="object-toolbar-title"><span className="control-label">EDITING</span><strong>{displayName(selectedObject.label)}</strong><span className="object-position">Object {selectedIndex + 1} of {sceneObjects.length}</span></div>
+            <div className="object-toolbar-title"><span className="control-label">EDITING</span><strong>{selectedObjectLabel}</strong><span className="object-position">Object {selectedIndex + 1} of {sceneObjects.length}</span></div>
             <div className="object-toolbar-actions">
-              <div className="object-colors" role="group" aria-label="Recolor selected object">{colors.map((swatch) => <button key={swatch} className={`color-swatch ${selectedObject.color === swatch ? 'active' : ''}`} style={{'--swatch':swatch}} onClick={() => recolorSelected(swatch)} aria-pressed={selectedObject.color === swatch} aria-label={`Recolor selected object ${swatch}`} title={`Recolor ${swatch}`}>{selectedObject.color === swatch && <Check size={12}/>}</button>)}</div>
+              <div className="object-colors" role="group" aria-label="Recolor selected object">
+                {colors.map((swatch) => <button key={swatch} className={`color-swatch ${selectedObject.color === swatch ? 'active' : ''}`} style={{'--swatch':swatch}} onClick={() => recolorSelected(swatch)} aria-pressed={selectedObject.color === swatch} aria-label={`Recolor selected object ${swatch}`} title={`Recolor ${swatch}`}>{selectedObject.color === swatch && <Check size={12}/>}</button>)}
+                <input className="custom-color" type="color" value={selectedObject.color.length === 7 && selectedObject.color[0] === '#' ? selectedObject.color : '#242422'} onChange={(event) => recolorSelected(event.target.value)} aria-label="Custom selected object color" title="Custom color"/>
+              </div>
+              {selectedObject.type === 'text' && <div className="text-object-controls" role="group" aria-label="Selected text controls">
+                <button className="object-action" onClick={() => editTextObject(selectedObject)} aria-label="Edit text content" title="Edit text"><Type size={14}/> Edit text</button>
+                <label className="text-setting"><span>SIZE</span><select aria-label="Text font size" value={Math.round(selectedObject.fontSize)} onChange={(event) => changeSelectedText({ fontSize: Number(event.target.value) })}>
+                  {!([16, 24, 32, 48, 64, 80, 96, 128, 160, 200].includes(Math.round(selectedObject.fontSize))) && <option value={Math.round(selectedObject.fontSize)}>{Math.round(selectedObject.fontSize)}px</option>}
+                  {[16, 24, 32, 48, 64, 80, 96, 128, 160, 200].map((fontSize) => <option key={fontSize} value={fontSize}>{fontSize}px</option>)}
+                </select></label>
+                <label className="text-setting font-family"><span>FONT</span><select aria-label="Text font family" value={selectedObject.fontFamily} onChange={(event) => changeSelectedText({ fontFamily: event.target.value })}>{SAFE_TEXT_FAMILIES.map((family) => <option key={family} value={family}>{family === 'Arial, sans-serif' ? 'Arial' : family === 'Georgia, serif' ? 'Georgia' : 'Monospace'}</option>)}</select></label>
+                <button className={`object-action ${selectedObject.fontWeight === 'bold' ? 'pressed' : ''}`} onClick={() => changeSelectedText({ fontWeight: selectedObject.fontWeight === 'bold' ? 'normal' : 'bold' })} aria-label="Toggle bold text" aria-pressed={selectedObject.fontWeight === 'bold'} title="Bold"><Bold size={14}/></button>
+                <div className="text-align-controls" role="group" aria-label="Text alignment">
+                  <button className={`object-action icon-only ${selectedObject.textAlign === 'left' ? 'pressed' : ''}`} onClick={() => changeSelectedText({ textAlign: 'left' })} aria-label="Align text left" aria-pressed={selectedObject.textAlign === 'left'}><AlignLeft size={14}/></button>
+                  <button className={`object-action icon-only ${selectedObject.textAlign === 'center' ? 'pressed' : ''}`} onClick={() => changeSelectedText({ textAlign: 'center' })} aria-label="Align text center" aria-pressed={selectedObject.textAlign === 'center'}><AlignCenter size={14}/></button>
+                  <button className={`object-action icon-only ${selectedObject.textAlign === 'right' ? 'pressed' : ''}`} onClick={() => changeSelectedText({ textAlign: 'right' })} aria-label="Align text right" aria-pressed={selectedObject.textAlign === 'right'}><AlignRight size={14}/></button>
+                </div>
+              </div>}
               <span className="object-toolbar-divider"/>
               <button className="object-action" onClick={duplicateSelected} aria-label="Duplicate selected object" title="Duplicate"><Copy size={15}/> Duplicate</button>
               <button className="object-action" onClick={() => reorderSelected(1)} disabled={selectedIndex >= sceneObjects.length - 1} aria-label="Bring selected object forward" title="Bring forward one step"><ArrowUp size={15}/> Forward</button>
               <button className="object-action" onClick={() => reorderSelected(-1)} disabled={selectedIndex <= 0} aria-label="Send selected object backward" title="Send backward one step"><ArrowDown size={15}/> Back</button>
-              <button className="object-action" onClick={flipSelected} aria-label="Flip selected object horizontally" title="Flip horizontally"><FlipHorizontal2 size={15}/> Flip</button>
+              {selectedObject.type === 'artwork' && <button className="object-action" onClick={flipSelected} aria-label="Flip selected object horizontally" title="Flip horizontally"><FlipHorizontal2 size={15}/> Flip</button>}
               <button className="object-action danger" onClick={deleteSelected} aria-label="Delete selected object" title="Delete"><Trash2 size={15}/> Delete</button>
             </div>
-            <span className="object-edit-hint">Drag the object to move · corners resize · upper handle rotates</span>
+            <span className="object-edit-hint">Drag to move · corners resize proportionally · upper handle rotates · double-click text to edit</span>
           </div>}
-          <div className="editor-bottom"><div className="palette"><span className="control-label">BRUSH</span>{colors.map((swatch) => <button key={swatch} className={`color-swatch ${color === swatch ? 'active' : ''}`} style={{'--swatch':swatch}} onClick={() => changeBrushColor(swatch)} aria-pressed={color === swatch} aria-label={`Brush color ${swatch}`} title={swatch}>{color === swatch && <Check size={12}/>}</button>)}</div><div className="brush-control"><span className="control-label">SIZE</span><div className="size-dot"/><input aria-label="Brush size" type="range" min="3" max="24" value={size} onChange={(event) => setSize(Number(event.target.value))}/><div className="size-dot big"/><span className="size-value">{size}px</span></div><div className="bottom-tip"><MousePointer2 size={14}/>{tool === 'select' ? 'Edit objects' : tool === 'eraser' ? 'Erase sketch or object' : 'Draw freely'}</div></div>
+          {tool === 'fill' && <div className="fill-controls" aria-label="Paint bucket and canvas background controls">
+            <div className="fill-color-control"><span className="control-label">FILL COLOR</span><div className="fill-swatches" role="group" aria-label="Fill color">
+              {fillColors.map((swatch) => <button key={swatch} className={`color-swatch ${fillColor.toLowerCase() === swatch ? 'active' : ''}`} style={{'--swatch':swatch}} onClick={() => setFillColor(swatch)} aria-pressed={fillColor.toLowerCase() === swatch} aria-label={`Fill color ${swatch}`} title={`Fill color ${swatch}`}>{fillColor.toLowerCase() === swatch && <Check size={12}/>}</button>)}
+            </div><input className="custom-color" type="color" value={fillColor} onChange={(event) => setFillColor(event.target.value)} aria-label="Custom fill color" title="Custom fill color"/></div>
+            <span className="object-toolbar-divider"/>
+            <label className="background-control"><span className="control-label">CANVAS BACKGROUND</span><input className="custom-color" type="color" value={backgroundColor} onChange={(event) => setCanvasBackground(event.target.value)} aria-label="Canvas Background" title="Canvas Background"/></label>
+            <button className="object-action" onClick={() => setCanvasBackground('#ffffff')} aria-label="Reset canvas background to white">Reset to White</button>
+            <span className="fill-hint">Bucket fills a connected region; background changes the whole canvas.</span>
+          </div>}
+          <div className="editor-bottom">
+            {(tool === 'pencil' || tool === 'eraser') && <>
+              <div className="palette"><span className="control-label">BRUSH</span>{colors.map((swatch) => <button key={swatch} className={`color-swatch ${color === swatch ? 'active' : ''}`} style={{'--swatch':swatch}} onClick={() => changeBrushColor(swatch)} aria-pressed={color === swatch} aria-label={`Brush color ${swatch}`} title={swatch}>{color === swatch && <Check size={12}/>}</button>)}</div>
+              <div className="brush-control"><span className="control-label">SIZE</span><div className="size-dot"/><input aria-label="Brush size" type="range" min="3" max="24" value={size} onChange={(event) => setSize(Number(event.target.value))}/><div className="size-dot big"/><span className="size-value">{size}px</span></div>
+            </>}
+            <div className="bottom-tip"><MousePointer2 size={14}/>{tool === 'select' ? 'Edit objects' : tool === 'eraser' ? 'Erase sketch or object' : tool === 'text' ? 'Click to add editable text' : tool === 'fill' ? 'Click a connected region to fill' : tool === 'pan' ? 'Drag to pan · Space + drag also works' : 'Draw freely'}</div>
+          </div>
         </div>
         <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">A peek inside the model’s mind.</p>
           {status === 'ready' && modelTier === 'basic' && <p className="model-note" title={fallbackReason ? `Reason: ${fallbackReason}` : undefined}><Info size={12}/> Extended AI unavailable — using 100-object model</p>}
@@ -574,7 +919,7 @@ function App() {
       {message && <div className="notice" role="status">{message}</div>}
       <div className="page-bottom"><span><span className="tiny-star">✳</span> Made for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
-    {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>You sketch an object on the temporary drawing layer.</li><li>SketchAI crops, centers and resizes the sketch into a 28 × 28 image, matching the way its training data was drawn.</li><li>A neural network looks for patterns in the pixels.</li><li>A Quick, Draw! classifier trained for this project looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Choose an illustration to add an editable object. Select it to move, resize, rotate, recolor, duplicate, flip, reorder or delete it.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your rough sketch stays separate from clean objects.</div><button className="primary-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
+    {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>Sketch with the pencil, add editable text with the Text tool, or use Fill on a connected region. Sketch ink, fills and objects stay on separate layers.</li><li>SketchAI crops, centers and resizes the sketch into a 28 × 28 image, matching the way its training data was drawn.</li><li>A neural network looks for patterns in the pixels.</li><li>A Quick, Draw! classifier trained for this project looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Choose an illustration to add an editable object. Select artwork or text to move, resize, rotate, recolor, duplicate, reorder or delete it. Text can be edited inline and artwork can be flipped. Zoom with the controls or wheel, and pan with Space + drag or the Hand tool; view changes never alter document coordinates.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your rough sketch stays separate from clean objects.</div><button className="primary-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
   </div>;
 }
 
