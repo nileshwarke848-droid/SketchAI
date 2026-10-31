@@ -188,7 +188,7 @@ export function variantCount(label) {
  * hand-authored variants are line art and take the brush colour, so an inserted
  * drawing matches the strokes the user made.
  */
-export function variantToSvgString(variant, { size = 160, color = '#242422' } = {}) {
+export function variantToSvgString(variant, { size = 160, color = '#242422', width = size, height = size } = {}) {
   if (!variant) return null;
   // Line art (primary and alternates) is drawn with the pen colour, so an
   // inserted drawing matches the brush the user picked.
@@ -203,7 +203,38 @@ export function variantToSvgString(variant, { size = 160, color = '#242422' } = 
     : variant.source === 'mdi'
       ? `<g fill="${color}">${variant.b}</g>`
       : variant.b;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${variant.w} ${variant.h}">${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${variant.w} ${variant.h}">${body}</svg>`;
+}
+
+/**
+ * Standalone artwork SVG for an editable scene object. Unlike suggestion-card
+ * previews, scene objects are monochrome so their color can be changed later.
+ */
+export function variantToEditableSvgString(variant, { size = 160, color = '#242422', width = size, height = size } = {}) {
+  if (!variant) return null;
+  if (color === 'original') return variantToSvgString(variant, { size, width, height });
+  const isLineArt =
+    variant.origin === 'imported' ||
+    variant.origin === 'imported-variant' ||
+    variant.origin === 'derived' ||
+    variant.origin === 'lineart' ||
+    variant.origin === 'variant';
+  let body;
+  if (isLineArt) {
+    body = variant.b.replaceAll('STROKE', color).replaceAll('currentColor', color);
+  } else if (variant.source === 'mdi') {
+    body = `<g fill="${color}">${variant.b.replaceAll('currentColor', color)}</g>`;
+  } else if (variant.origin === 'icon') {
+    body = variant.b
+      .replace(/\b(fill|stroke)="(?!none"|url\()[^"]*"/gi, `$1="${color}"`)
+      .replace(/\b(fill|stroke)\s*:\s*(?!none\b|url\()[^;"]+/gi, `$1:${color}`)
+      .replaceAll('currentColor', color)
+      .replaceAll('STROKE', color);
+    if (!/\b(fill|stroke)=/i.test(body)) body = `<g fill="${color}" stroke="${color}">${body}</g>`;
+  } else {
+    body = variant.b.replaceAll('STROKE', color).replaceAll('currentColor', color);
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${variant.w} ${variant.h}">${body}</svg>`;
 }
 
 export { iconMarkup, ICON_LICENSES };

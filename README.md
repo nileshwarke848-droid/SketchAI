@@ -1,25 +1,26 @@
 # SketchAI
 
 SketchAI is a small, browser-based drawing studio. Draw a rough object, see a
-pretrained neural network's three most likely guesses and their confidence
-scores, and add a clean illustration beside your sketch. No account, backend,
+pretrained neural network's top guesses and their confidence scores, and accept
+a clean illustration as an editable scene object. No account, backend,
 API key, or paid service is required. Your drawing stays in your browser.
 
 ## Features
 
-- Mouse, trackpad, stylus and touch drawing with pencil, eraser, colors and brush size.
+- Mouse, trackpad, stylus and touch input with separate select, pencil and eraser tools, colors and brush size.
 - Local AI recognition after a 600 ms pause; the top 10 probabilities drive a
   horizontally scrollable strip of up to 10 clean suggestion cards.
-- One-click PNG export (1200 × 720, white background by default, optional
-  transparency) that composites every visible layer and needs no server.
 - "AI thinks you might be drawing…" framing: the panel reports the model's
   uncertainty (for example `Cat 54% · Dog 31% · Tiger 8%`) instead of claiming a
   certain answer.
-- Add an illustration beside the current sketch, then start drawing another object.
-  Suggestions use the current brush color; bold and fine variants change line weight.
-- Undo/redo (including insertion and erasing), clear, and PNG export. History keeps
-  the most recent 12 states. Use Ctrl/Cmd+Z to undo and Ctrl/Cmd+Shift+Z or
-  Ctrl/Cmd+Y to redo.
+- Accepted illustrations are structured scene objects, not flattened pixels:
+  select, move, proportionally resize, rotate, recolor, duplicate, flip, reorder
+  one layer at a time, and delete them independently.
+- Undo/redo covers sketching, erasing, object edits and clear. History keeps the
+  most recent 24 completed actions. Use Ctrl/Cmd+Z to undo and Ctrl/Cmd+Shift+Z
+  or Ctrl/Cmd+Y to redo.
+- PNG download/export is intentionally not part of the product. The workspace
+  prioritizes keeping clean artwork editable instead of flattening it into a file.
 - A short “How it works” explanation for a school demonstration.
 
 ## Technologies used
@@ -232,9 +233,9 @@ matter, and the category order always comes from
 The 345-class model is tried first. If its files are absent — `public/model-345/`
 is not committed, so a plain checkout starts on the fallback — or if any
 validation check fails, the app quietly falls back and shows
-"Extended AI unavailable — using 100-object model". Drawing, undo/redo and PNG
-export are unaffected either way. Each model has its own preprocessing function
-so the fallback can never be degraded by work on the new one.
+"Extended AI unavailable — using 100-object model". Drawing, object editing and
+undo/redo are unaffected either way. Each model has its own preprocessing
+function so the fallback can never be degraded by work on the new one.
 
 ## How AI recognition works
 
@@ -272,21 +273,23 @@ new stroke cancels the pending timer, so the interface stays responsive.
 
 These numbers are model confidence scores, **not guaranteed accuracy**. The model
 recognises 100 classes and can make mistakes; simple, centered, single-object
-doodles tend to work best. Once an illustration is inserted, a new recognition
-sketch begins; the existing artwork stays on the canvas, and recognition never
-treats all finished objects together as a new sketch.
+doodles tend to work best. Accepted illustrations are rendered deterministically
+from the editable scene-object list. A separate temporary sketch canvas feeds the
+recognizer, so clean objects never enter the model input and rough drawing never
+changes accepted artwork.
 
-## Exporting a PNG
+## Editable workspace and export decision
 
-The drawing lives on more than one canvas while you work: the visible art canvas
-(strokes plus inserted illustrations) and a separate overlay holding the
-temporary recognition sketch. `src/lib/download.js` composites the visible layers
-into a fresh 1200 × 720 canvas — never the recognition overlay — and saves it via
-`canvas.toBlob()` + a `blob:` object URL + an `<a download>`. It falls back to a
-data URL if `toBlob` returns nothing or throws, attaches the anchor to the DOM
-before clicking (Firefox and older Safari ignore detached anchors), and shows a
-manual “Save the PNG again” link in case the browser blocks the download. The
-“Transparent” toggle exports with an alpha background instead of white.
+Accepted suggestions become structured objects with their artwork variant,
+position, size, rotation, color, flip state and layer order. The scene-object
+list is the source of truth; the clean-art canvas is only a deterministic render
+of that list. The rough sketch remains on a separate temporary layer, and each
+completed pointer gesture is one undoable action.
+
+PNG download/export was intentionally removed as a product decision. SketchAI's
+workspace is focused on editable scene objects rather than flattening the current
+canvas composition into a PNG. There is no download button, export fallback,
+transparent-export setting or PNG export helper in the browser editor.
 
 ## Inspecting the model input (development only)
 
@@ -331,9 +334,9 @@ problems found, and the application test results.
 
 ## Release notes
 
-`docs/RELEASE-345.md` covers the PNG export repair, the 345-category licensing
-investigation and its outcome, top-10 predictions, the artwork library and the
-full test results for this release.
+`docs/RELEASE-345.md` is a historical release record for the 345-category
+licensing investigation, top-10 predictions, artwork library and release tests.
+It also notes that its PNG export feature has since been intentionally retired.
 
 ## Limitations
 

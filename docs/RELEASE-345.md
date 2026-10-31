@@ -1,9 +1,13 @@
-# Functional upgrade release notes
+# Functional upgrade release notes (historical)
 
-This release covers: the PNG export repair, the 345-category investigation and
-its outcome, top-10 predictions, the expanded suggestion artwork library, and the
-full test results. The recognition audit from the previous release is in
-[AI-AUDIT.md](AI-AUDIT.md).
+This document preserves the original release record for the PNG export repair,
+the 345-category investigation and its outcome, top-10 predictions, the expanded
+suggestion artwork library, and the tests run at that time. **PNG export was
+intentionally removed from the current product** when the workspace moved to an
+editable scene-object model; the historical export implementation and test
+results below are not current product capabilities. See the current product
+notes in [README.md](../README.md). The recognition audit from the previous
+release is in [AI-AUDIT.md](AI-AUDIT.md).
 
 ## 1. Download
 
