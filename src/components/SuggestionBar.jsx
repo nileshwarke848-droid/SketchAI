@@ -19,6 +19,8 @@ const formatScore = (score) => (score < 0.005 ? '<1%' : `${Math.round(score * 10
 export function VariantArt({ variant, size = 46, className = '' }) {
   const isLineArt =
     variant.origin === 'imported' ||
+    variant.origin === 'imported-variant' ||
+    variant.origin === 'derived' ||
     variant.origin === 'lineart' ||
     variant.origin === 'variant';
   const body = isLineArt

@@ -1,0 +1,172 @@
+{
+  "gameicons": {
+    "name": "Game Icons",
+    "version": "1.2.4",
+    "license": "CC BY 3.0",
+    "copyright": "Game Icons by Lorc, Delapouite, Skoll, and contributors (game-icons.net)",
+    "url": "https://github.com/game-icons/icons",
+    "categories": [
+      {
+        "label": "anvil",
+        "icon": "anvil",
+        "mode": "outline"
+      },
+      {
+        "label": "bread",
+        "icon": "bread",
+        "mode": "outline"
+      },
+      {
+        "label": "bridge",
+        "icon": "bridge",
+        "mode": "outline"
+      },
+      {
+        "label": "broccoli",
+        "icon": "broccoli",
+        "mode": "outline"
+      },
+      {
+        "label": "cactus",
+        "icon": "cactus",
+        "mode": "outline"
+      },
+      {
+        "label": "canoe",
+        "icon": "wood-canoe",
+        "mode": "outline"
+      },
+      {
+        "label": "clock",
+        "icon": "cuckoo-clock",
+        "mode": "filled"
+      },
+      {
+        "label": "dolphin",
+        "icon": "dolphin",
+        "mode": "outline"
+      },
+      {
+        "label": "drums",
+        "icon": "drum-kit",
+        "mode": "filled"
+      },
+      {
+        "label": "duck",
+        "icon": "duck",
+        "mode": "outline"
+      }
+    ]
+  },
+  "mdi": {
+    "name": "Material Design Icons",
+    "version": "7.4.47",
+    "license": "Apache-2.0",
+    "copyright": "Copyright 2020 Pictogrammers",
+    "url": "https://github.com/Templarian/MaterialDesign",
+    "categories": [
+      {
+        "label": "arm",
+        "icon": "arm-flex",
+        "mode": "outline"
+      },
+      {
+        "label": "bandage",
+        "icon": "bandage",
+        "mode": "outline"
+      },
+      {
+        "label": "beach",
+        "icon": "beach",
+        "mode": "outline"
+      },
+      {
+        "label": "candle",
+        "icon": "candle",
+        "mode": "outline"
+      },
+      {
+        "label": "castle",
+        "icon": "castle",
+        "mode": "outline"
+      },
+      {
+        "label": "ceiling fan",
+        "icon": "ceiling-fan-light",
+        "mode": "outline"
+      }
+    ]
+  },
+  "lucide": {
+    "name": "Lucide",
+    "version": "1.65.0",
+    "license": "ISC",
+    "copyright": "Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.",
+    "url": "https://github.com/lucide-icons/lucide",
+    "categories": [
+      {
+        "label": "basket",
+        "icon": "shopping-basket",
+        "mode": "stroke"
+      },
+      {
+        "label": "binoculars",
+        "icon": "binoculars",
+        "mode": "stroke"
+      },
+      {
+        "label": "book",
+        "icon": "book",
+        "mode": "stroke"
+      },
+      {
+        "label": "cloud",
+        "icon": "cloud-lightning",
+        "mode": "stroke"
+      },
+      {
+        "label": "computer",
+        "icon": "laptop",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "tabler": {
+    "name": "Tabler Icons",
+    "version": "3.50.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2020-2025 Paweł Kuna",
+    "url": "https://github.com/tabler/tabler-icons",
+    "categories": [
+      {
+        "label": "cloud",
+        "icon": "cloud-rain",
+        "mode": "stroke"
+      },
+      {
+        "label": "coffee cup",
+        "icon": "mug",
+        "mode": "stroke"
+      },
+      {
+        "label": "couch",
+        "icon": "sofa",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "fontawesome": {
+    "name": "Font Awesome Free",
+    "version": "7.3.1",
+    "license": "CC BY 4.0",
+    "copyright": "Copyright Fonticons, Inc.",
+    "url": "https://github.com/FortAwesome/Font-Awesome",
+    "categories": [
+      {
+        "label": "dragon",
+        "icon": "dragon",
+        "mode": "outline"
+      }
+    ]
+  }
+}

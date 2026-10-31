@@ -1,0 +1,117 @@
+{
+  "fontawesome": {
+    "name": "Font Awesome Free",
+    "version": "7.3.1",
+    "license": "CC BY 4.0",
+    "copyright": "Copyright Fonticons, Inc.",
+    "url": "https://github.com/FortAwesome/Font-Awesome",
+    "categories": [
+      {
+        "label": "paintbrush",
+        "icon": "paintbrush",
+        "mode": "outline"
+      },
+      {
+        "label": "tornado",
+        "icon": "tornado",
+        "mode": "outline"
+      }
+    ]
+  },
+  "gameicons": {
+    "name": "Game Icons",
+    "version": "1.2.4",
+    "license": "CC BY 3.0",
+    "copyright": "Game Icons by Lorc, Delapouite, Skoll, and contributors (game-icons.net)",
+    "url": "https://github.com/game-icons/icons",
+    "categories": [
+      {
+        "label": "peanut",
+        "icon": "peanut",
+        "mode": "filled"
+      },
+      {
+        "label": "penguin",
+        "icon": "penguin",
+        "mode": "outline"
+      },
+      {
+        "label": "saxophone",
+        "icon": "saxophone",
+        "mode": "outline"
+      },
+      {
+        "label": "sea turtle",
+        "icon": "sea-turtle",
+        "mode": "filled"
+      },
+      {
+        "label": "squirrel",
+        "icon": "squirrel",
+        "mode": "outline"
+      },
+      {
+        "label": "violin",
+        "icon": "violin",
+        "mode": "outline"
+      }
+    ]
+  },
+  "lucide": {
+    "name": "Lucide",
+    "version": "1.65.0",
+    "license": "ISC",
+    "copyright": "Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.",
+    "url": "https://github.com/lucide-icons/lucide",
+    "categories": [
+      {
+        "label": "piano",
+        "icon": "piano",
+        "mode": "stroke"
+      },
+      {
+        "label": "pizza",
+        "icon": "pizza",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "mdi": {
+    "name": "Material Design Icons",
+    "version": "7.4.47",
+    "license": "Apache-2.0",
+    "copyright": "Copyright 2020 Pictogrammers",
+    "url": "https://github.com/Templarian/MaterialDesign",
+    "categories": [
+      {
+        "label": "snowman",
+        "icon": "snowman",
+        "mode": "outline"
+      },
+      {
+        "label": "toilet",
+        "icon": "toilet",
+        "mode": "outline"
+      },
+      {
+        "label": "yoga",
+        "icon": "yoga",
+        "mode": "outline"
+      }
+    ]
+  },
+  "iconoir": {
+    "name": "Iconoir",
+    "version": "7.12.1",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2021 Iconoir",
+    "url": "https://github.com/iconoir-icons/iconoir",
+    "categories": [
+      {
+        "label": "yoga",
+        "icon": "yoga",
+        "mode": "stroke"
+      }
+    ]
+  }
+}

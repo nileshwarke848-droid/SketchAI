@@ -1,0 +1,93 @@
+{
+  "lucide": {
+    "name": "Lucide",
+    "version": "1.65.0",
+    "license": "ISC",
+    "copyright": "Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.",
+    "url": "https://github.com/lucide-icons/lucide",
+    "categories": [
+      {
+        "label": "ear",
+        "icon": "ear",
+        "mode": "stroke"
+      },
+      {
+        "label": "hammer",
+        "icon": "hammer",
+        "mode": "stroke"
+      },
+      {
+        "label": "hospital",
+        "icon": "hospital",
+        "mode": "stroke"
+      },
+      {
+        "label": "hourglass",
+        "icon": "hourglass",
+        "mode": "stroke"
+      },
+      {
+        "label": "lollipop",
+        "icon": "lollipop",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "gameicons": {
+    "name": "Game Icons",
+    "version": "1.2.4",
+    "license": "CC BY 3.0",
+    "copyright": "Game Icons by Lorc, Delapouite, Skoll, and contributors (game-icons.net)",
+    "url": "https://github.com/game-icons/icons",
+    "categories": [
+      {
+        "label": "flashlight",
+        "icon": "flashlight",
+        "mode": "outline"
+      },
+      {
+        "label": "helmet",
+        "icon": "helmet",
+        "mode": "outline"
+      },
+      {
+        "label": "microphone",
+        "icon": "microphone",
+        "mode": "outline"
+      },
+      {
+        "label": "nose",
+        "icon": "nose-front",
+        "mode": "outline"
+      }
+    ]
+  },
+  "iconoir": {
+    "name": "Iconoir",
+    "version": "7.12.1",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2021 Iconoir",
+    "url": "https://github.com/iconoir-icons/iconoir",
+    "categories": [
+      {
+        "label": "hospital",
+        "icon": "hospital",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "mdi": {
+    "name": "Material Design Icons",
+    "version": "7.4.47",
+    "license": "Apache-2.0",
+    "copyright": "Copyright 2020 Pictogrammers",
+    "url": "https://github.com/Templarian/MaterialDesign",
+    "categories": [
+      {
+        "label": "lighthouse",
+        "icon": "lighthouse",
+        "mode": "outline"
+      }
+    ]
+  }
+}

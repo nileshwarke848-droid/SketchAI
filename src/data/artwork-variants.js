@@ -399,18 +399,6 @@ const SECOND_PRIORITY = {
       ),
     ),
   ],
-  // "heart" is not a Quick, Draw! category (checked against the canonical 345
-  // and the 100-class fallback), so this slot went to a tier-C label that
-  // otherwise renders as a text-only card.
-  'baseball bat': [
-    v(
-      strokes(
-        '<path d="M12 21v-2"/>' +
-          '<path d="M9.8 19c-.4-3.2-.5-6 0-8.2.3-1.3.9-2.3 1.3-3.4-.5-.9-.6-1.9-.3-2.9.5-1.5 1.7-.9 2.5-.9s2-.6 2.5.9c.3 1 .2 2-.3 2.9.4 1.1 1 2.1 1.3 3.4.5 2.2.4 5 0 8.2"/>' +
-          '<path d="M9.8 19a2.2 2.2 0 0 0 4.4 0"/>',
-      ),
-    ),
-  ],
   key: [
     v(
       strokes(

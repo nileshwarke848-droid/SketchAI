@@ -1,20 +1,17 @@
 #!/usr/bin/env node
-// Proves the card preview and the inserted drawing are the SAME artwork.
+// Proves each inserted editable object preserves the exact geometry shown in
+// its suggestion-card preview. Object color is editable, so paint tokens may
+// differ, but paths and viewBox remain derived from the same artwork variant.
 //
 //   node scripts/test-preview-insert-match.mjs
-//
-// Regression guard for a specific failure: the card showing a clean line-art
-// drawing while the canvas received the legacy emoji (or vice versa). Both
-// paths must derive from one variant object and differ only in colour token
-// and pixel size.
 
-import { getArtworkVariants, variantToSvgString } from '../src/data/artwork.js';
+import { getArtworkVariants, variantToEditableSvgString } from '../src/data/artwork.js';
 import { categories } from '../src/data/categories.js';
 
 const BRUSH = '#e26755';
 
 /** Origins rendered as line art (pen-coloured, no fill). */
-const LINE_ORIGINS = ['imported', 'lineart', 'variant'];
+const LINE_ORIGINS = ['imported', 'imported-variant', 'derived', 'lineart', 'variant'];
 
 /** Exactly what SuggestionBar's VariantArt renders into the card. */
 function cardBody(variant) {
@@ -29,6 +26,8 @@ function normalise(markup) {
     .replaceAll('currentColor', 'COLOR')
     .replaceAll(BRUSH, 'COLOR')
     .replace(/#[0-9a-fA-F]{3,8}/g, 'COLOR')
+    .replace(/^<g fill="COLOR"(?: stroke="COLOR")?>/, '')
+    .replace(/<\/g>$/, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -41,8 +40,9 @@ for (const category of categories) {
   const variants = getArtworkVariants(category.label);
   variants.forEach((variant, index) => {
     const preview = normalise(cardBody(variant));
-    // variantToSvgString wraps the body in an <svg>; pull the body back out.
-    const full = variantToSvgString(variant, { size: 320, color: BRUSH });
+    // The object SVG wrapper differs only in paint policy; compare body geometry.
+    const objectColor = variant.origin === 'icon' && variant.source !== 'mdi' ? 'original' : BRUSH;
+    const full = variantToEditableSvgString(variant, { size: 320, color: objectColor });
     const inner = full.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
     const inserted = normalise(inner);
     checked += 1;

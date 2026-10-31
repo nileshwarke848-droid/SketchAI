@@ -63,9 +63,12 @@ const rows = categories.map((category) => {
   if (!primary) {
     bucket = 5;
     why = 'no artwork at all';
-  } else if (primary.origin === 'imported') {
+  } else if (primary.origin === 'derived') {
     bucket = 1;
-    why = 'line drawing imported from an openly licensed icon library';
+    why = 'original SketchAI-derived line drawing (no suitable approved source)';
+  } else if (primary.origin === 'imported' || primary.origin === 'imported-variant') {
+    bucket = 1;
+    why = 'line drawing from an openly licensed icon library';
   } else if (primary.origin === 'lineart' || primary.origin === 'variant') {
     bucket = 1;
     why = primary.origin === 'lineart' ? 'SketchAI line-art drawing' : 'hand-authored line art';

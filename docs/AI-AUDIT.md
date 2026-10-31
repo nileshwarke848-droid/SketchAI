@@ -2,7 +2,10 @@
 
 This document records the engineering and machine-learning audit of SketchAI's
 doodle recognition: what model is used, how the drawing reaches it, what was
-wrong, what was changed, and what the measured results are.
+wrong, what was changed, and what the measured results are. Application-test
+results below are historical; PNG export was subsequently removed as an
+intentional product decision when accepted illustrations became editable scene
+objects. See the current editor and export decision in [README.md](../README.md).
 
 **Summary: the model is fine and the labels are correct. The preprocessing was
 wrong.** Screen-resolution strokes were being shrunk into near-transparent

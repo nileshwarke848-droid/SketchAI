@@ -1,4 +1,228 @@
 {
+  "gameicons": {
+    "name": "Game Icons",
+    "version": "1.2.4",
+    "license": "CC BY 3.0",
+    "copyright": "Game Icons by Lorc, Delapouite, Skoll, and contributors (game-icons.net)",
+    "url": "https://github.com/game-icons/icons",
+    "categories": [
+      {
+        "label": "aircraft carrier",
+        "icon": "carrier",
+        "mode": "filled"
+      },
+      {
+        "label": "ant",
+        "icon": "ant",
+        "mode": "filled"
+      },
+      {
+        "label": "arm",
+        "icon": "arm",
+        "mode": "outline"
+      },
+      {
+        "label": "asparagus",
+        "icon": "asparagus",
+        "mode": "filled"
+      },
+      {
+        "label": "bear",
+        "icon": "polar-bear",
+        "mode": "outline"
+      },
+      {
+        "label": "beard",
+        "icon": "beard",
+        "mode": "outline"
+      },
+      {
+        "label": "belt",
+        "icon": "belt",
+        "mode": "outline"
+      },
+      {
+        "label": "camel",
+        "icon": "camel",
+        "mode": "outline"
+      },
+      {
+        "label": "cannon",
+        "icon": "cannon",
+        "mode": "outline"
+      },
+      {
+        "label": "canoe",
+        "icon": "canoe",
+        "mode": "outline"
+      },
+      {
+        "label": "crab",
+        "icon": "crab",
+        "mode": "outline"
+      },
+      {
+        "label": "flamingo",
+        "icon": "flamingo",
+        "mode": "outline"
+      },
+      {
+        "label": "harp",
+        "icon": "harp",
+        "mode": "filled"
+      },
+      {
+        "label": "hedgehog",
+        "icon": "hedgehog",
+        "mode": "outline"
+      },
+      {
+        "label": "lantern",
+        "icon": "lantern",
+        "mode": "filled"
+      },
+      {
+        "label": "leg",
+        "icon": "leg",
+        "mode": "outline"
+      },
+      {
+        "label": "mermaid",
+        "icon": "mermaid",
+        "mode": "outline"
+      },
+      {
+        "label": "nose",
+        "icon": "nose-side",
+        "mode": "outline"
+      },
+      {
+        "label": "octopus",
+        "icon": "octopus",
+        "mode": "filled"
+      },
+      {
+        "label": "owl",
+        "icon": "owl",
+        "mode": "filled"
+      },
+      {
+        "label": "passport",
+        "icon": "passport",
+        "mode": "filled"
+      },
+      {
+        "label": "peas",
+        "icon": "peas",
+        "mode": "outline"
+      },
+      {
+        "label": "police car",
+        "icon": "police-car",
+        "mode": "filled"
+      },
+      {
+        "label": "potato",
+        "icon": "potato",
+        "mode": "outline"
+      },
+      {
+        "label": "rifle",
+        "icon": "rifle",
+        "mode": "outline"
+      },
+      {
+        "label": "scorpion",
+        "icon": "scorpion",
+        "mode": "outline"
+      },
+      {
+        "label": "sheep",
+        "icon": "sheep",
+        "mode": "outline"
+      },
+      {
+        "label": "shorts",
+        "icon": "underwear-shorts",
+        "mode": "outline"
+      },
+      {
+        "label": "sleeping bag",
+        "icon": "sleeping-bag",
+        "mode": "outline"
+      },
+      {
+        "label": "snorkel",
+        "icon": "snorkel",
+        "mode": "outline"
+      },
+      {
+        "label": "steak",
+        "icon": "steak",
+        "mode": "filled"
+      },
+      {
+        "label": "stove",
+        "icon": "gas-stove",
+        "mode": "outline"
+      },
+      {
+        "label": "strawberry",
+        "icon": "strawberry",
+        "mode": "filled"
+      },
+      {
+        "label": "streetlight",
+        "icon": "street-light",
+        "mode": "outline"
+      },
+      {
+        "label": "swan",
+        "icon": "swan",
+        "mode": "outline"
+      },
+      {
+        "label": "tennis racquet",
+        "icon": "tennis-racket",
+        "mode": "outline"
+      },
+      {
+        "label": "the mona lisa",
+        "icon": "mona-lisa",
+        "mode": "filled"
+      },
+      {
+        "label": "tiger",
+        "icon": "tiger",
+        "mode": "filled"
+      },
+      {
+        "label": "trombone",
+        "icon": "trombone",
+        "mode": "outline"
+      },
+      {
+        "label": "underwear",
+        "icon": "underwear",
+        "mode": "outline"
+      },
+      {
+        "label": "vase",
+        "icon": "porcelain-vase",
+        "mode": "outline"
+      },
+      {
+        "label": "whale",
+        "icon": "sperm-whale",
+        "mode": "outline"
+      },
+      {
+        "label": "windmill",
+        "icon": "windmill",
+        "mode": "outline"
+      }
+    ]
+  },
   "iconoir": {
     "name": "Iconoir",
     "version": "7.12.1",
@@ -111,6 +335,11 @@
         "mode": "stroke"
       },
       {
+        "label": "bush",
+        "icon": "shrub",
+        "mode": "stroke"
+      },
+      {
         "label": "castle",
         "icon": "castle",
         "mode": "stroke"
@@ -146,6 +375,11 @@
         "mode": "stroke"
       },
       {
+        "label": "dumbbell",
+        "icon": "dumbbell",
+        "mode": "stroke"
+      },
+      {
         "label": "eyeglasses",
         "icon": "glasses",
         "mode": "stroke"
@@ -153,11 +387,6 @@
       {
         "label": "fan",
         "icon": "fan",
-        "mode": "stroke"
-      },
-      {
-        "label": "flamingo",
-        "icon": "bird",
         "mode": "stroke"
       },
       {
@@ -231,11 +460,6 @@
         "mode": "stroke"
       },
       {
-        "label": "parrot",
-        "icon": "bird",
-        "mode": "stroke"
-      },
-      {
         "label": "popsicle",
         "icon": "popsicle",
         "mode": "stroke"
@@ -266,23 +490,8 @@
         "mode": "stroke"
       },
       {
-        "label": "stereo",
-        "icon": "speaker",
-        "mode": "stroke"
-      },
-      {
-        "label": "swan",
-        "icon": "bird",
-        "mode": "stroke"
-      },
-      {
         "label": "syringe",
         "icon": "syringe",
-        "mode": "stroke"
-      },
-      {
-        "label": "the great wall of china",
-        "icon": "brick-wall",
         "mode": "stroke"
       },
       {
@@ -317,11 +526,6 @@
       {
         "label": "apple",
         "icon": "apple",
-        "mode": "stroke"
-      },
-      {
-        "label": "asparagus",
-        "icon": "carrot",
         "mode": "stroke"
       },
       {
@@ -365,23 +569,8 @@
         "mode": "stroke"
       },
       {
-        "label": "blackberry",
-        "icon": "grape",
-        "mode": "stroke"
-      },
-      {
-        "label": "blueberry",
-        "icon": "grape",
-        "mode": "stroke"
-      },
-      {
         "label": "book",
         "icon": "book",
-        "mode": "stroke"
-      },
-      {
-        "label": "bowtie",
-        "icon": "bow",
         "mode": "stroke"
       },
       {
@@ -407,11 +596,6 @@
       {
         "label": "bus",
         "icon": "bus",
-        "mode": "stroke"
-      },
-      {
-        "label": "bush",
-        "icon": "plant",
         "mode": "stroke"
       },
       {
@@ -490,11 +674,6 @@
         "mode": "stroke"
       },
       {
-        "label": "crayon",
-        "icon": "brush",
-        "mode": "stroke"
-      },
-      {
         "label": "crown",
         "icon": "crown",
         "mode": "stroke"
@@ -515,18 +694,8 @@
         "mode": "stroke"
       },
       {
-        "label": "diving board",
-        "icon": "pool",
-        "mode": "stroke"
-      },
-      {
         "label": "dragon",
         "icon": "dragon",
-        "mode": "stroke"
-      },
-      {
-        "label": "dumbbell",
-        "icon": "dumbbell",
         "mode": "stroke"
       },
       {
@@ -587,16 +756,6 @@
       {
         "label": "flying saucer",
         "icon": "ufo",
-        "mode": "stroke"
-      },
-      {
-        "label": "garden",
-        "icon": "garden-cart",
-        "mode": "stroke"
-      },
-      {
-        "label": "golf club",
-        "icon": "golf",
         "mode": "stroke"
       },
       {
@@ -750,16 +909,6 @@
         "mode": "stroke"
       },
       {
-        "label": "oven",
-        "icon": "microwave",
-        "mode": "stroke"
-      },
-      {
-        "label": "paint can",
-        "icon": "paint",
-        "mode": "stroke"
-      },
-      {
         "label": "paper clip",
         "icon": "paperclip",
         "mode": "stroke"
@@ -770,11 +919,6 @@
         "mode": "stroke"
       },
       {
-        "label": "peas",
-        "icon": "plant",
-        "mode": "stroke"
-      },
-      {
         "label": "pencil",
         "icon": "pencil",
         "mode": "stroke"
@@ -782,11 +926,6 @@
       {
         "label": "piano",
         "icon": "piano",
-        "mode": "stroke"
-      },
-      {
-        "label": "pickup truck",
-        "icon": "truck",
         "mode": "stroke"
       },
       {
@@ -805,23 +944,13 @@
         "mode": "stroke"
       },
       {
-        "label": "police car",
-        "icon": "car",
-        "mode": "stroke"
-      },
-      {
-        "label": "pond",
-        "icon": "pool",
-        "mode": "stroke"
-      },
-      {
         "label": "pool",
         "icon": "pool",
         "mode": "stroke"
       },
       {
         "label": "power outlet",
-        "icon": "plug",
+        "icon": "outlet",
         "mode": "stroke"
       },
       {
@@ -850,11 +979,6 @@
         "mode": "stroke"
       },
       {
-        "label": "school bus",
-        "icon": "bus",
-        "mode": "stroke"
-      },
-      {
         "label": "scissors",
         "icon": "scissors",
         "mode": "stroke"
@@ -862,11 +986,6 @@
       {
         "label": "shoe",
         "icon": "shoe",
-        "mode": "stroke"
-      },
-      {
-        "label": "shorts",
-        "icon": "shirt",
         "mode": "stroke"
       },
       {
@@ -930,18 +1049,8 @@
         "mode": "stroke"
       },
       {
-        "label": "steak",
-        "icon": "meat",
-        "mode": "stroke"
-      },
-      {
         "label": "stethoscope",
         "icon": "stethoscope",
-        "mode": "stroke"
-      },
-      {
-        "label": "string bean",
-        "icon": "carrot",
         "mode": "stroke"
       },
       {
@@ -955,18 +1064,8 @@
         "mode": "stroke"
       },
       {
-        "label": "sweater",
-        "icon": "shirt",
-        "mode": "stroke"
-      },
-      {
         "label": "sword",
         "icon": "sword",
-        "mode": "stroke"
-      },
-      {
-        "label": "table",
-        "icon": "table",
         "mode": "stroke"
       },
       {
@@ -980,11 +1079,6 @@
         "mode": "stroke"
       },
       {
-        "label": "tennis racquet",
-        "icon": "ball-tennis",
-        "mode": "stroke"
-      },
-      {
         "label": "tent",
         "icon": "tent",
         "mode": "stroke"
@@ -992,11 +1086,6 @@
       {
         "label": "the eiffel tower",
         "icon": "building-eiffel-tower",
-        "mode": "stroke"
-      },
-      {
-        "label": "the mona lisa",
-        "icon": "photo",
         "mode": "stroke"
       },
       {
@@ -1040,168 +1129,14 @@
         "mode": "stroke"
       },
       {
-        "label": "underwear",
-        "icon": "shirt",
-        "mode": "stroke"
-      },
-      {
         "label": "wheel",
         "icon": "wheel",
-        "mode": "stroke"
-      },
-      {
-        "label": "windmill",
-        "icon": "windmill",
         "mode": "stroke"
       },
       {
         "label": "yoga",
         "icon": "yoga",
         "mode": "stroke"
-      }
-    ]
-  },
-  "gameicons": {
-    "name": "Game Icons",
-    "version": "1.2.4",
-    "license": "CC BY 3.0",
-    "copyright": "Game Icons by Lorc, Delapouite, Skoll, and contributors (game-icons.net)",
-    "url": "https://github.com/game-icons/icons",
-    "categories": [
-      {
-        "label": "ant",
-        "icon": "ant",
-        "mode": "filled"
-      },
-      {
-        "label": "arm",
-        "icon": "arm",
-        "mode": "outline"
-      },
-      {
-        "label": "beard",
-        "icon": "beard",
-        "mode": "outline"
-      },
-      {
-        "label": "belt",
-        "icon": "belt",
-        "mode": "outline"
-      },
-      {
-        "label": "camel",
-        "icon": "camel",
-        "mode": "outline"
-      },
-      {
-        "label": "cannon",
-        "icon": "cannon",
-        "mode": "outline"
-      },
-      {
-        "label": "canoe",
-        "icon": "canoe",
-        "mode": "outline"
-      },
-      {
-        "label": "cooler",
-        "icon": "cooler",
-        "mode": "filled"
-      },
-      {
-        "label": "crab",
-        "icon": "crab",
-        "mode": "outline"
-      },
-      {
-        "label": "harp",
-        "icon": "harp",
-        "mode": "filled"
-      },
-      {
-        "label": "hedgehog",
-        "icon": "hedgehog",
-        "mode": "outline"
-      },
-      {
-        "label": "lantern",
-        "icon": "lantern",
-        "mode": "filled"
-      },
-      {
-        "label": "leg",
-        "icon": "leg",
-        "mode": "outline"
-      },
-      {
-        "label": "lion",
-        "icon": "lion",
-        "mode": "outline"
-      },
-      {
-        "label": "mermaid",
-        "icon": "mermaid",
-        "mode": "outline"
-      },
-      {
-        "label": "monkey",
-        "icon": "monkey",
-        "mode": "outline"
-      },
-      {
-        "label": "nose",
-        "icon": "nose-side",
-        "mode": "outline"
-      },
-      {
-        "label": "octopus",
-        "icon": "octopus",
-        "mode": "filled"
-      },
-      {
-        "label": "potato",
-        "icon": "potato",
-        "mode": "outline"
-      },
-      {
-        "label": "rifle",
-        "icon": "rifle",
-        "mode": "outline"
-      },
-      {
-        "label": "sleeping bag",
-        "icon": "sleeping-bag",
-        "mode": "outline"
-      },
-      {
-        "label": "snorkel",
-        "icon": "snorkel",
-        "mode": "outline"
-      },
-      {
-        "label": "stop sign",
-        "icon": "stop-sign",
-        "mode": "filled"
-      },
-      {
-        "label": "strawberry",
-        "icon": "strawberry",
-        "mode": "filled"
-      },
-      {
-        "label": "tiger",
-        "icon": "tiger",
-        "mode": "filled"
-      },
-      {
-        "label": "vase",
-        "icon": "porcelain-vase",
-        "mode": "outline"
-      },
-      {
-        "label": "whale",
-        "icon": "sperm-whale",
-        "mode": "outline"
       }
     ]
   },
@@ -1238,11 +1173,6 @@
         "mode": "outline"
       },
       {
-        "label": "bear",
-        "icon": "teddy-bear",
-        "mode": "outline"
-      },
-      {
         "label": "bee",
         "icon": "bee",
         "mode": "outline"
@@ -1258,6 +1188,11 @@
         "mode": "outline"
       },
       {
+        "label": "bowtie",
+        "icon": "bow-tie",
+        "mode": "outline"
+      },
+      {
         "label": "butterfly",
         "icon": "butterfly",
         "mode": "outline"
@@ -1268,28 +1203,8 @@
         "mode": "outline"
       },
       {
-        "label": "cello",
-        "icon": "violin",
-        "mode": "outline"
-      },
-      {
         "label": "chandelier",
         "icon": "chandelier",
-        "mode": "outline"
-      },
-      {
-        "label": "clarinet",
-        "icon": "glass-flute",
-        "mode": "outline"
-      },
-      {
-        "label": "cow",
-        "icon": "cow",
-        "mode": "outline"
-      },
-      {
-        "label": "crocodile",
-        "icon": "snake",
         "mode": "outline"
       },
       {
@@ -1303,11 +1218,6 @@
         "mode": "outline"
       },
       {
-        "label": "dresser",
-        "icon": "dresser",
-        "mode": "filled"
-      },
-      {
         "label": "duck",
         "icon": "duck",
         "mode": "outline"
@@ -1316,11 +1226,6 @@
         "label": "elephant",
         "icon": "elephant",
         "mode": "outline"
-      },
-      {
-        "label": "fireplace",
-        "icon": "fireplace",
-        "mode": "filled"
       },
       {
         "label": "floor lamp",
@@ -1388,24 +1293,14 @@
         "mode": "outline"
       },
       {
-        "label": "owl",
-        "icon": "owl",
-        "mode": "filled"
+        "label": "oven",
+        "icon": "toaster-oven",
+        "mode": "outline"
       },
       {
         "label": "palm tree",
         "icon": "palm-tree",
         "mode": "outline"
-      },
-      {
-        "label": "panda",
-        "icon": "panda",
-        "mode": "filled"
-      },
-      {
-        "label": "passport",
-        "icon": "passport",
-        "mode": "filled"
       },
       {
         "label": "peanut",
@@ -1463,8 +1358,8 @@
         "mode": "outline"
       },
       {
-        "label": "scorpion",
-        "icon": "spider",
+        "label": "school bus",
+        "icon": "bus-school",
         "mode": "outline"
       },
       {
@@ -1488,11 +1383,6 @@
         "mode": "outline"
       },
       {
-        "label": "sheep",
-        "icon": "sheep",
-        "mode": "outline"
-      },
-      {
         "label": "snail",
         "icon": "snail",
         "mode": "outline"
@@ -1508,9 +1398,9 @@
         "mode": "outline"
       },
       {
-        "label": "stove",
-        "icon": "stove",
-        "mode": "filled"
+        "label": "table",
+        "icon": "table-furniture",
+        "mode": "outline"
       },
       {
         "label": "teddy-bear",
@@ -1548,11 +1438,6 @@
         "mode": "outline"
       },
       {
-        "label": "trombone",
-        "icon": "trumpet",
-        "mode": "outline"
-      },
-      {
         "label": "trumpet",
         "icon": "trumpet",
         "mode": "outline"
@@ -1565,6 +1450,16 @@
       {
         "label": "watermelon",
         "icon": "fruit-watermelon",
+        "mode": "outline"
+      },
+      {
+        "label": "wine bottle",
+        "icon": "bottle-wine",
+        "mode": "outline"
+      },
+      {
+        "label": "wine glass",
+        "icon": "glass-wine",
         "mode": "outline"
       },
       {
@@ -1597,6 +1492,11 @@
         "mode": "outline"
       },
       {
+        "label": "cow",
+        "icon": "cow",
+        "mode": "outline"
+      },
+      {
         "label": "envelope",
         "icon": "envelope",
         "mode": "outline"
@@ -1617,6 +1517,11 @@
         "mode": "outline"
       },
       {
+        "label": "pickup truck",
+        "icon": "truck-pickup",
+        "mode": "outline"
+      },
+      {
         "label": "sink",
         "icon": "sink",
         "mode": "outline"
@@ -1624,16 +1529,6 @@
       {
         "label": "spoon",
         "icon": "spoon",
-        "mode": "outline"
-      },
-      {
-        "label": "wine bottle",
-        "icon": "wine-bottle",
-        "mode": "outline"
-      },
-      {
-        "label": "wine glass",
-        "icon": "wine-glass",
         "mode": "outline"
       }
     ]
