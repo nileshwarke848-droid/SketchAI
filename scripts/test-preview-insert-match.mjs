@@ -14,7 +14,7 @@ import { categories } from '../src/data/categories.js';
 const BRUSH = '#e26755';
 
 /** Origins rendered as line art (pen-coloured, no fill). */
-const LINE_ORIGINS = ['imported', 'lineart', 'variant'];
+const LINE_ORIGINS = ['imported', 'imported-variant', 'derived', 'lineart', 'variant'];
 
 /** Exactly what SuggestionBar's VariantArt renders into the card. */
 function cardBody(variant) {

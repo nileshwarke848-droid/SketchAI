@@ -1,4 +1,158 @@
 {
+  "gameicons": {
+    "name": "Game Icons",
+    "version": "1.2.4",
+    "license": "CC BY 3.0",
+    "copyright": "Game Icons by Lorc, Delapouite, Skoll, and contributors (game-icons.net)",
+    "url": "https://github.com/game-icons/icons",
+    "categories": [
+      {
+        "label": "aircraft carrier",
+        "icon": "carrier",
+        "mode": "filled"
+      },
+      {
+        "label": "ant",
+        "icon": "ant",
+        "mode": "filled"
+      },
+      {
+        "label": "arm",
+        "icon": "arm",
+        "mode": "outline"
+      },
+      {
+        "label": "asparagus",
+        "icon": "asparagus",
+        "mode": "filled"
+      },
+      {
+        "label": "bear",
+        "icon": "polar-bear",
+        "mode": "outline"
+      },
+      {
+        "label": "beard",
+        "icon": "beard",
+        "mode": "outline"
+      },
+      {
+        "label": "belt",
+        "icon": "belt",
+        "mode": "outline"
+      },
+      {
+        "label": "camel",
+        "icon": "camel",
+        "mode": "outline"
+      },
+      {
+        "label": "cannon",
+        "icon": "cannon",
+        "mode": "outline"
+      },
+      {
+        "label": "canoe",
+        "icon": "canoe",
+        "mode": "outline"
+      },
+      {
+        "label": "crab",
+        "icon": "crab",
+        "mode": "outline"
+      },
+      {
+        "label": "harp",
+        "icon": "harp",
+        "mode": "filled"
+      },
+      {
+        "label": "hedgehog",
+        "icon": "hedgehog",
+        "mode": "outline"
+      },
+      {
+        "label": "lantern",
+        "icon": "lantern",
+        "mode": "filled"
+      },
+      {
+        "label": "leg",
+        "icon": "leg",
+        "mode": "outline"
+      },
+      {
+        "label": "lion",
+        "icon": "lion",
+        "mode": "outline"
+      },
+      {
+        "label": "mermaid",
+        "icon": "mermaid",
+        "mode": "outline"
+      },
+      {
+        "label": "monkey",
+        "icon": "monkey",
+        "mode": "outline"
+      },
+      {
+        "label": "nose",
+        "icon": "nose-side",
+        "mode": "outline"
+      },
+      {
+        "label": "octopus",
+        "icon": "octopus",
+        "mode": "filled"
+      },
+      {
+        "label": "potato",
+        "icon": "potato",
+        "mode": "outline"
+      },
+      {
+        "label": "rifle",
+        "icon": "rifle",
+        "mode": "outline"
+      },
+      {
+        "label": "sleeping bag",
+        "icon": "sleeping-bag",
+        "mode": "outline"
+      },
+      {
+        "label": "snorkel",
+        "icon": "snorkel",
+        "mode": "outline"
+      },
+      {
+        "label": "stop sign",
+        "icon": "stop-sign",
+        "mode": "filled"
+      },
+      {
+        "label": "strawberry",
+        "icon": "strawberry",
+        "mode": "filled"
+      },
+      {
+        "label": "tiger",
+        "icon": "tiger",
+        "mode": "filled"
+      },
+      {
+        "label": "vase",
+        "icon": "porcelain-vase",
+        "mode": "outline"
+      },
+      {
+        "label": "whale",
+        "icon": "sperm-whale",
+        "mode": "outline"
+      }
+    ]
+  },
   "iconoir": {
     "name": "Iconoir",
     "version": "7.12.1",
@@ -108,6 +262,11 @@
       {
         "label": "broom",
         "icon": "broom",
+        "mode": "stroke"
+      },
+      {
+        "label": "bush",
+        "icon": "shrub",
         "mode": "stroke"
       },
       {
@@ -320,11 +479,6 @@
         "mode": "stroke"
       },
       {
-        "label": "asparagus",
-        "icon": "carrot",
-        "mode": "stroke"
-      },
-      {
         "label": "axe",
         "icon": "axe",
         "mode": "stroke"
@@ -365,23 +519,8 @@
         "mode": "stroke"
       },
       {
-        "label": "blackberry",
-        "icon": "grape",
-        "mode": "stroke"
-      },
-      {
-        "label": "blueberry",
-        "icon": "grape",
-        "mode": "stroke"
-      },
-      {
         "label": "book",
         "icon": "book",
-        "mode": "stroke"
-      },
-      {
-        "label": "bowtie",
-        "icon": "bow",
         "mode": "stroke"
       },
       {
@@ -407,11 +546,6 @@
       {
         "label": "bus",
         "icon": "bus",
-        "mode": "stroke"
-      },
-      {
-        "label": "bush",
-        "icon": "plant",
         "mode": "stroke"
       },
       {
@@ -490,11 +624,6 @@
         "mode": "stroke"
       },
       {
-        "label": "crayon",
-        "icon": "brush",
-        "mode": "stroke"
-      },
-      {
         "label": "crown",
         "icon": "crown",
         "mode": "stroke"
@@ -512,11 +641,6 @@
       {
         "label": "diamond",
         "icon": "diamond",
-        "mode": "stroke"
-      },
-      {
-        "label": "diving board",
-        "icon": "pool",
         "mode": "stroke"
       },
       {
@@ -1061,150 +1185,6 @@
       }
     ]
   },
-  "gameicons": {
-    "name": "Game Icons",
-    "version": "1.2.4",
-    "license": "CC BY 3.0",
-    "copyright": "Game Icons by Lorc, Delapouite, Skoll, and contributors (game-icons.net)",
-    "url": "https://github.com/game-icons/icons",
-    "categories": [
-      {
-        "label": "ant",
-        "icon": "ant",
-        "mode": "filled"
-      },
-      {
-        "label": "arm",
-        "icon": "arm",
-        "mode": "outline"
-      },
-      {
-        "label": "beard",
-        "icon": "beard",
-        "mode": "outline"
-      },
-      {
-        "label": "belt",
-        "icon": "belt",
-        "mode": "outline"
-      },
-      {
-        "label": "camel",
-        "icon": "camel",
-        "mode": "outline"
-      },
-      {
-        "label": "cannon",
-        "icon": "cannon",
-        "mode": "outline"
-      },
-      {
-        "label": "canoe",
-        "icon": "canoe",
-        "mode": "outline"
-      },
-      {
-        "label": "cooler",
-        "icon": "cooler",
-        "mode": "filled"
-      },
-      {
-        "label": "crab",
-        "icon": "crab",
-        "mode": "outline"
-      },
-      {
-        "label": "harp",
-        "icon": "harp",
-        "mode": "filled"
-      },
-      {
-        "label": "hedgehog",
-        "icon": "hedgehog",
-        "mode": "outline"
-      },
-      {
-        "label": "lantern",
-        "icon": "lantern",
-        "mode": "filled"
-      },
-      {
-        "label": "leg",
-        "icon": "leg",
-        "mode": "outline"
-      },
-      {
-        "label": "lion",
-        "icon": "lion",
-        "mode": "outline"
-      },
-      {
-        "label": "mermaid",
-        "icon": "mermaid",
-        "mode": "outline"
-      },
-      {
-        "label": "monkey",
-        "icon": "monkey",
-        "mode": "outline"
-      },
-      {
-        "label": "nose",
-        "icon": "nose-side",
-        "mode": "outline"
-      },
-      {
-        "label": "octopus",
-        "icon": "octopus",
-        "mode": "filled"
-      },
-      {
-        "label": "potato",
-        "icon": "potato",
-        "mode": "outline"
-      },
-      {
-        "label": "rifle",
-        "icon": "rifle",
-        "mode": "outline"
-      },
-      {
-        "label": "sleeping bag",
-        "icon": "sleeping-bag",
-        "mode": "outline"
-      },
-      {
-        "label": "snorkel",
-        "icon": "snorkel",
-        "mode": "outline"
-      },
-      {
-        "label": "stop sign",
-        "icon": "stop-sign",
-        "mode": "filled"
-      },
-      {
-        "label": "strawberry",
-        "icon": "strawberry",
-        "mode": "filled"
-      },
-      {
-        "label": "tiger",
-        "icon": "tiger",
-        "mode": "filled"
-      },
-      {
-        "label": "vase",
-        "icon": "porcelain-vase",
-        "mode": "outline"
-      },
-      {
-        "label": "whale",
-        "icon": "sperm-whale",
-        "mode": "outline"
-      }
-    ]
-  },
   "mdi": {
     "name": "Material Design Icons",
     "version": "7.4.47",
@@ -1238,11 +1218,6 @@
         "mode": "outline"
       },
       {
-        "label": "bear",
-        "icon": "teddy-bear",
-        "mode": "outline"
-      },
-      {
         "label": "bee",
         "icon": "bee",
         "mode": "outline"
@@ -1258,6 +1233,11 @@
         "mode": "outline"
       },
       {
+        "label": "bowtie",
+        "icon": "bow-tie",
+        "mode": "outline"
+      },
+      {
         "label": "butterfly",
         "icon": "butterfly",
         "mode": "outline"
@@ -1268,28 +1248,8 @@
         "mode": "outline"
       },
       {
-        "label": "cello",
-        "icon": "violin",
-        "mode": "outline"
-      },
-      {
         "label": "chandelier",
         "icon": "chandelier",
-        "mode": "outline"
-      },
-      {
-        "label": "clarinet",
-        "icon": "glass-flute",
-        "mode": "outline"
-      },
-      {
-        "label": "cow",
-        "icon": "cow",
-        "mode": "outline"
-      },
-      {
-        "label": "crocodile",
-        "icon": "snake",
         "mode": "outline"
       },
       {
@@ -1301,11 +1261,6 @@
         "label": "dolphin",
         "icon": "dolphin",
         "mode": "outline"
-      },
-      {
-        "label": "dresser",
-        "icon": "dresser",
-        "mode": "filled"
       },
       {
         "label": "duck",
@@ -1594,6 +1549,11 @@
       {
         "label": "couch",
         "icon": "couch",
+        "mode": "outline"
+      },
+      {
+        "label": "cow",
+        "icon": "cow",
         "mode": "outline"
       },
       {

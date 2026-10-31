@@ -22,6 +22,7 @@ export const SOURCES = {
     dir: 'tabler-icons-3.50.0/icons/outline',
     recursive: true,
     mode: 'stroke',
+    fetch: { npm: '@tabler/icons', paths: { 'package/icons/outline': 'tabler-icons-${version}/icons/outline' } },
   },
   lucide: {
     name: 'Lucide',
@@ -32,6 +33,7 @@ export const SOURCES = {
     dir: 'lucide-static-1.65.0/icons',
     recursive: true,
     mode: 'stroke',
+    fetch: { npm: 'lucide-static', paths: { 'package/icons': 'lucide-static-${version}/icons' } },
   },
   iconoir: {
     name: 'Iconoir',
@@ -42,6 +44,7 @@ export const SOURCES = {
     dir: 'iconoir-7.12.1/icons/regular',
     recursive: true,
     mode: 'stroke',
+    fetch: { github: 'iconoir-icons/iconoir', tag: 'v${version}', paths: { 'iconoir-${version}/icons/regular': 'iconoir-${version}/icons/regular' } },
   },
   mdi: {
     name: 'Material Design Icons',
@@ -52,6 +55,7 @@ export const SOURCES = {
     dir: 'mdi-svg-7.4.47/svg',
     recursive: false,
     mode: 'outline',
+    fetch: { npm: '@mdi/svg', paths: { 'package/svg': 'mdi-svg-${version}/svg' } },
   },
   gameicons: {
     name: 'Game Icons',
@@ -63,6 +67,7 @@ export const SOURCES = {
     recursive: false,
     mode: 'outline',
     jsonSet: true, // IconifyJSON: icons.json -> { icons: { name: { body } } }
+    fetch: { npm: '@iconify-json/game-icons', paths: { 'package/icons.json': 'game-icons/icons.json' } },
   },
   fontawesome: {
     name: 'Font Awesome Free',
@@ -74,6 +79,7 @@ export const SOURCES = {
     recursive: false,
     mode: 'outline',
     jsModule: true,
+    fetch: { npm: '@fortawesome/free-solid-svg-icons', paths: { 'package': 'fortawesome-free-solid-svg-icons-${version}' } },
   },
 };
 
@@ -94,7 +100,23 @@ export function sourcePath(id) {
 //     equivalent exists, and are rendered as outlines.
 //
 // [lib, icon, modeOverride?, extraBody?]
+// Exact source art can still be a poor visual fit. These labels have original
+// Batch-1 drawings in src/data/batch1-derived-art.js because no pinned source
+// gives a readable, class-specific primary (or its silhouette is too chunky).
+// Dresser is skipped because both exact MDI variants are too dense; wardrobe or
+// filing-cabinet alternatives would mislabel the class.
+export const SKIP_IMPORTED_ART = new Set(['clarinet', 'cooler', 'dresser']);
+
 export const MAP = {
+  // ---- Batch 1: reviewed primary corrections --------------------------------
+  // These are the first 100 canonical labels. Use a source whose subject is the
+  // class itself; do not substitute a nearby object just to fill a slot.
+  'aircraft carrier': ['gameicons', 'carrier'],
+  asparagus:   ['gameicons', 'asparagus'],
+  bear:        ['gameicons', 'polar-bear'],
+  bowtie:      ['mdi', 'bow-tie'],
+  bush:        ['lucide', 'shrub'],
+
   // ---- demo critical -------------------------------------------------------
   dog:        ['mdi', 'dog-side'],                                  // full body side view
   cat:        ['fontawesome', 'cat'],                               // full body; MDI cat is a face
@@ -143,7 +165,6 @@ export const MAP = {
   'smiley face': ['tabler', 'mood-smile'],
   't-shirt':     ['tabler', 'shirt'],
   eyeglasses:    ['lucide', 'glasses'],
-  bear:          ['mdi', 'teddy-bear'],
   'hot dog':     ['mdi', 'food-hot-dog'],
   'hot dog2':    ['mdi', 'food-hot-dog'],
   'school bus':  ['tabler', 'bus'],
@@ -151,7 +172,6 @@ export const MAP = {
   'pickup truck': ['tabler', 'truck'],
   'cruise ship': ['tabler', 'ship'],
   'sea turtle':  ['mdi', 'turtle'],
-  crocodile:     ['mdi', 'snake'],
   'flying saucer': ['tabler', 'ufo'],
   'picture frame': ['tabler', 'photo'],
   'power outlet': ['tabler', 'plug'],
@@ -162,9 +182,7 @@ export const MAP = {
   'the eiffel tower': ['tabler', 'building-eiffel-tower'],
   'the great wall of china': ['lucide', 'brick-wall'],
   'the mona lisa': ['tabler', 'photo'],
-  'cello':      ['mdi', 'violin'],
   'trombone':   ['mdi', 'trumpet'],
-  'clarinet':   ['mdi', 'glass-flute'],
   'drums':      ['lucide', 'drum'],
   'saw':        ['mdi', 'hand-saw'],
   'matches':    ['tabler', 'matchstick'],
@@ -173,7 +191,6 @@ export const MAP = {
   'toothbrush2'  : ['mdi', 'toothbrush'],
   'rollerskates': ['tabler', 'roller-skating'],
   'see saw':    ['mdi', 'seesaw'],
-  'diving board': ['tabler', 'pool'],
   'spreadsheet': ['tabler', 'table'],
   'stereo':     ['lucide', 'speaker'],
   'telephone':  ['tabler', 'phone'],
@@ -185,21 +202,16 @@ export const MAP = {
   'ocean':      ['lucide', 'waves'],
   'river':      ['lucide', 'waves'],
   'garden':     ['tabler', 'garden-cart'],
-  'bush':       ['tabler', 'plant'],
   'peas':       ['tabler', 'plant'],
   'watermelon': ['mdi', 'fruit-watermelon'],
   'pineapple':  ['mdi', 'fruit-pineapple'],
   'grapes':     ['tabler', 'grape'],
-  'blackberry': ['tabler', 'grape'],
-  'blueberry':  ['tabler', 'grape'],
   'steak':      ['tabler', 'meat'],
   'string bean': ['tabler', 'carrot'],
-  'asparagus':  ['tabler', 'carrot'],
   'pear':       ['mdi', 'fruit-pear'],
   'sweater':    ['tabler', 'shirt'],
   'shorts':     ['tabler', 'shirt'],
   'underwear':  ['tabler', 'shirt'],
-  'bowtie':     ['tabler', 'bow'],
   'snowman':    ['tabler', 'snowman'],
   'bee':        ['mdi', 'bee'],
   'bat':        ['mdi', 'bat'],
@@ -211,7 +223,6 @@ export const MAP = {
   skyscraper:   ['lucide', 'building-2'],
   oven:         ['tabler', 'microwave'],
   microwave:    ['tabler', 'microwave'],
-  crayon:       ['tabler', 'brush'],
   'paint can':  ['tabler', 'paint'],
 
   // ---- animals no stroke library ships: Game Icons (CC BY 3.0) -------------
@@ -249,7 +260,7 @@ export const MAP = {
   'penguin':    ['mdi', 'penguin'],
   'pig':        ['mdi', 'pig-variant'],
   'sheep':      ['mdi', 'sheep'],
-  'cow':        ['mdi', 'cow'],
+  'cow':        ['fontawesome', 'cow'],  // whole animal; MDI's exact glyph is only a face
   'duck':       ['mdi', 'duck'],
   'owl':        ['mdi', 'owl'],
   'rabbit':     ['mdi', 'rabbit'],
