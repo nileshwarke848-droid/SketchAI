@@ -1,3 +1,5 @@
+import { DEFAULT_BACKGROUND_COLOR, hexToRgb, normalizeHexColor } from './color-utils.js';
+
 export const DEFAULT_FILL_TOLERANCE = 22;
 
 /**
@@ -6,7 +8,7 @@ export const DEFAULT_FILL_TOLERANCE = 22;
  * no scene data is flattened or replaced.
  */
 export function composeFillBoundary(referenceCanvas, {
-  backgroundColor = '#ffffff',
+  backgroundColor = DEFAULT_BACKGROUND_COLOR,
   fillCanvas,
   sceneCanvas,
   sketchCanvas,
@@ -14,8 +16,10 @@ export function composeFillBoundary(referenceCanvas, {
   if (!referenceCanvas) throw new TypeError('A reference canvas is required.');
   const context = referenceCanvas.getContext('2d', { willReadFrequently: true });
   context.clearRect(0, 0, referenceCanvas.width, referenceCanvas.height);
+  const normalizedBackground = normalizeHexColor(backgroundColor);
+  if (!normalizedBackground) throw new TypeError(`Unsupported canvas background color: ${backgroundColor}`);
   context.globalCompositeOperation = 'source-over';
-  context.fillStyle = backgroundColor;
+  context.fillStyle = normalizedBackground;
   context.fillRect(0, 0, referenceCanvas.width, referenceCanvas.height);
   for (const layer of [fillCanvas, sceneCanvas, sketchCanvas]) {
     if (layer) context.drawImage(layer, 0, 0, referenceCanvas.width, referenceCanvas.height);
@@ -122,13 +126,17 @@ export function fillCanvasRegion({
 }
 
 export function parseHexColor(color) {
-  if (typeof color !== 'string' || !color.startsWith('#')) return null;
-  const value = color.slice(1);
-  if (/^[\da-f]{3}$/i.test(value)) {
-    return [...value].map((part) => Number.parseInt(part + part, 16)).concat(255);
+  const normalized = normalizeHexColor(color);
+  if (normalized) {
+    const { r, g, b } = hexToRgb(normalized);
+    return [r, g, b, 255];
   }
-  if (/^[\da-f]{6}$/i.test(value)) {
-    return [0, 2, 4].map((index) => Number.parseInt(value.slice(index, index + 2), 16)).concat(255);
+  // Keep the raster helper's earlier shorthand convenience without admitting
+  // shorthand into the canonical scene/UI color representation.
+  if (typeof color === 'string' && /^#[\da-f]{3}$/i.test(color)) {
+    const expanded = `#${[...color.slice(1)].map((channel) => channel + channel).join('')}`;
+    const { r, g, b } = hexToRgb(expanded);
+    return [r, g, b, 255];
   }
   return null;
 }

@@ -241,13 +241,40 @@ function inkPixels(canvas) {
   return count;
 }
 
-function countRedPixels(canvas) {
+function inkRowsAtX(canvas, x, firstY, lastY) {
+  const context = canvas.getContext('2d');
+  const column = context.getImageData(Math.round(x), firstY, 1, lastY - firstY).data;
+  const rows = [];
+  for (let row = 0; row < lastY - firstY; row += 1) {
+    if (column[row * 4 + 3] > 0) rows.push(firstY + row);
+  }
+  return rows;
+}
+
+
+function countRgbPixels(canvas, [red, green, blue]) {
   const data = pixels(canvas);
   let count = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] > 0 && data[i] > data[i + 1] * 1.25 && data[i] > data[i + 2] * 1.2) count += 1;
+  for (let index = 0; index < data.length; index += 4) {
+    if (data[index + 3] > 0 && data[index] === red && data[index + 1] === green && data[index + 2] === blue) count += 1;
   }
   return count;
+}
+
+
+async function setActiveHex(window, value) {
+  const field = window.document.querySelector('input[aria-label="Hex color"]');
+  setControlValue(window, field, value);
+  await sleep(20);
+  return window.document.querySelector('[aria-label="Current active color"]')?.textContent?.trim() ?? '';
+}
+
+function activeHex(document) {
+  return document.querySelector('[aria-label="Current active color"]')?.textContent?.trim() ?? '';
+}
+
+function selectedColor(document) {
+  return document.querySelector('.selection-overlay')?.dataset.objectColor ?? '';
 }
 
 function canvasHash(canvas) {
@@ -359,6 +386,42 @@ async function main() {
   check('clean scene starts blank', inkPixels(canvas) === 0, `${inkPixels(canvas)} ink pixels`);
   check('temporary sketch starts blank', inkPixels(sketch) === 0, `${inkPixels(sketch)} ink pixels`);
 
+  section('Synchronized full-RGB Active Color controls');
+  const colorPicker = document.querySelector('input[aria-label="Active color picker"]');
+  const hexField = document.querySelector('input[aria-label="Hex color"]');
+  const channelFields = ['Red', 'Green', 'Blue'].map((name) => document.querySelector(`input[aria-label="${name}"]`));
+  check('shared Active Color includes native picker, HEX and all three labeled channels',
+    Boolean(colorPicker && hexField && channelFields.every(Boolean)));
+  check('RGB numeric controls are bounded integer 0–255 fields', channelFields.every((field) =>
+    field.min === '0' && field.max === '255' && field.step === '1'));
+  const activeFromHex = await setActiveHex(window, '#12A4F7');
+  check('HEX input accepts an arbitrary exact RGB value and synchronizes the picker/channels',
+    activeFromHex === '#12A4F7'
+      && colorPicker?.value?.toUpperCase() === '#12A4F7'
+      && channelFields.map((field) => field.value).join(',') === '18,164,247',
+    `${activeFromHex} / ${channelFields.map((field) => field?.value ?? '?').join(',')}`);
+  for (const [field, value] of channelFields.map((field, index) => [field, ['255', '0', '1'][index]])) {
+    setControlValue(window, field, value);
+    await sleep(15);
+  }
+  check('RGB fields update the shared HEX value and native picker in real time', activeHex(document) === '#FF0001'
+    && colorPicker?.value?.toUpperCase() === '#FF0001'
+    && channelFields.map((field) => field.value).join(',') === '255,0,1', activeHex(document));
+  setControlValue(window, channelFields[0], '256');
+  await sleep(15);
+  check('out-of-range RGB input cannot enter active color state', activeHex(document) === '#FF0001');
+  setControlValue(window, hexField, '#12GG00');
+  await sleep(15);
+  check('malformed HEX cannot enter active color state', activeHex(document) === '#FF0001');
+  const colorUndo = document.querySelector('button[aria-label="Undo"]');
+  check('Active Color tool-setting changes do not create document-history steps', Boolean(colorUndo?.disabled));
+  const activeAfterInvalid = await setActiveHex(window, '#12A4F7');
+  check('a valid RGB edit recovers cleanly after rejected channel input', activeAfterInvalid === '#12A4F7');
+  const brushSizeInput = document.querySelector('input[aria-label="Brush size"]');
+  check('brush-size control exposes 1–100 logical-pixel bounds', Boolean(brushSizeInput)
+    && brushSizeInput.min === '1' && brushSizeInput.max === '100' && brushSizeInput.step === '1',
+  `${brushSizeInput?.min ?? '?'}–${brushSizeInput?.max ?? '?'} px`);
+
   const bar = document.querySelector('.suggestion-bar');
   check('suggestion bar is mounted', Boolean(bar));
   if (bar) {
@@ -371,6 +434,8 @@ async function main() {
   drawCircle(window, canvas, 600, 360, 150);
   const roughInk = inkPixels(sketch);
   check('pencil draws on the temporary sketch layer', roughInk > 2000, `${roughInk} ink pixels`);
+  check('pencil renders the exact arbitrary Active Color on the sketch layer',
+    countRgbPixels(sketch, [18, 164, 247]) > 0, `${countRgbPixels(sketch, [18, 164, 247])} exact RGB pixels`);
   check('rough drawing leaves clean scene pixels unchanged', canvasHash(canvas) === cleanBeforeSketch);
   await sleep(2500);
 
@@ -519,17 +584,26 @@ async function main() {
       && Math.abs(geometry.rotation - rotatedDegrees) < 1);
   }
 
-  section('Object color, flip, duplicate and layer order');
-  click(window, 'button[aria-label="Recolor selected object #e26755"]');
+  section('Explicit Active Color application, flip, duplicate and layer order');
+  const artworkColorBeforeActiveChange = selectedColor(document);
+  const changedActiveForArtwork = await setActiveHex(window, '#18A4F7');
+  check('changing Active Color does not recolor the selected artwork', changedActiveForArtwork === '#18A4F7'
+    && selectedColor(document) === artworkColorBeforeActiveChange,
+  `${artworkColorBeforeActiveChange} remains selected artwork color`);
+  check('selected artwork exposes an explicit Apply Active Color action',
+    Boolean(document.querySelector('button[aria-label="Apply Active Color"]')));
+  click(window, 'button[aria-label="Apply Active Color"]');
   await sleep(180);
-  const redAfterRecolor = countRedPixels(canvas);
-  check('recolor action changes the clean vector rendering', redAfterRecolor > 0, `${redAfterRecolor} terracotta pixels`);
+  const artworkColorAfterApply = selectedColor(document);
+  check('explicit artwork recoloring applies arbitrary Active Color dynamically',
+    artworkColorAfterApply === '#18A4F7' && countRgbPixels(canvas, [24, 164, 247]) > 0,
+  `${artworkColorAfterApply}; ${countRgbPixels(canvas, [24, 164, 247])} exact RGB pixels`);
   click(window, 'button[aria-label="Undo"]');
   await sleep(90);
-  check('one undo restores the previous object color', countRedPixels(canvas) === 0);
+  check('one undo restores the selected artwork color', selectedColor(document) === artworkColorBeforeActiveChange);
   click(window, 'button[aria-label="Redo"]');
   await sleep(90);
-  check('one redo restores the recolored object', countRedPixels(canvas) > 0);
+  check('one redo restores the applied artwork color', selectedColor(document) === '#18A4F7');
   const pixelsBeforeFlip = Buffer.from(pixels(canvas));
   check('flip control toggles the selected object transform', Boolean(click(window, 'button[aria-label="Flip selected object horizontally"]')));
   await sleep(80);
@@ -703,23 +777,37 @@ async function main() {
   check('Enter creates a structured text object and selects it', countObjects(canvas) === 1
     && textGeometry?.svg.dataset.objectType === 'text' && textGeometry.svg.getAttribute('aria-label') === 'Selected Canvas title',
     `objects=${countObjects(canvas)} type=${textGeometry?.svg.dataset.objectType ?? 'none'} label=${textGeometry?.svg.getAttribute('aria-label') ?? 'none'} draft=${document.querySelector('.text-entry')?.dataset.draftValue ?? 'closed'}`);
+  check('new text starts with the shared Active Color', selectedColor(document) === '#18A4F7', selectedColor(document));
   check('selected text exposes compact editing and style controls', Boolean(document.querySelector('button[aria-label="Edit text content"]'))
     && Boolean(document.querySelector('select[aria-label="Text font size"]'))
     && Boolean(document.querySelector('select[aria-label="Text font family"]')));
+
+  const textColorBeforeActiveChange = selectedColor(document);
+  await setActiveHex(window, '#F0D84F');
+  check('changing Active Color does not automatically recolor selected text',
+    selectedColor(document) === textColorBeforeActiveChange);
+  click(window, 'button[aria-label="Apply Active Color"]');
+  await sleep(30);
+  check('explicit Active Color application recolors selected text', selectedColor(document) === '#F0D84F');
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(30);
+  check('text recolor participates in undo history', selectedColor(document) === textColorBeforeActiveChange);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(30);
+  check('redo restores the selected text color', selectedColor(document) === '#F0D84F');
 
   click(window, 'button[aria-label="Toggle bold text"]');
   setControlValue(window, document.querySelector('select[aria-label="Text font family"]'), 'Georgia, serif');
   setControlValue(window, document.querySelector('select[aria-label="Text font size"]'), '64');
   click(window, 'button[aria-label="Align text center"]');
-  click(window, 'button[aria-label="Recolor selected object #e26755"]');
   await sleep(30);
   textGeometry = selectedGeometry(document);
-  check('bold, font family, font size, alignment and recolor controls update text data',
+  check('bold, font family, font size and alignment controls update text data',
     textGeometry?.svg.dataset.objectFontWeight === 'bold'
       && textGeometry.svg.dataset.objectFontFamily === 'Georgia, serif'
       && Number(textGeometry.svg.dataset.objectFontSize) >= 64
       && textGeometry.svg.dataset.objectTextAlign === 'center'
-      && document.querySelector('button[aria-label="Recolor selected object #e26755"]')?.getAttribute('aria-pressed') === 'true');
+      && selectedColor(document) === '#F0D84F');
 
   if (textGeometry) {
     const centerX = textGeometry.x + textGeometry.width / 2;
@@ -829,14 +917,17 @@ async function main() {
   await sleep(40);
   click(window, 'button[aria-label="Fill tool"]');
   await sleep(20);
-  click(window, 'button[aria-label="Fill color #e26755"]');
+  const bucketActiveColor = await setActiveHex(window, '#7FA3BC');
+  check('bucket controls report the shared full-RGB Active Color',
+    bucketActiveColor === '#7FA3BC' && document.querySelector('[aria-label="Bucket uses active color"]')?.textContent === '#7FA3BC',
+    bucketActiveColor);
   const fillInside = logicalToClient(window, 450, 350);
   const cleanBeforeFill = canvasHash(canvas);
   pointer(window, wrapper, 'pointerdown', fillInside.x, fillInside.y);
   pointer(window, wrapper, 'pointerup', fillInside.x, fillInside.y);
   await sleep(40);
-  check('bucket fills the connected interior on a dedicated layer', inkPixels(fillCanvas) > 1000
-    && pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '226,103,85');
+  check('bucket fills the connected interior with exact arbitrary RGB on a dedicated layer', inkPixels(fillCanvas) > 1000
+    && pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '127,163,188');
   check('fill leaves rough sketch, editable text and clean-art pixels independent',
     inkPixels(sketch) === closedSketchInk && countObjects(canvas) === 1 && canvasHash(canvas) === cleanBeforeFill,
     `sketch=${inkPixels(sketch)}/${closedSketchInk} objects=${countObjects(canvas)} artStable=${canvasHash(canvas) === cleanBeforeFill}`);
@@ -849,28 +940,52 @@ async function main() {
   check('redo restores the raster fill while the text remains editable', inkPixels(fillCanvas) > 1000 && countObjects(canvas) === 1,
     `fill=${inkPixels(fillCanvas)} objects=${countObjects(canvas)}`);
 
-  setControlValue(window, document.querySelector('input[aria-label="Custom fill color"]'), '#6590bd');
+  await setActiveHex(window, '#18A4F7');
+  check('changing Active Color does not immediately recolor an existing bucket fill',
+    pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '127,163,188');
   const fillAgain = logicalToClient(window, 450, 350);
   pointer(window, wrapper, 'pointerdown', fillAgain.x, fillAgain.y);
   pointer(window, wrapper, 'pointerup', fillAgain.x, fillAgain.y);
   await sleep(35);
-  check('fill color picker changes the bucket color', pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '101,144,189');
-
-  setControlValue(window, document.querySelector('input[aria-label="Canvas Background"]'), '#123456');
-  await sleep(25);
-  check('canvas background changes independently from raster fills', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#123456');
+  check('the next bucket action uses the new arbitrary Active Color',
+    pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '24,164,247');
   click(window, 'button[aria-label="Undo"]');
   await sleep(25);
-  check('canvas background change is undoable', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#ffffff');
+  check('undo restores the fill color before the latest bucket operation',
+    pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '127,163,188');
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(25);
+  check('redo restores the latest bucket RGB color',
+    pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '24,164,247');
+
+  await setActiveHex(window, '#123456');
+  check('choosing an Active Color does not alter the background without action',
+    document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#FFFFFF');
+  click(window, 'button[aria-label="Set background to active color"]');
+  await sleep(25);
+  check('Set Background to Active Color applies the exact selected RGB value',
+    document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#123456');
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(25);
+  check('canvas background change is undoable', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#FFFFFF');
   click(window, 'button[aria-label="Redo"]');
   await sleep(25);
   check('canvas background change is redoable', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#123456');
   click(window, 'button[aria-label="Reset canvas background to white"]');
   await sleep(20);
-  check('Reset to White restores the default background', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#ffffff');
-  check('scene object remains selected and editable after fill operations',
-    countObjects(canvas) === 1 && document.querySelector('.object-toolbar strong')?.textContent === 'Editable',
-    `objects=${countObjects(canvas)} toolbar=${document.querySelector('.object-toolbar strong')?.textContent ?? 'missing'}`);
+  check('Reset White restores canonical white background', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#FFFFFF');
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(25);
+  check('Reset White is undoable and restores the previous background', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#123456');
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(25);
+  check('redo reapplies the Reset White action', document.querySelector('.canvas-stage')?.dataset.backgroundColor === '#FFFFFF');
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(25);
+  check('scene object remains selected, recolored only by explicit action, and editable after fills',
+    countObjects(canvas) === 1 && document.querySelector('.object-toolbar strong')?.textContent === 'Editable'
+      && selectedColor(document) === '#F0D84F',
+    `objects=${countObjects(canvas)} toolbar=${document.querySelector('.object-toolbar strong')?.textContent ?? 'missing'} color=${selectedColor(document)}`);
 
   section('Zoom, pan and transformed pointer input');
   clearButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -996,6 +1111,36 @@ async function main() {
   await sleep(20);
   check('Space + drag pans without entering document history',
     Number(stage.dataset.viewPanX) === oldPanX + 25 && Number(stage.dataset.viewPanY) === oldPanY + 13);
+
+  click(window, 'button[aria-label="Pencil"]');
+  await sleep(20);
+  await setActiveHex(window, '#123456');
+  setControlValue(window, document.querySelector('input[aria-label="Brush size"]'), '1');
+  await sleep(20);
+  const thinStart = logicalToClient(window, 400, 500.5);
+  const thinEnd = logicalToClient(window, 800, 500.5);
+  drawLine(window, wrapper, thinStart.x, thinStart.y, thinEnd.x, thinEnd.y);
+  await sleep(30);
+  const thinRows = inkRowsAtX(sketch, 600, 400, 601);
+  check('1 px brush remains one logical-pixel thick while drawing under zoom and pan',
+    thinRows.length >= 1 && thinRows.length <= 2 && hasInkNear(sketch, 600, 500, 2),
+    `${thinRows.length} covered rows; zoom=${stage.dataset.viewZoom}`);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(20);
+  setControlValue(window, document.querySelector('input[aria-label="Brush size"]'), '100');
+  await sleep(20);
+  const wideStart = logicalToClient(window, 400, 500.5);
+  const wideEnd = logicalToClient(window, 800, 500.5);
+  drawLine(window, wrapper, wideStart.x, wideStart.y, wideEnd.x, wideEnd.y);
+  await sleep(30);
+  const wideRows = inkRowsAtX(sketch, 600, 400, 601);
+  check('100 px brush size is measured in logical document pixels',
+    wideRows.length >= 95 && wideRows.length <= 102 && countRgbPixels(sketch, [18, 52, 86]) > 0,
+    `${wideRows.length} covered rows at ${stage.dataset.viewZoom}× display zoom`);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(20);
+  setControlValue(window, document.querySelector('input[aria-label="Brush size"]'), '7');
+  await sleep(20);
 
   const wheelAnchor = logicalToClient(window, 600, 360);
   const beforeWheel = Number(stage.dataset.viewZoom);

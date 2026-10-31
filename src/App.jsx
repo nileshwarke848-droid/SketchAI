@@ -3,6 +3,7 @@ import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, Bol
 import { loadModel, predict } from './ai/model';
 import { getSketchBounds } from './ai/preprocess';
 import SuggestionBar from './components/SuggestionBar';
+import ColorControl from './components/ColorControl';
 import { displayName, getArtworkVariants } from './data/artwork';
 import { buildSuggestions } from './lib/suggestions';
 import {
@@ -17,6 +18,8 @@ import {
   viewportTransformCss,
 } from './lib/canvas-coordinates';
 import { composeFillBoundary, fillCanvasRegion } from './lib/raster-fill';
+import { drawCanvasStrokeSegment } from './lib/canvas-drawing';
+import { DEFAULT_ACTIVE_COLOR, DEFAULT_BACKGROUND_COLOR, normalizeHexColor } from './lib/color-utils';
 import { beginTextCreation, beginTextEditing, cancelTextDraft, confirmTextDraft, updateTextDraftValue } from './lib/text-editor';
 import { EditorHistory } from './lib/editor-history';
 import {
@@ -47,8 +50,6 @@ import {
 import DebugPanel from './dev/DebugPanel';
 
 const W = 1200, H = 720;
-const colors = ['#242422', '#e26755', '#e9ab45', '#799b79', '#6590bd', '#a282b5'];
-const fillColors = ['#242422', '#ffffff', '#e26755', '#e98342', '#e9ab45', '#f0d84f', '#799b79', '#6590bd', '#a282b5'];
 const zoomSteps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
 // The preprocessing inspector is a development tool. It opens automatically in
@@ -66,7 +67,7 @@ function App() {
   const referenceCanvasRef = useRef(null);
   const fillSnapshotRef = useRef(null);
   const hasFillRef = useRef(false);
-  const backgroundColorRef = useRef('#ffffff');
+  const backgroundColorRef = useRef(DEFAULT_BACKGROUND_COLOR);
   const viewRef = useRef({ ...DEFAULT_VIEWPORT });
   const spacePressedRef = useRef(false);
   const modelRef = useRef(null);
@@ -81,9 +82,8 @@ function App() {
   if (!imageCacheRef.current) imageCacheRef.current = createArtworkImageCache();
 
   const [tool, setTool] = useState('pencil');
-  const [color, setColor] = useState(colors[0]);
-  const [fillColor, setFillColor] = useState('#e26755');
-  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [activeColor, setActiveColor] = useState(DEFAULT_ACTIVE_COLOR);
+  const [backgroundColor, setBackgroundColor] = useState(DEFAULT_BACKGROUND_COLOR);
   const [view, setView] = useState({ ...DEFAULT_VIEWPORT });
   const [textDraft, setTextDraft] = useState(null);
   const [size, setSize] = useState(7);
@@ -221,7 +221,7 @@ function App() {
     }
     hasFillRef.current = Boolean(snapshot.hasFill);
     setHasFill(Boolean(snapshot.hasFill));
-    const restoredBackground = snapshot.canvasBackgroundColor ?? '#ffffff';
+    const restoredBackground = normalizeHexColor(snapshot.canvasBackgroundColor) ?? DEFAULT_BACKGROUND_COLOR;
     backgroundColorRef.current = restoredBackground;
     setBackgroundColor(restoredBackground);
     const bounds = getSketchBounds(sketchRef.current);
@@ -348,17 +348,7 @@ function App() {
 
   const drawSketchSegment = (from, to, erase = false) => {
     const context = sketchRef.current.getContext('2d');
-    context.save();
-    context.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
-    context.strokeStyle = erase ? '#000' : color;
-    context.lineWidth = erase ? size * 3 : size;
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
-    context.beginPath();
-    context.moveTo(from.x, from.y);
-    context.lineTo(to.x + 0.01, to.y + 0.01);
-    context.stroke();
-    context.restore();
+    drawCanvasStrokeSegment(context, from, to, activeColor, erase ? size * 3 : size, { erase });
   };
 
   const eraseObjectsAlong = (from, to) => {
@@ -378,9 +368,10 @@ function App() {
   };
 
   const setCanvasBackground = (nextColor) => {
-    if (nextColor === backgroundColorRef.current) return;
-    backgroundColorRef.current = nextColor;
-    setBackgroundColor(nextColor);
+    const normalizedColor = normalizeHexColor(nextColor);
+    if (!normalizedColor || normalizedColor === backgroundColorRef.current) return;
+    backgroundColorRef.current = normalizedColor;
+    setBackgroundColor(normalizedColor);
     pushHistory();
   };
 
@@ -401,7 +392,7 @@ function App() {
       referenceCanvas: referenceCanvasRef.current,
       fillCanvas: fillRef.current,
       seed,
-      color: fillColor,
+      color: activeColor,
     });
     if (!result.changed) return;
     hasFillRef.current = true;
@@ -427,7 +418,7 @@ function App() {
         text: value,
         x: draft.x,
         y: draft.y,
-        color,
+        color: activeColor,
         zIndex: sceneObjectsRef.current.length,
       });
       object.x = Math.min(Math.max(0, object.x), Math.max(0, W - object.width));
@@ -637,7 +628,7 @@ function App() {
     const hasContent = sceneObjectsRef.current.length > 0
       || Boolean(getSketchBounds(sketchRef.current).width)
       || hasFillRef.current
-      || backgroundColorRef.current !== '#ffffff';
+      || backgroundColorRef.current !== DEFAULT_BACKGROUND_COLOR;
     if (!hasContent) return;
     if (historyRef.current.cursor > 5 && !window.confirm('Clear the entire canvas? You can still undo this action.')) return;
     revisionRef.current += 1;
@@ -650,8 +641,8 @@ function App() {
     fillSnapshotRef.current = fillRef.current.getContext('2d').getImageData(0, 0, W, H);
     hasFillRef.current = false;
     setHasFill(false);
-    backgroundColorRef.current = '#ffffff';
-    setBackgroundColor('#ffffff');
+    backgroundColorRef.current = DEFAULT_BACKGROUND_COLOR;
+    setBackgroundColor(DEFAULT_BACKGROUND_COLOR);
     setRecognition(IDLE);
     setHasInk(false);
     setMessage('');
@@ -672,7 +663,7 @@ function App() {
     }
     try {
       const revision = ++revisionRef.current;
-      const objectColor = defaultSceneObjectColor(variant, color);
+      const objectColor = defaultSceneObjectColor(variant, activeColor);
       await imageCacheRef.current.ensure(variant, objectColor);
       if (revision !== revisionRef.current) return;
       const placement = getSceneObjectPlacement(bounds, variant, W, H);
@@ -732,27 +723,23 @@ function App() {
   };
 
   const recolorSelected = async (nextColor) => {
+    const normalizedColor = normalizeHexColor(nextColor);
     const id = selectedObjectIdRef.current;
     const object = sceneObjectsRef.current.find((candidate) => candidate.id === id);
-    if (!object || object.color === nextColor) return;
+    if (!object || !normalizedColor || object.color === normalizedColor) return;
     if (object.type === 'text') {
-      changeSelectedText({ color: nextColor });
+      changeSelectedText({ color: normalizedColor });
       return;
     }
     try {
-      await imageCacheRef.current.ensure(object.artwork, nextColor);
+      await imageCacheRef.current.ensure(object.artwork, normalizedColor);
       if (selectedObjectIdRef.current !== id) return;
-      syncScene(updateSceneObject(sceneObjectsRef.current, id, { color: nextColor }));
+      syncScene(updateSceneObject(sceneObjectsRef.current, id, { color: normalizedColor }));
       pushHistory();
     } catch (error) {
       console.error('Could not recolor artwork:', error);
       setMessage('Could not change that object’s color. Please try again.');
     }
-  };
-
-  const changeBrushColor = (nextColor) => {
-    setColor(nextColor);
-    if (tool === 'select' && selectedObjectIdRef.current) recolorSelected(nextColor);
   };
 
   const selectedObject = sceneObjects.find((object) => object.id === selectedObjectId) ?? null;
@@ -839,7 +826,7 @@ function App() {
                 <canvas ref={fillRef} className="fill-canvas" width={W} height={H} aria-hidden="true"/>
                 <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil, text, fill or eraser tools." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''}/>
                 <canvas ref={sketchRef} className="sketch-overlay" width={W} height={H} aria-hidden="true"/>
-                {tool === 'select' && selectedObject && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label={`Selected ${selectedObjectLabel}`} data-selected-object-id={selectedObject.id} data-object-type={selectedObject.type} data-object-x={selectedObject.x} data-object-y={selectedObject.y} data-object-width={selectedObject.width} data-object-height={selectedObject.height} data-object-rotation={selectedObject.rotation} data-object-flip-x={selectedObject.flipX} data-object-font-size={selectedObject.fontSize ?? ''} data-object-font-family={selectedObject.fontFamily ?? ''} data-object-font-weight={selectedObject.fontWeight ?? ''} data-object-text-align={selectedObject.textAlign ?? ''}>
+                {tool === 'select' && selectedObject && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label={`Selected ${selectedObjectLabel}`} data-selected-object-id={selectedObject.id} data-object-type={selectedObject.type} data-object-x={selectedObject.x} data-object-y={selectedObject.y} data-object-width={selectedObject.width} data-object-height={selectedObject.height} data-object-rotation={selectedObject.rotation} data-object-flip-x={selectedObject.flipX} data-object-font-size={selectedObject.fontSize ?? ''} data-object-font-family={selectedObject.fontFamily ?? ''} data-object-font-weight={selectedObject.fontWeight ?? ''} data-object-text-align={selectedObject.textAlign ?? ''} data-object-color={selectedObject.color}>
                   <polygon className="selection-box" strokeWidth={1.5 / displayScale} points={selectionCorners.map(({ x, y }) => `${x},${y}`).join(' ')}/>
                   <line className="rotation-stem" strokeWidth={1.25 / displayScale} x1={rotationStem.x} y1={rotationStem.y} x2={rotationHandle.x} y2={rotationHandle.y}/>
                   <circle className="rotation-hit-area" cx={rotationHandle.x} cy={rotationHandle.y} r={handleHitRadius} data-transform-handle="rotate" aria-label="Rotate selected object" role="button" tabIndex="0"/>
@@ -865,9 +852,15 @@ function App() {
           {selectedObject && <div className="object-toolbar" aria-label="Selected object editor">
             <div className="object-toolbar-title"><span className="control-label">EDITING</span><strong>{selectedObjectLabel}</strong><span className="object-position">Object {selectedIndex + 1} of {sceneObjects.length}</span></div>
             <div className="object-toolbar-actions">
-              <div className="object-colors" role="group" aria-label="Recolor selected object">
-                {colors.map((swatch) => <button key={swatch} className={`color-swatch ${selectedObject.color === swatch ? 'active' : ''}`} style={{'--swatch':swatch}} onClick={() => recolorSelected(swatch)} aria-pressed={selectedObject.color === swatch} aria-label={`Recolor selected object ${swatch}`} title={`Recolor ${swatch}`}>{selectedObject.color === swatch && <Check size={12}/>}</button>)}
-                <input className="custom-color" type="color" value={selectedObject.color.length === 7 && selectedObject.color[0] === '#' ? selectedObject.color : '#242422'} onChange={(event) => recolorSelected(event.target.value)} aria-label="Custom selected object color" title="Custom color"/>
+              <div className="object-color-apply" role="group" aria-label="Selected object color">
+                <span className="object-current-color">
+                  <i style={{ '--object-color': selectedObject.color === 'original' ? '#FFFFFF' : selectedObject.color }} aria-hidden="true"/>
+                  <output aria-label="Current selected object color">{selectedObject.color === 'original' ? 'Original colors' : selectedObject.color}</output>
+                </span>
+                <button className="object-action" onClick={() => recolorSelected(activeColor)}
+                  disabled={selectedObject.color === activeColor} aria-label="Apply Active Color" title={`Apply ${activeColor}`}>
+                  <Check size={14}/> Apply Active Color
+                </button>
               </div>
               {selectedObject.type === 'text' && <div className="text-object-controls" role="group" aria-label="Selected text controls">
                 <button className="object-action" onClick={() => editTextObject(selectedObject)} aria-label="Edit text content" title="Edit text"><Type size={14}/> Edit text</button>
@@ -893,19 +886,30 @@ function App() {
             <span className="object-edit-hint">Drag to move · corners resize proportionally · upper handle rotates · double-click text to edit</span>
           </div>}
           {tool === 'fill' && <div className="fill-controls" aria-label="Paint bucket and canvas background controls">
-            <div className="fill-color-control"><span className="control-label">FILL COLOR</span><div className="fill-swatches" role="group" aria-label="Fill color">
-              {fillColors.map((swatch) => <button key={swatch} className={`color-swatch ${fillColor.toLowerCase() === swatch ? 'active' : ''}`} style={{'--swatch':swatch}} onClick={() => setFillColor(swatch)} aria-pressed={fillColor.toLowerCase() === swatch} aria-label={`Fill color ${swatch}`} title={`Fill color ${swatch}`}>{fillColor.toLowerCase() === swatch && <Check size={12}/>}</button>)}
-            </div><input className="custom-color" type="color" value={fillColor} onChange={(event) => setFillColor(event.target.value)} aria-label="Custom fill color" title="Custom fill color"/></div>
+            <div className="fill-active-color">
+              <span className="control-label">BUCKET COLOR</span>
+              <i style={{ '--object-color': activeColor }} aria-hidden="true"/>
+              <output aria-label="Bucket uses active color">{activeColor}</output>
+            </div>
             <span className="object-toolbar-divider"/>
-            <label className="background-control"><span className="control-label">CANVAS BACKGROUND</span><input className="custom-color" type="color" value={backgroundColor} onChange={(event) => setCanvasBackground(event.target.value)} aria-label="Canvas Background" title="Canvas Background"/></label>
-            <button className="object-action" onClick={() => setCanvasBackground('#ffffff')} aria-label="Reset canvas background to white">Reset to White</button>
-            <span className="fill-hint">Bucket fills a connected region; background changes the whole canvas.</span>
+            <div className="background-current">
+              <span className="control-label">CANVAS BACKGROUND</span>
+              <i style={{ '--object-color': backgroundColor }} aria-hidden="true"/>
+              <output aria-label="Canvas background color">{backgroundColor}</output>
+            </div>
+            <button className="object-action" onClick={() => setCanvasBackground(activeColor)}
+              disabled={backgroundColor === activeColor} aria-label="Set background to active color">Set Background to Active Color</button>
+            <button className="object-action" onClick={() => setCanvasBackground(DEFAULT_BACKGROUND_COLOR)}
+              aria-label="Reset canvas background to white">Reset White</button>
+            <span className="fill-hint">Fill and background use the shared Active Color control.</span>
           </div>}
           <div className="editor-bottom">
-            {(tool === 'pencil' || tool === 'eraser') && <>
-              <div className="palette"><span className="control-label">BRUSH</span>{colors.map((swatch) => <button key={swatch} className={`color-swatch ${color === swatch ? 'active' : ''}`} style={{'--swatch':swatch}} onClick={() => changeBrushColor(swatch)} aria-pressed={color === swatch} aria-label={`Brush color ${swatch}`} title={swatch}>{color === swatch && <Check size={12}/>}</button>)}</div>
-              <div className="brush-control"><span className="control-label">SIZE</span><div className="size-dot"/><input aria-label="Brush size" type="range" min="3" max="24" value={size} onChange={(event) => setSize(Number(event.target.value))}/><div className="size-dot big"/><span className="size-value">{size}px</span></div>
-            </>}
+            <ColorControl value={activeColor} onChange={setActiveColor}/>
+            {(tool === 'pencil' || tool === 'eraser') && <div className="brush-control">
+              <span className="control-label">BRUSH SIZE</span>
+              <input aria-label="Brush size" type="range" min="1" max="100" step="1" value={size} onChange={(event) => setSize(Number(event.target.value))}/>
+              <output className="size-value">{size}px logical</output>
+            </div>}
             <div className="bottom-tip"><MousePointer2 size={14}/>{tool === 'select' ? 'Edit objects' : tool === 'eraser' ? 'Erase sketch or object' : tool === 'text' ? 'Click to add editable text' : tool === 'fill' ? 'Click a connected region to fill' : tool === 'pan' ? 'Drag to pan · Space + drag also works' : 'Draw freely'}</div>
           </div>
         </div>

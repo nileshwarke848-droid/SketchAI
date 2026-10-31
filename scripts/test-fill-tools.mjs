@@ -195,7 +195,7 @@ const backgroundRedo = backgroundHistory.redo();
 const backgroundFill = fillCanvasRegion({ referenceCanvas: backgroundLayers.reference, fillCanvas: backgroundLayers.fill, seed: { x: 900, y: 600 }, color: BLUE });
 check('canvas background is independent state and background changes undo/redo', () => {
   assert.deepEqual(colorAt(backgroundLayers.reference, 900, 600), [18, 52, 86, 255]);
-  assert.equal(backgroundUndo.canvasBackgroundColor, '#ffffff');
+  assert.equal(backgroundUndo.canvasBackgroundColor, '#FFFFFF');
   assert.equal(backgroundRedo.canvasBackgroundColor, '#123456');
   assert.equal(backgroundFill.count, PIXEL_COUNT, 'a uniform background is one connected fill region');
 });

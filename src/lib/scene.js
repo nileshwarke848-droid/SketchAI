@@ -1,4 +1,5 @@
 import { variantToEditableSvgString } from '../data/artwork.js';
+import { normalizeHexColor } from './color-utils.js';
 
 export const DEFAULT_SCENE_COLOR = '#242422';
 export const MIN_OBJECT_SIZE = 40;
@@ -15,7 +16,8 @@ let sceneIdCounter = 0;
 
 /** Preserve the established full-color rendering for non-MDI bundled icons. */
 export function defaultSceneObjectColor(artwork, brushColor) {
-  return artwork?.origin === 'icon' && artwork.source !== 'mdi' ? 'original' : brushColor;
+  if (artwork?.origin === 'icon' && artwork.source !== 'mdi') return 'original';
+  return normalizeHexColor(brushColor) ?? DEFAULT_SCENE_COLOR;
 }
 
 export function createSceneObjectId() {
@@ -43,6 +45,10 @@ export function createSceneObject({
   if (![x, y, width, height, rotation].every(Number.isFinite) || width <= 0 || height <= 0) {
     throw new TypeError('Scene object position and dimensions must be finite and positive.');
   }
+  const normalizedColor = color === 'original' && artwork.origin === 'icon' && artwork.source !== 'mdi'
+    ? 'original'
+    : normalizeHexColor(color);
+  if (!normalizedColor) throw new TypeError(`Scene object color must be a valid RGB hex value: ${color}`);
   const artworkData = {
     id: artwork.id,
     w: artwork.w,
@@ -64,7 +70,7 @@ export function createSceneObject({
     width,
     height,
     rotation,
-    color,
+    color: normalizedColor,
     flipX: Boolean(flipX),
     zIndex,
   };
@@ -93,6 +99,8 @@ export function createTextSceneObject({
   if (![x, y, rotation].every(Number.isFinite)) {
     throw new TypeError('Text object position and rotation must be finite.');
   }
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor) throw new TypeError(`Text color must be a valid RGB hex value: ${color}`);
   const family = SAFE_TEXT_FAMILIES.includes(fontFamily) ? fontFamily : SAFE_TEXT_FAMILIES[0];
   const weight = fontWeight === 'bold' ? 'bold' : 'normal';
   const align = ['left', 'center', 'right'].includes(textAlign) ? textAlign : 'left';
@@ -110,7 +118,7 @@ export function createTextSceneObject({
     width: objectWidth,
     height: objectHeight,
     rotation,
-    color,
+    color: normalizedColor,
     flipX: Boolean(flipX),
     zIndex,
     text: value,
@@ -175,8 +183,16 @@ export function updateSceneObject(objects, id, update) {
     if (object.id !== id) return object;
     const patch = typeof update === 'function' ? update(object) : update;
     if (!patch) return object;
+    let safePatch = patch;
+    if (Object.prototype.hasOwnProperty.call(patch, 'color')) {
+      const keepsOriginalArtworkColors = patch.color === 'original' && object.type === 'artwork'
+        && object.artwork?.origin === 'icon' && object.artwork.source !== 'mdi';
+      const normalizedColor = keepsOriginalArtworkColors ? 'original' : normalizeHexColor(patch.color);
+      if (!normalizedColor) return object;
+      safePatch = { ...patch, color: normalizedColor };
+    }
     changed = true;
-    return { ...object, ...patch };
+    return { ...object, ...safePatch };
   });
   return changed ? next : objects;
 }
@@ -326,7 +342,9 @@ export function getRotationFromPointer(object, startRotation, startPointer, poin
 }
 
 export function artworkImageKey(artworkId, color) {
-  return `${artworkId}\u0000${color}`;
+  const normalizedColor = color === 'original' ? 'original' : normalizeHexColor(color);
+  if (!normalizedColor) throw new TypeError(`Artwork cache color must be a valid RGB hex value: ${color}`);
+  return `${artworkId}\u0000${normalizedColor}`;
 }
 
 export function createArtworkImageCache(ImageConstructor = globalThis.Image) {
@@ -337,7 +355,9 @@ export function createArtworkImageCache(ImageConstructor = globalThis.Image) {
       return images.get(artworkImageKey(artworkId, color));
     },
     async ensure(artwork, color) {
-      const key = artworkImageKey(artwork.id, color);
+      const normalizedColor = color === 'original' ? 'original' : normalizeHexColor(color);
+      if (!normalizedColor) throw new TypeError(`Artwork cache color must be a valid RGB hex value: ${color}`);
+      const key = artworkImageKey(artwork.id, normalizedColor);
       if (images.has(key)) return images.get(key);
       if (pending.has(key)) return pending.get(key);
       if (typeof ImageConstructor !== 'function') throw new Error('Image decoding is unavailable.');
@@ -346,7 +366,7 @@ export function createArtworkImageCache(ImageConstructor = globalThis.Image) {
         const svg = variantToEditableSvgString(artwork, {
           width: artwork.w,
           height: artwork.h,
-          color,
+          color: normalizedColor,
         });
         image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
         if (typeof image.decode === 'function') {

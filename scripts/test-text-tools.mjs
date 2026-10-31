@@ -120,7 +120,7 @@ check('text resize scales font with its box and enforces a readable minimum', ()
 
 const recolored = updateSceneObject([resized], resized.id, { color: '#e26755' })[0];
 check('text recoloring updates scene data independently of its wording', () => {
-  assert.equal(recolored.color, '#e26755');
+  assert.equal(recolored.color, '#E26755');
   assert.equal(recolored.text, resized.text);
 });
 
@@ -148,7 +148,7 @@ check('undo and redo restore text edits, style, and selection', () => {
   assert.equal(undo.objects[0].text, 'Editable title');
   assert.equal(undo.selectedObjectId, text.id);
   const redo = history.redo();
-  assert.equal(redo.objects[0].color, '#e26755');
+  assert.equal(redo.objects[0].color, '#E26755');
   assert.equal(redo.selectedObjectId, recolored.id);
 });
 

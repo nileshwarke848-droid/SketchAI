@@ -134,3 +134,29 @@
 .fill-hint{margin-left:auto;color:#a6aba2;font-size:9px}
 @media(max-width:1100px){.editor-top-right{gap:10px}.fill-hint{flex-basis:100%;margin-left:0}}
 @media(max-width:700px){.editor-top{padding:0 10px}.editor-top-right{gap:6px}.editor-top-right>span:first-child{display:none}.zoom-controls{gap:1px}.zoom-button{width:23px}.zoom-readout{min-width:30px}.text-setting select{max-width:92px}.fill-controls{gap:8px;padding:9px 10px}.fill-color-control{flex-wrap:wrap}.fill-swatches{gap:7px}.background-control{flex-wrap:wrap}.fill-hint{font-size:8px}}
+/* Accessible, shared full-RGB Active Color editor and contextual apply controls. */
+.editor-bottom{flex-wrap:wrap;gap:12px;min-height:86px}
+.active-color-control{display:flex;align-items:center;flex-wrap:wrap;gap:7px;border:0;margin:0;padding:0;min-width:0;flex:1 1 620px}
+.active-color-control legend{float:left;width:auto;padding:0;margin:0 2px 0 0;font-size:8px;font-weight:700;letter-spacing:1px;color:#81877d}
+.active-color-editors{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.active-color-picker-label{width:28px;height:26px;display:grid;place-items:center;border:1px solid #e5e8e0;border-radius:5px;background:#fff;overflow:hidden}
+.active-color-picker-label input{width:34px;height:30px;padding:0;border:0;background:transparent;cursor:pointer}
+.color-hex-field,.rgb-field{display:inline-flex;align-items:center;gap:4px;border:1px solid #e5e8e0;border-radius:5px;padding:3px 5px;background:#fff;color:#7d857a}
+.color-hex-field>span,.rgb-field>span{font-size:8px;font-weight:700;letter-spacing:.5px}
+.color-hex-field input{width:73px;border:0;padding:1px 2px;background:transparent;color:#343a32;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;text-transform:uppercase;outline:none}
+.rgb-inputs{display:flex;align-items:center;gap:3px}
+.rgb-field{gap:2px;padding:2px 4px}
+.rgb-field input{width:38px;border:0;padding:1px;background:transparent;color:#343a32;text-align:right;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;outline:none}
+.active-color-value{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:9px;font-weight:700;color:#666e63}
+.quick-color-swatches{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.quick-color-swatches .color-swatch{width:16px;height:16px;flex:none}
+.brush-control{gap:8px;border-left:1px solid #eceee8;padding-left:12px;flex-wrap:wrap}
+.brush-control input{width:88px}
+.brush-control .size-value{min-width:62px;font-size:9px}
+.object-color-apply{display:flex;align-items:center;gap:7px;padding:0 5px}
+.object-current-color{display:inline-flex;align-items:center;gap:5px;color:#697166;font-size:9px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.object-current-color i,.fill-active-color i,.background-current i{width:16px;height:16px;border:1px solid #d9ddd5;border-radius:50%;background:var(--object-color);display:inline-block;flex:none}
+.fill-active-color,.background-current{display:flex;align-items:center;gap:7px}
+.fill-active-color output,.background-current output{font-size:9px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#697166}
+.fill-active-color .control-label,.background-current .control-label{margin:0;white-space:nowrap}
+@media(max-width:700px){.active-color-control{flex-basis:100%}.active-color-control legend{flex-basis:100%}.active-color-editors{gap:4px}.quick-color-swatches{gap:6px}.brush-control{border:0;padding:0;flex-basis:100%}.object-color-apply{padding:0 2px}.fill-controls{align-items:flex-start}.fill-active-color,.background-current{flex-wrap:wrap}}
