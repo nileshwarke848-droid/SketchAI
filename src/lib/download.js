@@ -1,9 +1,8 @@
 // PNG export.
 //
-// The drawing lives on more than one canvas while the user works: the visible
-// art canvas holds strokes plus inserted illustrations, and a separate overlay
-// holds the temporary recognition sketch. Export must composite every *visible*
-// layer into one fresh canvas and never leak the recognition overlay.
+// The drawing lives on two visible layers while the user works: permanent art
+// holds accepted illustrations, while a separate overlay holds only the current
+// rough sketch. Export composites both without mutating either canvas.
 //
 // Saving itself is deliberately defensive. `a[download]` is the only way to name
 // a file without a server, but it is silently ignored in some embeddings

@@ -19,6 +19,9 @@ import { build } from 'esbuild';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { createCanvas, ImageData as NapiImageData } from '@napi-rs/canvas';
 import { Resvg } from '@resvg/resvg-js';
+import { getSketchBounds } from '../src/ai/preprocess.js';
+import { getArtworkVariants, variantToSvgString } from '../src/data/artwork.js';
+import { getArtworkReplacementPlacement } from '../src/lib/canvas-layers.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -109,6 +112,10 @@ function makeCanvasShim(window) {
   // then never calls the callback, so download.js would hang. Implement it for real.
   proto.toBlob = function toBlob(callback, mime = 'image/png') {
     const dataUrl = this.toDataURL(mime);
+    window.__lastExportDataUrl = dataUrl;
+    window.__lastExportPixels = new Uint8ClampedArray(
+      this.getContext('2d').getImageData(0, 0, this.width, this.height).data,
+    );
     const payload = dataUrl.slice(dataUrl.indexOf(',') + 1);
     callback(new window.Blob([Buffer.from(payload, 'base64')], { type: mime }));
   };
@@ -222,6 +229,7 @@ function createWindow(code) {
       makeCanvasShim(window);
       makeImageShim(window);
       makeFetchShim(window);
+      window.confirm = () => true;
     },
   });
 
@@ -261,6 +269,38 @@ function drawCircle(window, canvas, cx, cy, radius, steps = 48) {
   pointer(window, canvas, 'pointerup', endX, cy);
 }
 
+function drawLine(window, canvas, x1, y1, x2, y2) {
+  pointer(window, canvas, 'pointerdown', x1, y1);
+  pointer(window, canvas, 'pointermove', x2, y2);
+  pointer(window, canvas, 'pointerup', x2, y2);
+}
+
+function imagePixels(canvas) {
+  return new Uint8ClampedArray(
+    canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data,
+  );
+}
+
+function renderVariant(variant, color = '#242422') {
+  const svg = variantToSvgString(variant, { size: 320, color });
+  const rendered = new Resvg(svg, { fitTo: { mode: 'width', value: 320 } }).render();
+  const canvas = createCanvas(rendered.width, rendered.height);
+  canvas.getContext('2d').putImageData(
+    new NapiImageData(new Uint8ClampedArray(rendered.pixels), rendered.width, rendered.height),
+    0,
+    0,
+  );
+  return canvas;
+}
+
+function countNonWhitePixels(pixels) {
+  let count = 0;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i] < 250 || pixels[i + 1] < 250 || pixels[i + 2] < 250) count += 1;
+  }
+  return count;
+}
+
 function inkPixels(canvas) {
   const ctx = canvas.getContext('2d');
   const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -271,8 +311,12 @@ function inkPixels(canvas) {
 
 // Insertion now *replaces* rough strokes with clean artwork in place, so "more
 // ink" is no longer the right assertion. A fingerprint of the pixels is.
+function regionPixels(canvas, x, y, w, h) {
+  return new Uint8ClampedArray(canvas.getContext('2d').getImageData(x, y, w, h).data);
+}
+
 function inkInRegion(canvas, x, y, w, h) {
-  const { data } = canvas.getContext('2d').getImageData(x, y, w, h);
+  const data = regionPixels(canvas, x, y, w, h);
   let count = 0;
   for (let i = 3; i < data.length; i += 4) if (data[i] > 0) count += 1;
   return count;
@@ -329,12 +373,15 @@ async function main() {
 
   // ---- draw ---------------------------------------------------------------
   section('Drawing and prediction');
-  const canvas = document.querySelector('canvas.canvas-wrap canvas')
-    ?? document.querySelector('.canvas-wrap canvas');
-  check('drawing canvas is mounted', Boolean(canvas), canvas ? `${canvas.width}x${canvas.height}` : 'missing');
+  const canvas = document.querySelector('.canvas-wrap canvas.art-canvas');
+  const sketch = document.querySelector('.canvas-wrap canvas.sketch-overlay');
+  check('permanent art canvas is mounted', Boolean(canvas), canvas ? `${canvas.width}x${canvas.height}` : 'missing');
+  check('temporary sketch canvas is mounted', Boolean(sketch), sketch ? `${sketch.width}x${sketch.height}` : 'missing');
 
   const blankInk = inkPixels(canvas);
-  check('canvas starts blank', blankInk === 0, `${blankInk} ink pixels`);
+  const blankSketchInk = inkPixels(sketch);
+  check('permanent art starts blank', blankInk === 0, `${blankInk} ink pixels`);
+  check('temporary sketch starts blank', blankSketchInk === 0, `${blankSketchInk} ink pixels`);
 
   // ---- suggestion bar ----------------------------------------------------
   section('Suggestion bar');
@@ -347,9 +394,13 @@ async function main() {
   const emptyText = document.querySelector('.suggestion-bar-empty')?.textContent?.trim() ?? '';
   check('empty state invites drawing', /start drawing/i.test(emptyText), emptyText);
 
+  const permanentBeforeSketch = canvasHash(canvas);
   drawCircle(window, canvas, 600, 360, 150);
-  const drawnInk = inkPixels(canvas);
-  check('a stroke puts ink on the canvas', drawnInk > 2000, `${drawnInk} ink pixels`);
+  const drawnInk = inkPixels(sketch);
+  const permanentAfterSketch = canvasHash(canvas);
+  check('a stroke appears on the temporary sketch layer', drawnInk > 2000, `${drawnInk} ink pixels`);
+  check('ordinary drawing never paints onto permanent art', permanentAfterSketch === permanentBeforeSketch,
+    `permanent fingerprint ${permanentBeforeSketch} -> ${permanentAfterSketch}`);
 
   // The prediction is debounced by 600 ms.
   await sleep(2500);
@@ -424,16 +475,22 @@ async function main() {
   let inkAfterInsert = drawnInk;
   let hashBeforeInsert = canvasHash(canvas);
   let hashAfterInsert = hashBeforeInsert;
+  const sketchHashBeforeInsert = canvasHash(sketch);
+  let sketchHashAfterInsert = sketchHashBeforeInsert;
   if (insertable) {
     hashBeforeInsert = canvasHash(canvas);
     insertable.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
     await sleep(400);
     inkAfterInsert = inkPixels(canvas);
     hashAfterInsert = canvasHash(canvas);
-    // Replaces the rough strokes in place: the canvas changes and still has ink.
-    inserted = hashAfterInsert !== hashBeforeInsert && inkAfterInsert > 0;
+    sketchHashAfterInsert = canvasHash(sketch);
+    const sketchInkAfterInsert = inkPixels(sketch);
+    // A suggestion commits permanent art and removes every temporary rough pixel.
+    inserted = hashAfterInsert !== hashBeforeInsert && inkAfterInsert > 0 && sketchInkAfterInsert === 0;
     check('clicking a suggestion inserts artwork', inserted,
-      `${drawnInk} -> ${inkAfterInsert} ink pixels, fingerprint ${hashBeforeInsert} -> ${hashAfterInsert}`);
+      `${drawnInk} rough pixels -> ${inkAfterInsert} permanent pixels`);
+    check('replacement leaves no rough pixels on the temporary layer', sketchInkAfterInsert === 0,
+      `${sketchInkAfterInsert} sketch pixels`);
   } else {
     check('an illustrated suggestion is available to insert', false, 'no clickable card');
   }
@@ -447,46 +504,131 @@ async function main() {
   undoButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(300);
   const hashAfterUndo = canvasHash(canvas);
-  check('undo reverses the inserted artwork', hashAfterUndo === hashBeforeInsert,
-    `fingerprint ${hashAfterInsert} -> ${hashAfterUndo} (drawing was ${hashBeforeInsert})`);
+  const sketchHashAfterUndo = canvasHash(sketch);
+  check('undo restores pre-replacement permanent artwork', hashAfterUndo === hashBeforeInsert,
+    `fingerprint ${hashAfterInsert} -> ${hashAfterUndo} (before replacement ${hashBeforeInsert})`);
+  check('undo restores the rough sketch on its temporary layer',
+    sketchHashAfterUndo === sketchHashBeforeInsert && inkPixels(sketch) > 0,
+    `${inkPixels(sketch)} rough pixels restored`);
 
   check('redo is enabled after undo', redoButton && !redoButton.disabled, `disabled=${redoButton?.disabled}`);
   redoButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(300);
   const hashAfterRedo = canvasHash(canvas);
-  check('redo restores it', hashAfterRedo === hashAfterInsert,
+  const sketchHashAfterRedo = canvasHash(sketch);
+  check('redo restores the clean inserted artwork', hashAfterRedo === hashAfterInsert,
     `fingerprint ${hashAfterUndo} -> ${hashAfterRedo} (inserted was ${hashAfterInsert})`);
+  check('redo restores an empty temporary sketch layer',
+    sketchHashAfterRedo === sketchHashAfterInsert && inkPixels(sketch) === 0,
+    `${inkPixels(sketch)} sketch pixels`);
+
+  // ---- overlapping replacement regression -------------------------------
+  section('Overlapping sketch replacement');
+  {
+    const permanentBefore = imagePixels(canvas);
+    const permanentHashBefore = canvasHash(canvas);
+    drawCircle(window, canvas, 700, 360, 105);
+    const roughPixels = imagePixels(sketch);
+    const roughBounds = getSketchBounds(sketch);
+    const permanentHashDuringSketch = canvasHash(canvas);
+    let overlaps = 0;
+    for (let i = 3; i < permanentBefore.length; i += 4) {
+      if (permanentBefore[i] > 0 && roughPixels[i] > 10) overlaps += 1;
+    }
+    check('new rough sketch overlaps accepted artwork', overlaps > 0, `${overlaps} overlapping pixels`);
+    check('overlapping rough sketch leaves permanent art unchanged',
+      permanentHashDuringSketch === permanentHashBefore,
+      `fingerprint ${permanentHashBefore} -> ${permanentHashDuringSketch}`);
+
+    await sleep(2500);
+    const circleCard = document.querySelector('button.s-card[aria-label="Insert Circle drawing"]');
+    check('overlap scenario has a clean Circle suggestion', Boolean(circleCard));
+    if (circleCard) {
+      const bounds = getSketchBounds(sketch);
+      const placement = getArtworkReplacementPlacement(bounds, CANVAS_W, CANVAS_H);
+      const variant = getArtworkVariants('circle')[0];
+      const clean = renderVariant(variant);
+      const expected = createCanvas(CANVAS_W, CANVAS_H);
+      const expectedContext = expected.getContext('2d');
+      expectedContext.drawImage(canvas.__backing, 0, 0);
+      expectedContext.drawImage(clean, placement.x, placement.y, placement.dimension, placement.dimension);
+      const expectedPixels = imagePixels(expected);
+
+      circleCard.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+      await sleep(400);
+      const actualPixels = imagePixels(canvas);
+      const matchesSourceOver = Buffer.compare(Buffer.from(actualPixels), Buffer.from(expectedPixels)) === 0;
+      check('overlap replacement matches non-destructive source-over compositing', matchesSourceOver,
+        matchesSourceOver ? 'old accepted pixels preserved outside clean ink' : 'permanent pixels differ from expected composite');
+      check('overlap replacement clears the temporary sketch', inkPixels(sketch) === 0,
+        `${inkPixels(sketch)} sketch pixels`);
+    }
+  }
 
   // ---- multiple objects --------------------------------------------------
   // Draw a second, separate sketch and insert into it. The first inserted
   // drawing must survive: several objects have to coexist on the canvas.
   section('Multiple objects');
   {
-    const firstRegion = () => inkInRegion(canvas, 450, 210, 300, 300);
-    const firstInkBefore = firstRegion();
+    const firstRegion = () => regionPixels(canvas, 450, 210, 300, 300);
+    const firstRegionBefore = Buffer.from(firstRegion());
+    const permanentHashBeforeSketch = canvasHash(canvas);
     drawCircle(window, canvas, 300, 200, 90);
+    check('second rough sketch stays off permanent artwork',
+      canvasHash(canvas) === permanentHashBeforeSketch);
     await sleep(2200);
     const secondCards = [...document.querySelectorAll('.s-card')].filter((card) => card.tagName === 'BUTTON');
     if (secondCards.length) {
       secondCards[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
       await sleep(500);
     }
-    const firstInkAfter = firstRegion();
+    const firstRegionAfter = Buffer.from(firstRegion());
     const secondInk = inkInRegion(canvas, 210, 110, 180, 180);
-    check('the first object survives a second insertion', firstInkAfter > 0,
-      `first region ${firstInkBefore} -> ${firstInkAfter} ink pixels`);
+    check('the first object remains pixel-identical after a separate insertion',
+      Buffer.compare(firstRegionBefore, firstRegionAfter) === 0,
+      `first region ${inkInRegion(canvas, 450, 210, 300, 300)} ink pixels`);
     check('a second object lands in its own place', secondInk > 0, `${secondInk} ink pixels`);
   }
+
+  // ---- intentional eraser -------------------------------------------------
+  section('Intentional eraser');
+  const eraserButton = document.querySelector('button[aria-label="Eraser"]');
+  const beforeEraseRegion = inkInRegion(canvas, 450, 210, 300, 300);
+  const pixelsBeforeErase = imagePixels(canvas);
+  clickBySelector(window, 'button[aria-label="Eraser"]');
+  await sleep(100);
+  drawLine(window, canvas, 420, 360, 780, 360);
+  const afterEraseRegion = inkInRegion(canvas, 450, 210, 300, 300);
+  const pixelsAfterErase = imagePixels(canvas);
+  check('eraser intentionally removes permanent artwork',
+    afterEraseRegion < beforeEraseRegion,
+    `${beforeEraseRegion} -> ${afterEraseRegion} ink pixels`);
+  check('eraser does not leave a temporary visible stroke', inkPixels(sketch) === 0,
+    `${inkPixels(sketch)} sketch pixels`);
+  clickBySelector(window, 'button[aria-label="Undo"]');
+  await sleep(300);
+  check('undo restores intentionally erased artwork',
+    Buffer.compare(Buffer.from(imagePixels(canvas)), Buffer.from(pixelsBeforeErase)) === 0);
+  clickBySelector(window, 'button[aria-label="Redo"]');
+  await sleep(300);
+  check('redo reapplies intentional erasing',
+    Buffer.compare(Buffer.from(imagePixels(canvas)), Buffer.from(pixelsAfterErase)) === 0);
+  check('eraser control is present', Boolean(eraserButton));
 
   // ---- clear --------------------------------------------------------------
   section('Clear');
   const clearButton = [...document.querySelectorAll('button')]
     .find((button) => /Clear canvas/i.test(button.textContent ?? ''));
   check('clear button exists', Boolean(clearButton));
+  clickBySelector(window, 'button[aria-label="Pencil"]');
+  await sleep(100);
+  drawCircle(window, canvas, 280, 500, 60);
   clearButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(400);
   const afterClear = inkPixels(canvas);
-  check('clear empties the canvas', afterClear === 0, `${afterClear} ink pixels`);
+  const sketchAfterClear = inkPixels(sketch);
+  check('clear empties permanent art', afterClear === 0, `${afterClear} ink pixels`);
+  check('clear empties the temporary sketch', sketchAfterClear === 0, `${sketchAfterClear} ink pixels`);
 
   // ---- PNG download -------------------------------------------------------
   section('PNG download');
@@ -498,17 +640,23 @@ async function main() {
   if (typeof originalCreate === 'function') {
     window.URL.createObjectURL = (blob) => { pngUrl = { blob }; return 'blob:stub'; };
   }
-  // Draw something first so the export is not empty.
+  // Draw only on the temporary layer so the export must composite both layers.
   drawCircle(window, canvas, 400, 300, 120);
+  const sketchInkBeforeExport = inkPixels(sketch);
+  const permanentInkBeforeExport = inkPixels(canvas);
   await sleep(200);
   downloadButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(1500);
   if (typeof originalCreate === 'function') window.URL.createObjectURL = originalCreate;
 
   const notice = document.querySelector('.notice')?.textContent ?? '';
-  const dataUrlProbe = canvas.toDataURL('image/png');
+  const dataUrlProbe = window.__lastExportDataUrl ?? '';
   const isPng = dataUrlProbe.startsWith('data:image/png;base64,') && dataUrlProbe.length > 2000;
-  check('canvas exports a PNG data URL', isPng, `${dataUrlProbe.length} chars`);
+  check('composite export is a PNG data URL', isPng, `${dataUrlProbe.length} chars`);
+  check('PNG export includes temporary sketch pixels',
+    permanentInkBeforeExport === 0 && sketchInkBeforeExport > 2000
+      && countNonWhitePixels(window.__lastExportPixels ?? []) > 2000,
+    `permanent ${permanentInkBeforeExport}, sketch ${sketchInkBeforeExport}, exported ink ${countNonWhitePixels(window.__lastExportPixels ?? [])}`);
   check('download reports success', /Saved|saved|download/i.test(notice) || pngUrl !== null
     || !/could not be created/i.test(notice), notice.trim().slice(0, 90) || 'no notice');
 

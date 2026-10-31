@@ -6,6 +6,7 @@ import SuggestionBar from './components/SuggestionBar';
 import { displayName, getArtworkVariants, variantToSvgString } from './data/artwork';
 import { buildSuggestions } from './lib/suggestions';
 import { compositeLayers, releaseUrl, saveCanvasAsPng, EXPORT_FILENAME } from './lib/download';
+import { commitSketchReplacement } from './lib/canvas-layers';
 import DebugPanel from './dev/DebugPanel';
 
 const W = 1200, H = 720;
@@ -69,7 +70,6 @@ function App() {
     }, 600);
   }, []);
   useEffect(() => {
-    const sketch = document.createElement('canvas'); sketch.width = W; sketch.height = H; sketchRef.current = sketch;
     saveHistory();
     let active = true;
     loadModel({ onBackend: setBackend, onProfile: (info) => { if (info.tier) setModelTier(info.tier); if (info.fallbackReason !== undefined) setFallbackReason(info.fallbackReason); } }).then((loaded) => { if (!active) { loaded.model.dispose(); return; } modelRef.current = loaded; setClassCount(loaded.labels.length); setModelTier(loaded.tier); setFallbackReason(loaded.fallbackReason); setStatus('ready'); schedulePrediction(); }).catch((error) => { console.error('Model load failed:', error); if (!active) return; setStatus('error'); setMessage('The recognition model could not be loaded. Drawing and downloading still work.'); });
@@ -98,10 +98,16 @@ function App() {
 
   const point = (e) => { const r = canvasRef.current.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; };
   const drawSegment = (from, to) => {
-    [canvasRef.current, sketchRef.current].forEach((canvas) => {
+    // Pencil strokes are temporary and visible only on the sketch overlay.
+    // The eraser remains an explicit edit to permanent artwork and also clears
+    // any active sketch underneath it.
+    const canvases = tool === 'eraser'
+      ? [canvasRef.current, sketchRef.current]
+      : [sketchRef.current];
+    canvases.forEach((canvas) => {
       const ctx = canvas.getContext('2d'); ctx.save();
       ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
-      ctx.strokeStyle = canvas === sketchRef.current ? '#000' : color;
+      ctx.strokeStyle = color;
       ctx.lineWidth = tool === 'eraser' ? size * 3 : size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x + 0.01, to.y + 0.01); ctx.stroke(); ctx.restore();
     });
@@ -124,10 +130,10 @@ function App() {
     revisionRef.current++; clearTimeout(timerRef.current); canvasRef.current.getContext('2d').clearRect(0, 0, W, H); sketchRef.current.getContext('2d').clearRect(0, 0, W, H);
     setRecognition(IDLE); setHasInk(false); setMessage(''); saveHistory();
   };
-  // Clicking a suggestion swaps the rough strokes for clean artwork in place:
-  // the drawing lands where the sketch was, at roughly the sketch's size, so the
-  // composition survives the swap. A tiny scribble still becomes a clearly
-  // visible drawing rather than a speck. Undo restores the original strokes.
+  // Clicking a suggestion swaps the temporary rough sketch for clean artwork
+  // in place. The sketch layer is cleared and the accepted SVG is composited
+  // onto permanent art; the sketch is never used as an erasing mask. Undo
+  // restores the previous permanent art and the rough sketch together.
   //
   // Accepts either a suggestion card or a bare label.
   const insert = async (target) => {
@@ -144,19 +150,12 @@ function App() {
       const image = new Image(); image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
       await image.decode();
       if (revision !== revisionRef.current) return;
-      const ctx = canvasRef.current.getContext('2d');
-      const dimension = Math.min(320, Math.max(140, Math.max(bounds.width, bounds.height)));
-      const x = Math.max(8, Math.min(W - dimension - 8, bounds.x + bounds.width / 2 - dimension / 2));
-      const y = Math.max(8, Math.min(H - dimension - 8, bounds.y + bounds.height / 2 - dimension / 2));
-      // sketchRef holds a faithful copy of just the rough strokes, so using it
-      // as an erasing mask removes exactly those strokes and never any artwork
-      // already placed on the canvas.
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.drawImage(sketchRef.current, 0, 0);
-      ctx.restore();
-      ctx.drawImage(image, x, y, dimension, dimension);
-      sketchRef.current.getContext('2d').clearRect(0, 0, W, H);
+      commitSketchReplacement({
+        permanentCanvas: canvasRef.current,
+        sketchCanvas: sketchRef.current,
+        image,
+        bounds,
+      });
       clearTimeout(timerRef.current); setRecognition(IDLE); setHasInk(false);
       setMessage(`Swapped your sketch for a clean ${displayName(label)}. Keep drawing to add another.`);
       saveHistory();
@@ -167,12 +166,12 @@ function App() {
     setExporting(true);
     setSaveLink(null);
     try {
-      // Composite every visible layer (user strokes + inserted illustrations) and
-      // never the temporary recognition overlay.
+      // Export the same visible composition: accepted permanent art, then the
+      // current temporary sketch overlay. Neither layer is mutated by export.
       const out = compositeLayers({
         width: W,
         height: H,
-        layers: [canvasRef.current],
+        layers: [canvasRef.current, sketchRef.current],
         opaque: !transparentExport,
       });
       const saved = await saveCanvasAsPng(out, { filename: EXPORT_FILENAME });
@@ -229,7 +228,7 @@ function App() {
             />
             <div className="drawing-area">
             <div className="tool-rail" aria-label="Drawing tools"><span className="rail-label">TOOLS</span><button className={`rail-button ${tool === 'pencil' ? 'selected' : ''}`} onClick={() => setTool('pencil')} aria-pressed={tool === 'pencil'} aria-label="Pencil" title="Pencil"><Pencil size={19}/></button><button className={`rail-button ${tool === 'eraser' ? 'selected' : ''}`} onClick={() => setTool('eraser')} aria-pressed={tool === 'eraser'} aria-label="Eraser" title="Eraser"><Eraser size={19}/></button><div className="rail-divider"/><button className="rail-button" disabled={!canUndo} onClick={() => restore(-1)} aria-label="Undo" title="Undo (Ctrl or Cmd + Z)"><RotateCcw size={19}/></button><button className="rail-button flip" disabled={!canRedo} onClick={() => restore(1)} aria-label="Redo" title="Redo (Ctrl or Cmd + Shift + Z)"><RotateCcw size={19}/></button><div className="rail-spacer"/><span className="rail-label bottom-label">SKETCH<br/>AWAY</span></div>
-            <div className="canvas-wrap"><canvas ref={canvasRef} width={W} height={H} aria-label="Drawing canvas. Use a pointer or touch to draw." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd}/>{!hasInk && !canUndo && <div className="canvas-hint"><div className="hint-icon"><Pencil size={20}/></div><strong>Your next idea starts here</strong><span>Pick a tool and start drawing</span></div>}<div className="canvas-corner">✳ &nbsp; MAKE SOMETHING WONDERFUL</div></div>
+            <div className="canvas-wrap"><canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Use a pointer or touch to draw." onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd}/><canvas ref={sketchRef} className="sketch-overlay" width={W} height={H} aria-hidden="true"/>{!hasInk && !canUndo && <div className="canvas-hint"><div className="hint-icon"><Pencil size={20}/></div><strong>Your next idea starts here</strong><span>Pick a tool and start drawing</span></div>}<div className="canvas-corner">✳ &nbsp; MAKE SOMETHING WONDERFUL</div></div>
           </div>
           <div className="editor-bottom"><div className="palette"><span className="control-label">COLOR</span>{colors.map(c => <button key={c} className={`color-swatch ${color === c ? 'active' : ''}`} style={{'--swatch':c}} onClick={() => setColor(c)} aria-pressed={color === c} aria-label={`Brush color ${c}`} title={c}>{color === c && <Check size={12}/>}</button>)}</div><div className="brush-control"><span className="control-label">SIZE</span><div className="size-dot"/><input aria-label="Brush size" type="range" min="3" max="24" value={size} onChange={e => setSize(Number(e.target.value))}/><div className="size-dot big"/><span className="size-value">{size}px</span></div><div className="bottom-tip"><MousePointer2 size={14}/> Draw freely</div></div>
         </div>
