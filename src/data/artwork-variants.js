@@ -174,20 +174,17 @@ const HIGH_PRIORITY = {
   bus: [
     v(
       strokes(
-        '<path d="M3 5.5h18v11H3z"/>' +
-          '<path d="M3 10.5h18"/>' +
-          '<path d="M6.5 10.5v6M11 10.5v6M15.5 10.5v6"/>' +
-          '<path d="M5 16.5v2M19 16.5v2"/>',
-      ) + solid('<circle cx="7" cy="18.8" r="1.4"/><circle cx="17" cy="18.8" r="1.4"/>'),
+        '<path d="M4 8 7 5h10l4 4v8H4z"/>' +
+          '<path d="M6 8h5v4H5zM12.5 7h3.8l2.2 2v3h-6z"/>' +
+          '<path d="M5 14h15M4 10h1M6 17v1M18 17v1"/>',
+      ) + solid('<circle cx="7" cy="18.5" r="1.4"/><circle cx="17" cy="18.5" r="1.4"/>'),
     ),
     v(
       strokes(
-        '<path d="M4 4.5h16v13H4z"/>' +
-          '<path d="M4 9h16"/>' +
-          '<path d="M7.5 4.5v4.5M12 4.5v4.5M16.5 4.5v4.5"/>' +
-          '<path d="M8 17.5v1.5M16 17.5v1.5"/>' +
-          '<path d="M12 11.5v2.5"/>',
-      ) + solid('<circle cx="7.5" cy="19.5" r="1.2"/><circle cx="16.5" cy="19.5" r="1.2"/>'),
+        '<path d="M6 4h12v14H6z"/>' +
+          '<path d="M8 6h8v6H8zM9 14h6v2H9z"/>' +
+          '<path d="M7 5v1M17 5v1M5 14h2M17 14h2M7 18v1M17 18v1"/>',
+      ) + solid('<circle cx="8" cy="20" r="1"/><circle cx="16" cy="20" r="1"/>'),
     ),
   ],
 

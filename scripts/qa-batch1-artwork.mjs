@@ -5,6 +5,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ART_VARIANT_MAP } from './oss-art-variant-map.mjs';
+import { FIRST50_ART_VARIANT_MAP } from './first50-art-variant-map.mjs';
+import { NEXT50_ART_VARIANT_MAP } from './next50-art-variant-map.mjs';
 import { IMPORTED_ART } from '../src/data/imported-art.js';
 import {
   IMPORTED_ART_VARIANTS,
@@ -12,6 +14,7 @@ import {
   IMPORTED_ART_VARIANT_LABELS,
 } from '../src/data/imported-art-variants.js';
 import { BATCH1_DERIVED_ART } from '../src/data/batch1-derived-art.js';
+import { NEXT50_DERIVED_ART, NEXT50_LINE_ART, NEXT50_VARIANTS } from '../src/data/next50-artwork.js';
 import { getArtworkVariants, variantToSvgString } from '../src/data/artwork.js';
 import { qualityIssues } from './oss-art-lib.mjs';
 import {
@@ -43,13 +46,32 @@ for (const [name, labels] of [
   const invalid = outside(labels);
   if (invalid.length) fail.push(`${name} includes out-of-scope labels: ${invalid.join(', ')}`);
 }
+const next50Labels = new Set(canonical.slice(50, 100));
+for (const [name, labels] of [
+  ['next-50 derived artwork', Object.keys(NEXT50_DERIVED_ART)],
+  ['next-50 line art', Object.keys(NEXT50_LINE_ART)],
+  ['next-50 custom variants', Object.keys(NEXT50_VARIANTS)],
+]) {
+  const invalid = labels.filter((label) => !next50Labels.has(label));
+  if (invalid.length) fail.push(`${name} includes labels outside canonical categories 51–100: ${invalid.join(', ')}`);
+}
 
-const mapLabels = Object.keys(ART_VARIANT_MAP).filter((label) => ART_VARIANT_MAP[label].length > 0).sort();
+const expectedVariantMap = { ...ART_VARIANT_MAP };
+for (const supplementalMap of [FIRST50_ART_VARIANT_MAP, NEXT50_ART_VARIANT_MAP]) {
+  for (const [label, variants] of Object.entries(supplementalMap)) {
+    expectedVariantMap[label] = [...(expectedVariantMap[label] ?? []), ...variants];
+  }
+}
+const mapLabels = Object.keys(expectedVariantMap).filter((label) => expectedVariantMap[label].length > 0).sort();
 const generatedLabels = Object.keys(IMPORTED_ART_VARIANTS).sort();
 if (JSON.stringify(mapLabels) !== JSON.stringify(generatedLabels)) {
-  fail.push('generated source-variant label set does not match the curated source map');
+  fail.push('generated source-variant label set does not match the curated source maps');
 }
 const generatedVariantCount = Object.values(IMPORTED_ART_VARIANTS).flat().length;
+const mappedVariantCount = Object.values(expectedVariantMap).flat().length;
+if (generatedVariantCount !== mappedVariantCount) {
+  fail.push(`generated source variants ${generatedVariantCount} != curated map count ${mappedVariantCount}`);
+}
 if (IMPORTED_ART_VARIANT_COUNT !== generatedVariantCount) {
   fail.push(`variant count export is ${IMPORTED_ART_VARIANT_COUNT}, data contains ${generatedVariantCount}`);
 }
@@ -61,8 +83,8 @@ const derivedLabels = Object.keys(BATCH1_DERIVED_ART);
 if (derivedLabels.length !== 13) fail.push(`expected 13 reviewed derived drawings, found ${derivedLabels.length}`);
 
 const noPrimary = rows.filter((row) => !row.primary).map((row) => row.label);
-if (noPrimary.length !== 1 || noPrimary[0] !== 'camouflage') {
-  fail.push(`expected only camouflage to lack clean primary artwork; found ${noPrimary.join(', ') || 'none'}`);
+if (noPrimary.length !== 0) {
+  fail.push(`every canonical Batch-1 category must now have a clean primary; missing ${noPrimary.join(', ')}`);
 }
 for (const label of Object.keys(MANUAL_EXCLUSIONS)) {
   if (!batch1.has(label)) fail.push(`manual exclusion is outside Batch 1: ${label}`);
@@ -86,7 +108,7 @@ for (const row of rows) {
 
 const countsSum = counts.threePlus + counts.exactlyTwo + counts.exactlyOne + counts.zero;
 if (countsSum !== 100) fail.push(`distinct-option buckets sum to ${countsSum}, not 100`);
-if (counts.zero !== 1) fail.push(`expected one no-option category, found ${counts.zero}`);
+if (counts.zero !== 0) fail.push(`expected every category to have at least one distinct artwork option, found ${counts.zero} empty`);
 const unknownImported = Object.keys(IMPORTED_ART).filter((label) => !canonical.includes(label));
 if (unknownImported.length) fail.push(`imported artwork has unknown canonical labels: ${unknownImported.join(', ')}`);
 
@@ -111,6 +133,9 @@ console.log('Batch-1 artwork QA — canonical categories 1–100');
 console.log('='.repeat(58));
 console.log(`coverage: ${100 - noPrimary.length}/100 clean primaries; text-only fallback: ${noPrimary.join(', ')}`);
 console.log(`distinct options (after raster + human exclusions): 3+:${counts.threePlus}  2:${counts.exactlyTwo}  1:${counts.exactlyOne}  0:${counts.zero}`);
+const next50Rows = rows.slice(50);
+const next50TargetReady = next50Rows.filter((row) => row.extras.length >= 2 && row.lineArt).length;
+console.log(`next-50 artwork target (3+ distinct non-line options + separate line art): ${next50TargetReady}/50`);
 console.log(`approved options quality-checked: ${checkedOptions}`);
 console.log(`source variants: ${generatedVariantCount} across ${generatedLabels.length} labels; derived drawings: ${derivedLabels.length}`);
 console.log(`manual exclusion rules: ${Object.values(MANUAL_EXCLUSIONS).reduce((n, x) => n + Object.keys(x).length, 0)}`);

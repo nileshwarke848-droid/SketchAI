@@ -12,6 +12,11 @@
         "mode": "outline"
       },
       {
+        "label": "basket",
+        "icon": "basket",
+        "mode": "filled"
+      },
+      {
         "label": "bread",
         "icon": "bread",
         "mode": "outline"
@@ -32,9 +37,19 @@
         "mode": "outline"
       },
       {
+        "label": "candle",
+        "icon": "candles",
+        "mode": "filled"
+      },
+      {
         "label": "canoe",
         "icon": "wood-canoe",
         "mode": "outline"
+      },
+      {
+        "label": "castle",
+        "icon": "castle-ruins",
+        "mode": "filled"
       },
       {
         "label": "clock",
@@ -42,9 +57,24 @@
         "mode": "filled"
       },
       {
+        "label": "clock",
+        "icon": "alarm-clock",
+        "mode": "filled"
+      },
+      {
+        "label": "coffee cup",
+        "icon": "coffee-mug",
+        "mode": "outline"
+      },
+      {
         "label": "dolphin",
         "icon": "dolphin",
         "mode": "outline"
+      },
+      {
+        "label": "dragon",
+        "icon": "dragon-head",
+        "mode": "filled"
       },
       {
         "label": "drums",
@@ -55,6 +85,161 @@
         "label": "duck",
         "icon": "duck",
         "mode": "outline"
+      },
+      {
+        "label": "duck",
+        "icon": "plastic-duck",
+        "mode": "outline"
+      },
+      {
+        "label": "ant",
+        "icon": "ants",
+        "mode": "filled"
+      },
+      {
+        "label": "banana",
+        "icon": "banana",
+        "mode": "outline"
+      },
+      {
+        "label": "baseball bat",
+        "icon": "baseball-bat",
+        "mode": "outline"
+      },
+      {
+        "label": "bat",
+        "icon": "bat",
+        "mode": "outline"
+      },
+      {
+        "label": "bathtub",
+        "icon": "bathtub",
+        "mode": "outline"
+      },
+      {
+        "label": "bear",
+        "icon": "bear-face",
+        "mode": "outline"
+      },
+      {
+        "label": "bear",
+        "icon": "bear-head",
+        "mode": "outline"
+      },
+      {
+        "label": "bench",
+        "icon": "park-bench",
+        "mode": "outline"
+      },
+      {
+        "label": "boomerang",
+        "icon": "boomerang",
+        "mode": "outline"
+      },
+      {
+        "label": "bowtie",
+        "icon": "bow-tie",
+        "mode": "outline"
+      },
+      {
+        "label": "broom",
+        "icon": "broom",
+        "mode": "outline"
+      },
+      {
+        "label": "butterfly",
+        "icon": "butterfly",
+        "mode": "outline"
+      },
+      {
+        "label": "cake",
+        "icon": "cake-slice",
+        "mode": "filled"
+      },
+      {
+        "label": "calculator",
+        "icon": "calculator",
+        "mode": "filled"
+      },
+      {
+        "label": "camel",
+        "icon": "camel-head",
+        "mode": "outline"
+      },
+      {
+        "label": "camera",
+        "icon": "photo-camera",
+        "mode": "filled"
+      },
+      {
+        "label": "campfire",
+        "icon": "campfire",
+        "mode": "filled"
+      },
+      {
+        "label": "cannon",
+        "icon": "pirate-cannon",
+        "mode": "outline"
+      },
+      {
+        "label": "car",
+        "icon": "race-car",
+        "mode": "outline"
+      },
+      {
+        "label": "carrot",
+        "icon": "carrot",
+        "mode": "outline"
+      },
+      {
+        "label": "church",
+        "icon": "viking-church",
+        "mode": "filled"
+      },
+      {
+        "label": "clarinet",
+        "icon": "clarinet",
+        "mode": "outline"
+      },
+      {
+        "label": "compass",
+        "icon": "compass",
+        "mode": "filled"
+      },
+      {
+        "label": "cookie",
+        "icon": "cookie",
+        "mode": "outline"
+      },
+      {
+        "label": "cow",
+        "icon": "cow",
+        "mode": "outline"
+      },
+      {
+        "label": "crab",
+        "icon": "sad-crab",
+        "mode": "filled"
+      },
+      {
+        "label": "crown",
+        "icon": "imperial-crown",
+        "mode": "filled"
+      },
+      {
+        "label": "donut",
+        "icon": "donut",
+        "mode": "filled"
+      },
+      {
+        "label": "door",
+        "icon": "doorway",
+        "mode": "filled"
+      },
+      {
+        "label": "drill",
+        "icon": "drill",
+        "mode": "filled"
       }
     ]
   },
@@ -66,18 +251,28 @@
     "url": "https://github.com/Templarian/MaterialDesign",
     "categories": [
       {
-        "label": "arm",
-        "icon": "arm-flex",
-        "mode": "outline"
-      },
-      {
         "label": "bandage",
         "icon": "bandage",
         "mode": "outline"
       },
       {
+        "label": "basket",
+        "icon": "basket",
+        "mode": "outline"
+      },
+      {
         "label": "beach",
         "icon": "beach",
+        "mode": "outline"
+      },
+      {
+        "label": "binoculars",
+        "icon": "binoculars",
+        "mode": "outline"
+      },
+      {
+        "label": "bridge",
+        "icon": "bridge",
         "mode": "outline"
       },
       {
@@ -94,6 +289,116 @@
         "label": "ceiling fan",
         "icon": "ceiling-fan-light",
         "mode": "outline"
+      },
+      {
+        "label": "clock",
+        "icon": "watch",
+        "mode": "outline"
+      },
+      {
+        "label": "coffee cup",
+        "icon": "coffee-to-go",
+        "mode": "outline"
+      },
+      {
+        "label": "couch",
+        "icon": "sofa",
+        "mode": "outline"
+      },
+      {
+        "label": "ambulance",
+        "icon": "ambulance",
+        "mode": "outline"
+      },
+      {
+        "label": "apple",
+        "icon": "apple",
+        "mode": "outline"
+      },
+      {
+        "label": "bathtub",
+        "icon": "bathtub-outline",
+        "mode": "filled"
+      },
+      {
+        "label": "bench",
+        "icon": "bench-back",
+        "mode": "outline"
+      },
+      {
+        "label": "bird",
+        "icon": "bird",
+        "mode": "outline"
+      },
+      {
+        "label": "broom",
+        "icon": "broom",
+        "mode": "outline"
+      },
+      {
+        "label": "bucket",
+        "icon": "bucket",
+        "mode": "outline"
+      },
+      {
+        "label": "bucket",
+        "icon": "pail",
+        "mode": "outline"
+      },
+      {
+        "label": "bucket",
+        "icon": "bucket-outline",
+        "mode": "outline"
+      },
+      {
+        "label": "bulldozer",
+        "icon": "bulldozer",
+        "mode": "outline"
+      },
+      {
+        "label": "cake",
+        "icon": "cake-variant",
+        "mode": "outline"
+      },
+      {
+        "label": "calendar",
+        "icon": "calendar-month",
+        "mode": "filled"
+      },
+      {
+        "label": "camera",
+        "icon": "camera-front-variant",
+        "mode": "filled"
+      },
+      {
+        "label": "car",
+        "icon": "car-side",
+        "mode": "outline"
+      },
+      {
+        "label": "cell phone",
+        "icon": "cellphone-basic",
+        "mode": "outline"
+      },
+      {
+        "label": "compass",
+        "icon": "compass-rose",
+        "mode": "outline"
+      },
+      {
+        "label": "cup",
+        "icon": "cup-water",
+        "mode": "outline"
+      },
+      {
+        "label": "diamond",
+        "icon": "diamond-stone",
+        "mode": "outline"
+      },
+      {
+        "label": "dishwasher",
+        "icon": "dishwasher",
+        "mode": "filled"
       }
     ]
   },
@@ -104,6 +409,11 @@
     "copyright": "Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.",
     "url": "https://github.com/lucide-icons/lucide",
     "categories": [
+      {
+        "label": "bandage",
+        "icon": "bandage",
+        "mode": "stroke"
+      },
       {
         "label": "basket",
         "icon": "shopping-basket",
@@ -128,29 +438,55 @@
         "label": "computer",
         "icon": "laptop",
         "mode": "stroke"
-      }
-    ]
-  },
-  "tabler": {
-    "name": "Tabler Icons",
-    "version": "3.50.0",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2020-2025 Paweł Kuna",
-    "url": "https://github.com/tabler/tabler-icons",
-    "categories": [
+      },
       {
-        "label": "cloud",
-        "icon": "cloud-rain",
+        "label": "ambulance",
+        "icon": "ambulance",
         "mode": "stroke"
       },
       {
-        "label": "coffee cup",
-        "icon": "mug",
+        "label": "apple",
+        "icon": "apple",
         "mode": "stroke"
       },
       {
-        "label": "couch",
-        "icon": "sofa",
+        "label": "axe",
+        "icon": "axe",
+        "mode": "stroke"
+      },
+      {
+        "label": "backpack",
+        "icon": "backpack",
+        "mode": "stroke"
+      },
+      {
+        "label": "banana",
+        "icon": "banana",
+        "mode": "stroke"
+      },
+      {
+        "label": "bed",
+        "icon": "bed",
+        "mode": "stroke"
+      },
+      {
+        "label": "calculator",
+        "icon": "calculator",
+        "mode": "stroke"
+      },
+      {
+        "label": "calendar",
+        "icon": "calendar-days",
+        "mode": "stroke"
+      },
+      {
+        "label": "cell phone",
+        "icon": "smartphone",
+        "mode": "stroke"
+      },
+      {
+        "label": "chair",
+        "icon": "armchair",
         "mode": "stroke"
       }
     ]
@@ -163,9 +499,137 @@
     "url": "https://github.com/FortAwesome/Font-Awesome",
     "categories": [
       {
+        "label": "bandage",
+        "icon": "bandage",
+        "mode": "outline"
+      },
+      {
+        "label": "bridge",
+        "icon": "bridge",
+        "mode": "outline"
+      },
+      {
         "label": "dragon",
         "icon": "dragon",
         "mode": "outline"
+      },
+      {
+        "label": "baseball",
+        "icon": "baseball",
+        "mode": "outline"
+      },
+      {
+        "label": "baseball bat",
+        "icon": "baseball-bat-ball",
+        "mode": "outline"
+      },
+      {
+        "label": "brain",
+        "icon": "brain",
+        "mode": "outline"
+      },
+      {
+        "label": "broom",
+        "icon": "broom",
+        "mode": "outline"
+      }
+    ]
+  },
+  "iconoir": {
+    "name": "Iconoir",
+    "version": "7.12.1",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2021 Iconoir",
+    "url": "https://github.com/iconoir-icons/iconoir",
+    "categories": [
+      {
+        "label": "binoculars",
+        "icon": "binocular",
+        "mode": "stroke"
+      },
+      {
+        "label": "book",
+        "icon": "book",
+        "mode": "stroke"
+      },
+      {
+        "label": "axe",
+        "icon": "axes",
+        "mode": "stroke"
+      },
+      {
+        "label": "bed",
+        "icon": "bed",
+        "mode": "stroke"
+      },
+      {
+        "label": "brain",
+        "icon": "brain",
+        "mode": "stroke"
+      }
+    ]
+  },
+  "tabler": {
+    "name": "Tabler Icons",
+    "version": "3.50.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2020-2025 Paweł Kuna",
+    "url": "https://github.com/tabler/tabler-icons",
+    "categories": [
+      {
+        "label": "castle",
+        "icon": "building-castle",
+        "mode": "stroke"
+      },
+      {
+        "label": "cloud",
+        "icon": "cloud-rain",
+        "mode": "stroke"
+      },
+      {
+        "label": "coffee cup",
+        "icon": "mug",
+        "mode": "stroke"
+      },
+      {
+        "label": "computer",
+        "icon": "device-desktop",
+        "mode": "stroke"
+      },
+      {
+        "label": "couch",
+        "icon": "sofa",
+        "mode": "stroke"
+      },
+      {
+        "label": "bat",
+        "icon": "bat",
+        "mode": "stroke"
+      },
+      {
+        "label": "bicycle",
+        "icon": "bike",
+        "mode": "stroke"
+      },
+      {
+        "label": "butterfly",
+        "icon": "butterfly",
+        "mode": "stroke"
+      },
+      {
+        "label": "chair",
+        "icon": "rocking-chair",
+        "mode": "stroke"
+      },
+      {
+        "label": "church",
+        "icon": "building-church",
+        "mode": "stroke"
+      },
+      {
+        "label": "drill",
+        "icon": "hammer-drill",
+        "mode": "stroke"
       }
     ]
   }

@@ -3,13 +3,19 @@
 This folder contains everything needed to train a drawing classifier on
 **Google's Quick, Draw! dataset** and install it into SketchAI.
 
-The app currently ships with a 100-class model. The goal here is a model that
-recognises **all 345 official Quick, Draw! categories**, trained by us, so there
-are no third-party weights and no licensing grey areas.
+The app currently ships the project's **345-class model** at
+`public/model-345/`; it is loaded first and was trained by this pipeline. The
+original third-party **100-class model** remains bundled at `public/model/` as a
+fallback if the primary files fail validation or cannot be loaded. Training a
+new checkpoint is an optional reproduction/update workflow, not a prerequisite
+to get 345-class recognition from a normal checkout.
 
-> **Everything is free.** Training runs on a free Google Colab runtime; the
-> finished model is downloaded to your computer and runs offline in the user's
-> browser. No API keys, no paid GPU, no server, no cloud inference.
+> **Zero-budget path only.** The optional full-data workflow uses public GCS
+> reads and a free Google Colab runtime; it does not create paid GCP resources.
+> Free GPU, disk quota and runtime availability are controlled by Google and are
+> not guaranteed. Do not switch to a paid runtime. The full cache uses tens of GB
+> of ephemeral Colab disk and is preflighted before bulk transfer. The finished
+> model runs offline in the browser; no API keys or cloud inference are required.
 
 ---
 
@@ -17,14 +23,57 @@ are no third-party weights and no licensing grey areas.
 
 | File | What it is |
 | --- | --- |
-| `SketchAI_345_Training.ipynb` | The Colab notebook. **Start here.** |
-| `train_345.py` | The training pipeline as a normal Python script (the notebook calls it). |
-| `colab_setup.py` | Keeps the notebook alive on a real Colab runtime: dependency handling that never downgrades TensorFlow, repository cloning, and pre-flight checks. |
-| `build_notebook.py` | Regenerates the notebook from source, so the notebook and the code cannot drift apart. |
-| `manual_test.py` | Runs sixteen hand-drawn doodles through a trained model and prints the top ten guesses. |
+| `SketchAI_QuickDraw_200_Colab.ipynb` | 200 official training rows/category plus separate validation/test data (250 staged/category, 86,250 total), chunked GCS reads, free-runtime guard. **Start here for the interim run.** |
+| `build_200_colab_notebook.py` | Regenerates the 200-row notebook from source. |
+| `SketchAI_QuickDraw_50M_Colab.ipynb` | Full official 50M-drawing workflow for the later full-data run. |
+| `build_50m_colab_notebook.py` | Regenerates the full-data notebook from source. |
+| `SketchAI_345_Training.ipynb` | Small-mirror smoke-training notebook (at most 100 rows/class), not the full archive. |
+| `build_notebook.py` | Regenerates the small-mirror notebook. |
+| `train_345.py` | Training pipeline, app-compatible 345-label order/export and held-out evaluation. |
+| `quickdraw_gcs.py` | Resumable, bounded HTTP byte-range reader for the official public GCS bitmap objects. |
+| `colab_setup.py` | Defensive Colab TensorFlow.js exporter setup and environment diagnostics. |
+| `manual_test.py` | Renders sixteen manually authored doodle paths and prints a candidate model's top ten guesses. |
 | `doodles.json` | Those sixteen doodles, as stroke data shared with `scripts/manual-test-345.mjs`. |
 | `work/` | Scratch space (cached data, checkpoints, plots). Created on first run; not committed. |
-| `export/model-345/` | Where a finished 345-class model is written. Not committed. |
+| `export/model-345/` | Scratch destination for a newly trained/exported candidate. Not committed. |
+
+The deployed primary model is the checked-in `public/model-345/` package in the
+repository root. `export/model-345/` is a separate training output; installing a
+candidate into the app is an explicit step and should be followed by validation.
+
+---
+
+## Interim run: 200 training examples per class (free-only, not guaranteed)
+
+Open `SketchAI_QuickDraw_200_Colab.ipynb` from the active branch in Colab. It
+checks all 345 source objects, runs a 16-row smoke test on two categories, then
+requires `START_200_RUN = True` before transfer. It stages 250 rows per class
+(86,250 total) and splits them 200/25/25 per category for training, validation
+and held-out test, so the model receives 200 training examples per category.
+Only the small cache is stored on Colab scratch; no billable GCP resources are
+created. The run has not been launched from this session.
+
+## Full 50M-drawing workflow (free-only, not guaranteed)
+
+Open `SketchAI_QuickDraw_50M_Colab.ipynb` from the active GitHub branch in Colab.
+It first checks all 345 official GCS objects using small range requests and stops
+before downloading bitmap bodies if category coverage or free scratch space is
+insufficient. A small 16-row-per-category smoke test on two categories follows;
+set `START_FULL_RUN = True` only when you are ready for the long run. The full path streams one bounded
+chunk at a time to Colab's ephemeral cache and uses 98% train / 1% validation /
+1% held-out test. The entire source archive is never downloaded into this repo or
+held in RAM.
+
+The notebook only uses a free Colab runtime; it never provisions a VM, storage
+bucket or other billable GCP resource. Google may not offer a free GPU or enough
+disk, and may interrupt the runtime. A runtime reset erases the scratch dataset
+cache, so completion cannot be promised. If free capacity is unavailable, stop
+rather than enabling a paid option. No model training or accuracy gain is claimed
+until the run finishes, exports, and is evaluated on its held-out split.
+
+The existing `SketchAI_345_Training.ipynb` is only a small-mirror pipeline check
+(100 examples/category maximum). Do not use its sample counts as evidence of a
+full-data run.
 
 ---
 
@@ -45,94 +94,40 @@ and is cloned over plain HTTPS.
 
 ---
 
-## Quick start (the short version)
+## Quick start (the 200-row interim run)
 
-1. Open `training/SketchAI_345_Training.ipynb` in Google Colab.
-2. Leave `QUICK_TEST = True`, then **Runtime → Run all**.
-3. When it finishes, set `QUICK_TEST = False` and **Runtime → Run all** again.
-4. Download `sketchai-model-345.zip` when prompted.
-5. Unzip it and run `node scripts/install-model-345.mjs ./model-345`.
-6. `npm run dev` — the header should say **AI ready — 345 objects**.
+1. Push/open the active branch in GitHub, then open `training/SketchAI_QuickDraw_200_Colab.ipynb` in Colab.
+2. Use a free GPU runtime only if Colab offers it at no cost; never enable billing.
+3. Run setup, all-object preflight and the two-category range smoke test.
+4. When ready, change `START_200_RUN = False` to `True` and run the training cells.
+5. Review the exact 86,250-row manifest (69,000 training, 8,625 each for validation and test) and held-out metrics, then download the model zip.
+6. Unzip and run `node scripts/install-model-345.mjs ./model-345 --check` before installing.
 
-Step 2 takes a few minutes and proves everything works. Step 3 is the real
-training run and takes hours.
+Free Colab capacity and completion are not guaranteed. This is the interim 200-row run; the separate 50M notebook remains available for a later full-data attempt.
 
 ---
 
-## Running in Google Colab — step by step
+## Running in Google Colab — full dataset
 
-### 1. Open the notebook
+1. Push this branch to GitHub (or open the active branch in GitHub), then open
+   `training/SketchAI_QuickDraw_50M_Colab.ipynb` in Colab.
+2. Select a free T4 only if available at no cost. If no free GPU is offered, stop;
+   a 50M-row CPU run is not a practical substitute. Never enable paid compute.
+3. Run the setup and preflight. This checks the canonical 345 labels, the public
+   objects' NPY headers, total rows, and free disk. The preflight makes small
+   header-range reads only; no bitmap bodies are transferred at this stage.
+4. Run the two-category 16-row smoke test. It checks byte-range support and
+   preprocessing, not model accuracy.
+5. Review `START_FULL_RUN = False`; only set it to `True` if Colab reports enough
+   free disk and you are ready to start the long run.
+6. The training manifest records the exact source rows and 98/1/1 split. The
+   model is exported to a zip but is not installed into the app automatically.
 
-* Push this branch to GitHub (or open the repository on GitHub).
-* Go to <https://colab.research.google.com>.
-* Choose **GitHub**, paste the repository URL, and open
-  `training/SketchAI_345_Training.ipynb`.
-
-### 2. Pick a runtime
-
-**Runtime → Change runtime type → Hardware accelerator → GPU (T4)**, then Save.
-
-A GPU is not required — the notebook runs on CPU too — but a T4 turns a
-multi-day run into a few hours. If Colab tells you no GPUs are available, use
-**None** and reduce `SAMPLES_PER_CLASS` to 3000.
-
-### 3. Run the quick test first
-
-In the configuration cell, make sure it says:
-
-```python
-QUICK_TEST = True      # first run
-```
-
-Then **Runtime → Run all**. It trains 20 categories on 500 drawings each for
-10 epochs, using **real Google Quick, Draw! data**. Watch for:
-
-* the environment block (Python / TensorFlow / Keras / TensorFlow.js / GPU / RAM),
-* `Repository already present` or a successful clone,
-* `Exporter smoke test: PASSED` — the converter works in your runtime,
-* `Quick Draw dataset reachable` — Google's bucket is reachable,
-* the download progress lines,
-* `train 8,000   validation 1,000   test 1,000`,
-* the model summary ending in a Dense layer with 20 outputs,
-* training accuracy climbing over ten epochs,
-* `TensorFlow.js load verified`,
-* `sketchai-model-345.zip` appearing in the Files panel.
-
-If all of that happens, the pipeline works and you can commit to the long run.
-
-### 4. Run the full training
-
-Change **one line** in the configuration cell:
-
-```python
-QUICK_TEST = False     # second run: all 345 categories
-```
-
-then **Runtime → Run all** again. Nothing else needs changing.
-
-* `SAMPLES_PER_CLASS = 5000` → 1,725,000 drawings (the safe default).
-* `SAMPLES_PER_CLASS = 10000` → 3,450,000 drawings, better model, longer run.
-
-**Optional but recommended:** set `USE_DRIVE = True` so checkpoints are also
-written to your Google Drive. If Colab disconnects overnight you can restart
-from the saved checkpoint instead of losing the run.
-
-### 5. Expected runtime
-
-There is no honest way to give a precise number: it depends on which GPU Colab
-hands you, on how busy the machines are, and on `SAMPLES_PER_CLASS`.
-
-Roughly, for the full 345-class run:
-
-| Setup | Order of magnitude |
-| --- | --- |
-| Free T4 GPU, 5,000 per class | a few hours |
-| Free T4 GPU, 10,000 per class | most of a day |
-| CPU runtime, 5,000 per class | days — not recommended |
-
-Colab free runtimes also disconnect after periods of inactivity and have daily
-usage limits, so plan for the possibility of restarting. The dataset cache and
-(optionally) the Drive checkpoint make a restart cheap.
+There is no guaranteed runtime estimate or completion promise: free Colab quotas,
+GPU access, bandwidth and session durations can change. The cache is on ephemeral
+`/content` storage. An epoch-level Drive backup is optional; Drive does not hold
+the full dataset. If Colab offers only a paid runtime or insufficient free disk,
+stop and retry later rather than switching to a billable option.
 
 ### 6. Export
 
@@ -188,31 +183,39 @@ model is correctly installed and the label order is right.
 
 ---
 
-## Alternative: run it from the command line
+## Alternative: small-mirror command-line run
 
-If you have a machine with Python 3.9+ and `tensorflowjs` installed:
+If you have Python 3.9+ and the training dependencies installed, the local mirror
+mode can exercise the workflow:
 
 ```bash
-python training/train_345.py --quick-test                  # prove the pipeline
-python training/train_345.py --samples-per-class 5000      # the real run
+python training/train_345.py --quick-test          # small plumbing check
+python training/train_345.py --dataset quickdraw-js # at most 100 rows/class
 python training/train_345.py --help
 ```
+
+For 200 official rows/category, use the dedicated Colab notebook. The CLI mode
+is `--dataset quickdraw-gcs-sampled --samples-per-class 200`; run it only in a
+cloud runtime after preflight, never in this repository workspace. The separate
+`--dataset quickdraw-gcs-full` mode reads every row in the official archive.
 
 Useful flags:
 
 | Flag | Meaning |
 | --- | --- |
-| `--samples-per-class N` | drawings per category (default 5000) |
+| `--samples-per-class N` | local-mirror rows per category (full GCS mode reads all rows) |
 | `--epochs N` | maximum epochs; early stopping usually ends sooner |
 | `--batch-size N` | lower it if you run out of memory |
 | `--no-augment` | disable the light shift/rotate augmentation |
 | `--drive-dir PATH` | also save checkpoints to this folder |
+| `--dataset quickdraw-gcs-sampled` | read `--samples-per-class` rows/category from official GCS; cloud-only |
+| `--dataset quickdraw-gcs-full` | full official archive through bounded GCS byte ranges; cloud-only |
+| `--gcs-chunk-rows N` | rows per transfer chunk (default 4096) |
 | `--dataset synthetic` | **offline self-test only** — procedural shapes, not real data |
 | `--categories N` | trim the category list (debugging) |
 
-`--dataset synthetic` exists so the plumbing can be exercised where Google's
-bucket is unreachable. Its exports are marked `is_self_test_only` and the
-installer will reject them.
+`--dataset synthetic` exists only for offline plumbing checks. Its exports are
+marked `is_self_test_only` and the installer will reject them.
 
 ---
 
@@ -229,13 +232,12 @@ places: the training script, the export verifier and the installer.
 
 ### Dataset
 
-**Where the data comes from.** Google's Quick, Draw! dataset (CC BY 4.0,
-© Google, Inc.), downloaded by `fetch_quickdraw_data.py` from the
-[`quickdraw.js`](https://www.npmjs.com/package/quickdraw.js) npm package — a
-verbatim redistribution of the official data whose own licence file carries the
-CC BY 4.0 attribution to Google. The canonical Google Cloud Storage bucket and
-the Hugging Face mirror are both unreachable from many sandboxed networks (TLS
-connections are dropped), so this mirror is used instead.
+**Small-mirror mode.** The `quickdraw-js` source is fetched by
+`fetch_quickdraw_data.py` from the [`quickdraw.js`](https://www.npmjs.com/package/quickdraw.js)
+npm package, a licensed redistribution of official Quick, Draw! examples. This
+source is convenient for local smoke tests and is capped at 100 rows per class.
+The separate `quickdraw-gcs-full` mode described below reads the official full
+bitmap objects directly from public GCS; it does not depend on this npm mirror.
 
 Download it once:
 
@@ -266,6 +268,32 @@ ink to 1.0) over every training bitmap, so training and inference see the same
 geometry. It is documented here rather than done silently because it changes the
 pixels the network learns from.
 
+### Full Quick, Draw! source and streaming path
+
+Google documents about 50 million drawings across 345 categories and publishes
+28×28 `numpy_bitmap` objects at
+`gs://quickdraw_dataset/full/numpy_bitmap/` under CC BY 4.0. The full workflow
+uses the same official source via public HTTPS byte ranges; the [Google Quick,
+Draw! repository](https://github.com/googlecreativelab/quickdraw-dataset) is the
+source documentation. The [Hugging Face dataset](https://huggingface.co/datasets/google/quickdraw)
+is another representation/transport of the same upstream data, not an independent
+set to concatenate.
+
+`quickdraw_gcs.py` probes each NPY header and then requests bounded row ranges,
+preprocesses one chunk at a time into a memory-mapped cache, and writes progress
+metadata for category-level resumption. It refuses HTTP servers that ignore Range
+requests; no full-object fallback is allowed. `SketchAI_QuickDraw_50M_Colab.ipynb`
+preflights all 345 objects and free scratch-disk space before downloading bitmap
+bodies. No source files or cache are written into this Git workspace.
+
+**Execution status:** this cloud path is implemented but has **not** been run in
+this session. No full drawings have been downloaded or streamed, no new training
+has run, and the checked-in app model has not changed from this request. Free
+Colab runtime/GPU/disk availability is not guaranteed, and this notebook creates
+no paid cloud resources. Only report training or accuracy changes after an actual
+full-data run and held-out evaluation. No alternative sketch dataset was added;
+TU-Berlin licensing descriptions conflicted and were not safe to rely on.
+
 ### Memory
 
 Nothing is ever fully loaded into RAM. Each category's slice lives in a
@@ -277,9 +305,11 @@ gigabytes.
 
 ### Splits
 
-80% train, 10% validation, 10% held-out test, taken **per category** after a
-seeded shuffle (`SEED = 42`). The test set is touched exactly once, at the end.
-Re-running reproduces the identical partition.
+The local mirror default is 80% train / 10% validation / 10% held-out test. The
+full-data Colab notebook uses 98% / 1% / 1% to retain a large training set while
+keeping a substantial 500k-example-scale test split. Both splits are stratified
+per category with a seeded shuffle (`SEED = 42`), so rows do not overlap and the
+held-out test set is used only for final evaluation.
 
 ### Input format
 
@@ -351,18 +381,34 @@ Conversion goes through `tensorflowjs`, and the notebook verifies it three times
 
 ## Measuring the result
 
-`training/manual_test.py` renders sixteen hand-made doodles — dog, fish, house,
-bus, shoe, guitar, elephant, lion, train, cat, flower, sun, car, airplane, tree,
-umbrella — with the same thin-stroke geometry a browser produces, and prints the
-top ten guesses for each. Nine of those categories are ones the old 100-class
-model cannot recognise at all, so this is where the expansion should show.
+The committed primary model's held-out split metrics are recorded in its
+`public/model-345/manifest.json`: top-1 37.71%, top-3 58.12%, top-10 76.12%
+on 3,450 test drawings (100 examples per each of 345 classes, split with seed
+42). These are results for that particular training run.
+
+For an end-to-end smoke test on the repository's 16 manually authored stroke
+examples (not real user-drawn input), run the checked-in model through the app's
+TensorFlow.js inference and preprocessing:
+
+```bash
+node scripts/demo-test.mjs                 # current 345-class model
+node scripts/demo-test.mjs --force-fallback # bundled 100-class fallback
+```
+
+In the current checkout, the 345-class model placed the intended class at
+rank 1 for 7/16 sketches, in the top 3 for 8/16, top 5 for 10/16, and top 10 for
+14/16. The fallback placed the intended class in its top 10 for 7/16. These
+small, hand-authored examples are a smoke test—not a benchmark, independent test
+set, or guarantee of user accuracy. Use the held-out test split for training
+metrics, and use a broader human-drawn evaluation set before making product
+accuracy claims.
+
+`training/manual_test.py` can also evaluate a newly trained Keras candidate before
+installation, for example:
 
 ```bash
 python training/manual_test.py --model training/work/run/best.h5 --thickness 12
 ```
-
-Its output is a smoke test on sixteen drawings, **not** a benchmark — quote the
-test-split numbers from the notebook for accuracy claims.
 
 ---
 
@@ -385,11 +431,11 @@ test-split numbers from the notebook for accuracy claims.
 | `Could not get the SketchAI repository automatically` | The public clone failed. Download the ZIP from GitHub, upload it to the Files panel, `!unzip -q SketchAI*.zip -d /content/`, then re-run the cell. |
 | `No module named 'train_345'` | The clone is missing `training/`. Re-run the setup cell — it checks for that file and re-clones if needed. |
 | `Exporter smoke test: FAILED` | TensorFlow.js cannot convert in this runtime. Re-run the setup cell; if it still fails, **Runtime → Restart runtime** then Run all. |
-| `Quick Draw dataset could not be reached` | The runtime cannot reach Google Cloud Storage. Re-run the cell (transient), or check the runtime has internet access. |
-| `No GPU detected` | Fine but slow. Runtime → Change runtime type → T4 GPU, then Run all again. |
+| `Quick Draw dataset could not be reached` | The small-mirror notebook cannot find `training/quickdraw-source`; run `python training/fetch_quickdraw_data.py`. For full GCS data, use the separate 50M notebook. |
+| `No GPU detected` | The small-mirror smoke notebook can proceed slowly on CPU. The full 50M notebook stops; retry later only if Colab offers free GPU capacity. |
 | Runtime disconnects mid-run | Set `USE_DRIVE = True`, lower `SAMPLES_PER_CLASS`, re-run from section 3 (data is cached). |
 | Out of memory | Lower `BATCH_SIZE` to 128 or 64. |
-| Header still says "100 objects" | Run `node scripts/install-model-345.mjs ./model-345 --check`; it prints which test failed. |
+| App unexpectedly reports "AI ready — 100 objects" | The fallback is active. Check the displayed fallback reason, verify `public/model-345/` contains its model, weight shard and 345 labels, then run `node scripts/audit-app.mjs` to check the primary load path. |
 | "Label N is X but the canonical list says Y" | The export `classes.txt` is not from this repository's run. Re-run the export cell. |
 | Accuracy is awful on real doodles | Check the doodle contact sheet in section 12. If the 28×28 inputs look blank or blobby, the browser preprocessing profile and the training preprocessing disagree. |
 
@@ -418,9 +464,10 @@ verified, and alternative branches are tried until one contains
 `GIT_TERMINAL_PROMPT=0`, so a renamed or private repository fails fast with
 instructions instead of hanging on a credential prompt.
 
-**It fails early, not late.** Section 2 converts a throwaway five-class model to
-TensorFlow.js and probes the dataset bucket — seconds of work that prevent
-discovering a broken exporter after hours of training.
+**It fails early, not late.** The small-mirror notebook converts a throwaway
+five-class model and checks the local mirror before training. The full-data
+notebook separately probes all GCS NPY headers and checks free scratch space
+before any bitmap bodies are downloaded.
 
 **It is idempotent.** Existing checkouts, caches, packages and exports are reused;
 nothing fails because a file or folder already exists.
@@ -428,22 +475,23 @@ nothing fails because a file or folder already exists.
 `colab_setup.setup()` prints exactly what it did, and `colab_setup.diagnostics()`
 prints the environment block, so a problem can be diagnosed from the output alone.
 
-> **Testing note.** The pipeline was run end to end in a sandboxed Linux
-> environment with TensorFlow 2.21, tf-keras 2.21 and TensorFlow.js 4.22, on a
-> **CPU with no GPU**: fetch → normalise → train (345 classes) → evaluate →
-> export → install → app checks. The full 345-class run took 12.5 minutes.
+> **Testing note.** The existing small-mirror path and app export were tested
+> earlier in a sandboxed Linux environment; that run used at most 100 examples
+> per class and is not evidence of full-archive training. The new GCS byte-range
+> loader has offline unit tests for range enforcement, chunking, preprocessing,
+> resume behavior and training-pipeline integration.
 >
-> The Colab-specific pieces of the notebook (GPU detection) were **not** run on
-> Google Colab itself — that runtime was not available for this work — and the
-> notebook's pre-flight check now validates the local dataset mirror rather than
-> Google's bucket, which is unreachable from the sandbox. If the setup cell
-> reports something unexpected, its output is designed to say what to do next.
+> Neither full-data Colab execution nor its free GPU/disk availability has been
+> tested or guaranteed. No full archive has been downloaded or streamed in this
+> session, and the checked-in model remains unchanged. If Colab has no free
+> runtime with sufficient disk, stop instead of enabling paid compute.
 
 ## Training locally (outside Colab)
 
-The pipeline runs as an ordinary script and does not need a GPU. On the machine
-used for the run documented in the main README (CPU-only, 4 vCPU) the full
-345-class training took about 12.5 minutes.
+The small-mirror pipeline runs as an ordinary script and does not need a GPU.
+The earlier CPU-only 4-vCPU run took about 12.5 minutes for 345 labels with at
+most 100 examples per class. That is not the full 50M archive. The GCS full mode
+is intended for a free cloud runtime after preflight, not for this workspace.
 
 ```
 # 1. get the real drawings (13.7 MB, verified against the canonical 345)

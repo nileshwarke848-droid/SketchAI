@@ -1,0 +1,32 @@
+// Additional curated source icons for the first 50 canonical Quick, Draw! labels.
+// These supplement rather than replace each primary drawing. Sources and license
+// details are pinned in oss-art-sources.mjs and the generated credit registry.
+export const FIRST50_ART_VARIANT_MAP = {
+  ambulance: [['lucide', 'ambulance'], ['mdi', 'ambulance']],
+  ant: [['gameicons', 'ants']],
+  apple: [['lucide', 'apple'], ['mdi', 'apple']],
+  axe: [['lucide', 'axe'], ['iconoir', 'axes']],
+  backpack: [['lucide', 'backpack']],
+  banana: [['lucide', 'banana'], ['gameicons', 'banana']],
+  bandage: [['lucide', 'bandage'], ['fontawesome', 'bandage']],
+  baseball: [['fontawesome', 'baseball']],
+  'baseball bat': [['fontawesome', 'baseball-bat-ball'], ['gameicons', 'baseball-bat']],
+  basket: [['mdi', 'basket'], ['gameicons', 'basket']],
+  bat: [['tabler', 'bat'], ['gameicons', 'bat']],
+  bathtub: [['gameicons', 'bathtub'], ['mdi', 'bathtub-outline']],
+  bear: [['gameicons', 'bear-face'], ['gameicons', 'bear-head']],
+  bed: [['lucide', 'bed'], ['iconoir', 'bed']],
+  bench: [['gameicons', 'park-bench'], ['mdi', 'bench-back']],
+  bicycle: [['tabler', 'bike']],
+  binoculars: [['iconoir', 'binocular'], ['mdi', 'binoculars']],
+  bird: [['mdi', 'bird']],
+  book: [['iconoir', 'book']],
+  boomerang: [['gameicons', 'boomerang']],
+  bowtie: [['gameicons', 'bow-tie']],
+  brain: [['iconoir', 'brain'], ['fontawesome', 'brain']],
+  bridge: [['mdi', 'bridge'], ['fontawesome', 'bridge']],
+  broom: [['mdi', 'broom'], ['fontawesome', 'broom'], ['gameicons', 'broom']],
+  bucket: [['mdi', 'bucket'], ['mdi', 'pail'], ['mdi', 'bucket-outline']],
+  bulldozer: [['mdi', 'bulldozer']],
+  butterfly: [['tabler', 'butterfly'], ['gameicons', 'butterfly']],
+};

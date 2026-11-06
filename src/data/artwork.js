@@ -13,6 +13,8 @@ import { ICONS, ICON_LICENSES } from './icons.js';
 import { categories, categoriesByLabel, categoriesByNormalisedLabel } from './categories.js';
 import { VARIANT_SETS } from './artwork-variants.js';
 import { LINE_ART } from './line-art.js';
+import { FIRST50_LINE_ART, FIRST50_VARIANTS } from './first50-artwork.js';
+import { NEXT50_DERIVED_ART, NEXT50_LINE_ART, NEXT50_VARIANTS } from './next50-artwork.js';
 import { IMPORTED_ART } from './imported-art.js';
 import { IMPORTED_ART_VARIANTS as BATCH1_IMPORTED_ART_VARIANTS } from './imported-art-variants.js';
 import { IMPORTED_ART_VARIANTS as BATCH2_IMPORTED_ART_VARIANTS } from './imported-art-variants-batch2.js';
@@ -135,7 +137,7 @@ export function getArtworkVariants(label, { max = 4 } = {}) {
   //
   // A reviewed batch-specific derived drawing is primary; a replaced imported
   // glyph remains available as a secondary only when it is still useful.
-  const derived = BATCH1_DERIVED_ART[key] ?? BATCH2_DERIVED_ART[key] ?? BATCH3_DERIVED_ART[key];
+  const derived = BATCH1_DERIVED_ART[key] ?? NEXT50_DERIVED_ART[key] ?? BATCH2_DERIVED_ART[key] ?? BATCH3_DERIVED_ART[key];
   if (derived) push(derived, 'derived', 'derived');
 
   const imported = IMPORTED_ART[key];
@@ -148,11 +150,17 @@ export function getArtworkVariants(label, { max = 4 } = {}) {
     push(art, `source-${index + 2}`, 'imported-variant', { source: lib, sourceKey, mode });
   });
 
-  const drawing = LINE_ART[key];
+  const drawing = FIRST50_LINE_ART[key] ?? NEXT50_LINE_ART[key] ?? LINE_ART[key];
   if (drawing) push(drawing, 'line', 'lineart');
 
   (VARIANT_SETS[key] ?? []).forEach((extra, index) => {
     push(extra, `variant-${index + 2}`, 'variant');
+  });
+  (FIRST50_VARIANTS[key] ?? []).forEach((extra, index) => {
+    push(extra, `first50-${index + 1}`, 'variant');
+  });
+  (NEXT50_VARIANTS[key] ?? []).forEach((extra, index) => {
+    push(extra, `next50-${index + 1}`, 'variant');
   });
 
   const icon = getIconData(label);
@@ -166,11 +174,11 @@ export function getArtworkVariants(label, { max = 4 } = {}) {
     .slice(0, Math.max(1, max));
 }
 
-/** Lower sorts first; all source art stays ahead of the preserved hand line art. */
+/** Keep a primary, a project line drawing, and source alternates near the front. */
 function rank(art) {
   if (art.origin === 'imported' || art.origin === 'derived') return 0;
-  if (art.origin === 'imported-variant') return 1;
-  if (art.origin === 'lineart') return 2;
+  if (art.origin === 'lineart') return 1;
+  if (art.origin === 'imported-variant') return 2;
   if (art.origin === 'variant') return 3;
   if (art.origin === 'icon') return art.source === 'mdi' ? 4 : 5;
   return 6;

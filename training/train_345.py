@@ -1,33 +1,37 @@
 """Train SketchAI's own 345-class Quick, Draw! classifier.
 
-Everything here runs on free Google Colab (CPU or GPU) and produces the files
-SketchAI needs in the browser:
+The small-mirror path can run locally; the full GCS path is intended for a free
+Colab GPU runtime. Free capacity and completion are not guaranteed, and no paid
+cloud resources are provisioned. Both paths produce the files SketchAI needs in
+the browser:
 
     export/model-345/model.json + group1-shard*.bin + classes.txt
 
 Design notes for students
 -------------------------
-* The dataset is Google's official Quick, Draw! 28x28 numpy bitmaps. Each row is
-  784 uint8 values, already centred on the drawing's bounding box and rasterised
-  with a 1.5px pen (white ink on black), which is exactly what a browser-side
-  classifier wants: tiny input, no resizing artefacts.
+* ``quickdraw-js`` trains from the project's small npm mirror; ``quickdraw-gcs-full``
+  reads the complete official archive and ``quickdraw-gcs-sampled`` reads a fixed
+  number of rows per class. Both use bounded public GCS byte ranges and a cloud
+  runtime memory-mapped cache.
 * The class order is read from the repository's canonical category list, never
   from a directory listing, and the same list is written out as classes.txt.
   Output neuron N therefore always means classes.txt line N.
-* Images are never all loaded into RAM. Only the first SAMPLES_PER_CLASS rows of
-  each class are fetched (HTTP range requests) and kept in a memory-mapped cache;
-  a generator feeds batches to tf.data from those files.
+* Training batches are read from memory-mapped files; the complete dataset is
+  never loaded into RAM. The GCS path stores no source copy and writes only the
+  transformed cache to the cloud runtime's scratch disk.
 * QUICK_TEST runs a tiny version of the whole pipeline (few categories, few
   samples, few epochs) so you can prove the plumbing works before committing
   hours of training.
 
 Usage
 -----
-    python train_345.py --quick-test                 # ~minutes, verifies everything
-    python train_345.py --samples-per-class 5000     # full 345-class run
+    python train_345.py --quick-test                   # small pipeline smoke test
+    python train_345.py --dataset quickdraw-js         # local mirror, <=100 rows/class
+    python train_345.py --dataset quickdraw-gcs-sampled --samples-per-class 200
+    python train_345.py --dataset quickdraw-gcs-full   # full archive; cloud-only
     python train_345.py --help
 
-The notebook training/SketchAI_345_Training.ipynb calls the same functions.
+The full 50M-data Colab workflow is in SketchAI_QuickDraw_50M_Colab.ipynb.
 """
 
 from __future__ import annotations
@@ -73,9 +77,9 @@ CATEGORY_FILE = REPO_ROOT / "src" / "data" / "quickdraw-categories.txt"
 WORK_DIR = HERE / "work"
 EXPORT_DIR = HERE / "export" / "model-345"
 
-# The dataset is read from the local Quick, Draw! NDJSON mirror described in
-# `quickdraw_ndjson.py`. The Google Cloud Storage bucket that used to be the
-# source is unreachable from this environment and is deliberately not used.
+# The default `quickdraw-js` mode reads the local NDJSON mirror. The opt-in
+# `quickdraw-gcs-full` mode is implemented in quickdraw_gcs.py and streams the
+# official public GCS bitmap objects in bounded ranges (intended for free Colab).
 QUICKDRAW_SOURCE_DIR = Path(__file__).resolve().parent / "quickdraw-source" / "drawings"
 IMAGE_SIZE = 28
 PIXELS_PER_IMAGE = IMAGE_SIZE * IMAGE_SIZE
@@ -90,11 +94,13 @@ PIXELS_PER_IMAGE = IMAGE_SIZE * IMAGE_SIZE
 class Config:
     """Every knob that matters, in one place.
 
-    Defaults are sized for a free Colab CPU/GPU runtime. Raise
-    SAMPLES_PER_CLASS to 10000 once you have seen a full run finish.
+    Defaults use the small local mirror's 100-row ceiling. The full GCS mode reads
+    every available row and ignores ``samples_per_class`` outside quick-test mode.
     """
 
-    samples_per_class: int = 5000
+    samples_per_class: int = 100
+    # Bounded GCS transfer size for the full archive (each source row is 784 bytes).
+    gcs_chunk_rows: int = 4096
     batch_size: int = 256
     epochs: int = 20
     seed: int = 42
@@ -130,9 +136,9 @@ class Config:
     # on the test split and wrong on real hand-drawn doodles.
     thickness_augment: bool = True
 
-    # Dataset source. "quickdraw-js" is the real thing: the local Quick, Draw!
-    # NDJSON mirror (CC BY 4.0). "synthetic" draws procedural shapes offline and
-    # exists only to self-test the pipeline; it is never a real training run.
+    # Dataset source. "quickdraw-js" is the small local mirror; "quickdraw-gcs-full"
+    # streams the official full archive in chunks on a cloud runtime. "synthetic"
+    # is an offline self-test only and is never a real training run.
     dataset: str = "quickdraw-js"
     quickdraw_source_dir: Path = QUICKDRAW_SOURCE_DIR
     data_dir: Path = WORK_DIR / "data"
@@ -263,11 +269,42 @@ def synthetic_class_samples(name: str, rows: int, seed: int) -> np.ndarray:
 
 
 def download_dataset(categories: Sequence[str], cfg: Config, logger=print) -> Path:
-    """Fetch SAMPLES_PER_CLASS rows for each category into the cache directory."""
+    """Fetch category bitmaps into a memory-mapped cache.
+
+    The GCS modes read official public NPY objects in bounded HTTP byte ranges,
+    one category/chunk at a time. Full source files are never loaded into RAM or
+    downloaded into this repository's workspace.
+    """
     cfg.cache_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = cfg.cache_dir / "manifest.json"
-    manifest = {"dataset": cfg.dataset, "samples_per_class": cfg.samples_per_class, "classes": {}}
     started = time.time()
+
+    if cfg.dataset in {"quickdraw-gcs-full", "quickdraw-gcs-sampled"}:
+        from quickdraw_gcs import prepare_full_cache
+
+        row_limit = (
+            cfg.samples_per_class if cfg.dataset == "quickdraw-gcs-sampled" or cfg.quick_test
+            else None
+        )
+        if cfg.dataset == "quickdraw-gcs-sampled" and row_limit < 1:
+            raise ValueError("quickdraw-gcs-sampled requires --samples-per-class > 0")
+        logger("  Source: official Google Cloud Storage numpy_bitmap objects (HTTP Range)")
+        logger("  Transfer: one category and one bounded row chunk at a time; cloud scratch only")
+        manifest = prepare_full_cache(
+            list(categories), cfg.cache_dir,
+            chunk_rows=cfg.gcs_chunk_rows,
+            row_limit=row_limit,
+            logger=logger,
+        )
+        if (cfg.dataset == "quickdraw-gcs-full" and not cfg.quick_test
+                and len(categories) == 345 and manifest.get("total_rows", 0) < 45_000_000):
+            raise RuntimeError(
+                f"Expected the full Quick, Draw! archive (~50M rows), only "
+                f"{manifest.get('total_rows', 0):,} rows were staged."
+            )
+        return cfg.cache_dir
+
+    manifest = {"dataset": cfg.dataset, "samples_per_class": cfg.samples_per_class, "classes": {}}
     for index, name in enumerate(categories):
         target = cfg.cache_dir / f"{slug(name)}.npy"
         if target.exists():
@@ -275,7 +312,6 @@ def download_dataset(categories: Sequence[str], cfg: Config, logger=print) -> Pa
             if existing >= cfg.samples_per_class:
                 manifest["classes"][name] = {"rows": existing, "cached": True}
                 continue
-            # Cached from an earlier, smaller run: replace it with a bigger slice.
             target.unlink()
         if cfg.dataset == "synthetic":
             array = synthetic_class_samples(name, cfg.samples_per_class, cfg.seed + index)
@@ -393,8 +429,14 @@ def _read_batch(
 ) -> np.ndarray:
     """Materialise (batch, 28, 28, 1) float32 from the memmaps."""
     out = np.empty((pairs.shape[0], IMAGE_SIZE, IMAGE_SIZE, 1), dtype=np.float32)
-    for i, (class_index, row) in enumerate(pairs):
-        out[i, :, :, 0] = bundle.cache[class_index][row].reshape(IMAGE_SIZE, IMAGE_SIZE)
+    # Group the indexed gathers by class. This avoids one Python/memmap lookup per
+    # image on the 40M+ example cloud run while keeping only a single batch in RAM.
+    class_ids = pairs[:, 0]
+    rows = pairs[:, 1]
+    for class_index in np.unique(class_ids):
+        positions = np.flatnonzero(class_ids == class_index)
+        batch = np.asarray(bundle.cache[int(class_index)][rows[positions]])
+        out[positions, :, :, 0] = batch.reshape(-1, IMAGE_SIZE, IMAGE_SIZE)
     out /= 255.0  # Quick, Draw! bitmaps are 0-255 white ink on black
     if augment and rng is not None:
         out = _thickness_augment(out, rng)
@@ -545,14 +587,19 @@ def train_model(model, bundle: DatasetBundle, cfg: Config, logger=print):
     ]
     if cfg.drive_checkpoint_dir:
         cfg.drive_checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        callbacks.append(
+        callbacks.extend([
             tf.keras.callbacks.ModelCheckpoint(
                 filepath=str(cfg.drive_checkpoint_dir / "best.h5"),
                 monitor="val_accuracy",
                 save_best_only=True,
                 verbose=0,
-            )
-        )
+            ),
+            tf.keras.callbacks.BackupAndRestore(
+                backup_dir=str(cfg.drive_checkpoint_dir / "fit-backup"),
+                save_freq="epoch",
+                delete_checkpoint=False,
+            ),
+        ])
 
     started = time.time()
     history = model.fit(
@@ -799,16 +846,27 @@ def save_and_export(model, bundle: DatasetBundle, metrics: dict, cfg: Config, hi
         "name": "SketchAI 345-class doodle classifier",
         "trained_for": "SketchAI (school demonstration project)",
         "dataset": (
-            "Google Quick, Draw! drawings (CC BY 4.0), accessed via the "
-            "quickdraw.js npm redistribution of the official dataset"
+            "Google Quick, Draw! full 28x28 numpy bitmaps (CC BY 4.0), streamed from public GCS"
+            if cfg.dataset == "quickdraw-gcs-full"
+            else "Google Quick, Draw! sampled 28x28 bitmaps (CC BY 4.0), streamed from public GCS"
+            if cfg.dataset == "quickdraw-gcs-sampled"
+            else "Google Quick, Draw! drawings (CC BY 4.0), accessed via the quickdraw.js npm redistribution"
             if cfg.dataset == "quickdraw-js"
             else "synthetic-offline-selftest (NOT Quick, Draw!)"
         ),
         "dataset_url": "https://github.com/googlecreativelab/quickdraw-dataset",
-        "dataset_access_path": "npm:quickdraw.js@1.0.6 (CC BY 4.0, data by Google, Inc.)",
-        "is_self_test_only": cfg.dataset != "quickdraw-js",
+        "dataset_access_path": (
+            "Google Cloud Storage byte-range reads: gs://quickdraw_dataset/full/numpy_bitmap/"
+            if cfg.dataset in {"quickdraw-gcs-full", "quickdraw-gcs-sampled"}
+            else "npm:quickdraw.js@1.0.6 (CC BY 4.0, data by Google, Inc.)"
+        ),
+        "is_self_test_only": cfg.dataset == "synthetic",
         "categories": len(bundle.categories),
-        "samples_per_class": cfg.samples_per_class,
+        "samples_per_class": None if cfg.dataset == "quickdraw-gcs-full" else cfg.samples_per_class,
+        "source_rows_per_category": {
+            name: int(cache.shape[0]) for name, cache in zip(bundle.categories, bundle.cache)
+        },
+        "source_total_rows": sum(int(cache.shape[0]) for cache in bundle.cache),
         "train_samples": len(bundle.train),
         "validation_samples": len(bundle.val),
         "test_samples": len(bundle.test),
@@ -852,7 +910,7 @@ def save_and_export(model, bundle: DatasetBundle, metrics: dict, cfg: Config, hi
         f"Dataset : Google Quick, Draw! 28x28 numpy bitmaps ({manifest['dataset']})\n"
         "License : CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/\n"
         "Source  : https://github.com/googlecreativelab/quickdraw-dataset\n"
-        f"Samples : {manifest['samples_per_class']} per class for {manifest['categories']} classes\n"
+        f"Source rows: {manifest['source_total_rows']:,} across {manifest['categories']} classes\n"
         f"Split   : {manifest['train_samples']} train / {manifest['validation_samples']} validation / "
         f"{manifest['test_samples']} test (seed {manifest['seed']})\n"
         f"Metrics : top-1 {metrics.get('test_accuracy', 0):.4f}, "
@@ -939,13 +997,15 @@ def run_pipeline(cfg: Config, logger=print, categories: Sequence[str] | None = N
 
 def parse_args(argv: Sequence[str] | None = None) -> Config:
     parser = argparse.ArgumentParser(description="Train SketchAI's 345-class Quick, Draw! classifier.")
-    parser.add_argument("--quick-test", action="store_true", help="tiny end-to-end run (20 classes, 500 samples, 3 epochs)")
+    parser.add_argument("--quick-test", action="store_true", help="small end-to-end run (20 classes, up to 500 rows/class, 10 epochs)")
     parser.add_argument("--samples-per-class", type=int, default=Config.samples_per_class)
     parser.add_argument("--epochs", type=int, default=Config.epochs)
     parser.add_argument("--batch-size", type=int, default=Config.batch_size)
     parser.add_argument("--seed", type=int, default=Config.seed)
-    parser.add_argument("--dataset", choices=["quickdraw-js", "synthetic"], default="quickdraw-js",
-                        help="'synthetic' only self-tests the pipeline offline; it is not real data")
+    parser.add_argument("--dataset", choices=["quickdraw-js", "quickdraw-gcs-sampled", "quickdraw-gcs-full", "synthetic"], default="quickdraw-js",
+                        help="quickdraw-gcs-sampled reads N rows/class; quickdraw-gcs-full reads all official GCS rows; synthetic is only a self-test")
+    parser.add_argument("--gcs-chunk-rows", type=int, default=Config.gcs_chunk_rows,
+                        help="rows per bounded GCS transfer chunk (default: %(default)s)")
     parser.add_argument("--no-augment", action="store_true", help="disable light augmentation")
     parser.add_argument("--categories", type=int, default=0, help="limit the number of categories (debug)")
     parser.add_argument("--drive-dir", type=Path, default=None, help="optional Google Drive checkpoint directory")
@@ -963,6 +1023,7 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
 
     cfg = Config(
         samples_per_class=args.samples_per_class,
+        gcs_chunk_rows=args.gcs_chunk_rows,
         epochs=args.epochs,
         batch_size=args.batch_size,
         seed=args.seed,
@@ -986,7 +1047,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         categories = quick_test_categories(categories, cfg.quick_test_categories)
     if cfg.category_limit:
         categories = categories[: cfg.category_limit]
-    print(f"Training {len(categories)} classes · {cfg.samples_per_class} samples/class · "
+    sample_description = (
+        "all source rows" if cfg.dataset == "quickdraw-gcs-full" and not cfg.quick_test
+        else f"up to {cfg.samples_per_class} rows/class"
+    )
+    print(f"Training {len(categories)} classes · {sample_description} · "
           f"{cfg.epochs} epochs · dataset={cfg.dataset}")
     run_pipeline(cfg, categories=categories)
     return 0

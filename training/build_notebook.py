@@ -41,31 +41,22 @@ def code(text: str) -> dict:
 
 CELLS = [
     md("""
-# SketchAI — train our own 345-class drawing classifier
+# SketchAI — small Quick, Draw! smoke-training notebook
 
-This notebook trains a small convolutional neural network that recognises **all
-345 official Google Quick, Draw! categories**, converts it to TensorFlow.js and
-packages it for SketchAI.
+This notebook exercises SketchAI's 345-class training/export pipeline using the
+small `quickdraw.js` mirror (up to 100 drawings per category). It is **not** the
+full 50-million-drawing run. For the full official archive, use
+`SketchAI_QuickDraw_50M_Colab.ipynb`, which streams Google Cloud Storage objects
+in bounded chunks and includes a free-disk preflight.
 
-**Everything is free.** Training runs on a free Google Colab runtime (CPU or
-GPU); the finished model is downloaded to your computer and runs **offline in the
-user's browser**. No API keys, no paid services, no server.
+Use only a free Colab runtime; availability and completion are not guaranteed.
+No paid services are created. The finished model runs offline in the browser.
 
 ### How to use it
 
-Use **Runtime → Run all**. That is the whole workflow. The notebook checks its own
-environment, downloads the data, trains, exports and offers you a zip file.
-
-There is exactly **one** setting you change by hand:
-
-```python
-QUICK_TEST = True     # first run: 20 categories, a few minutes, proves everything
-QUICK_TEST = False    # second run: all 345 categories, the real model
-```
-
-Run all once with `QUICK_TEST = True`. When it finishes and you can see a
-`sketchai-model-345.zip` in the Files panel, change that one line to `False` and
-run all again.
+Use **Runtime → Run all**. `QUICK_TEST = True` proves the pipeline on a few
+categories. `QUICK_TEST = False` exercises all 345 labels using the small local
+mirror. It cannot train on more drawings than the mirror actually contains.
 
 ### What you end up with
 
@@ -118,7 +109,7 @@ RAW_URL     = ('https://raw.githubusercontent.com/nileshwarke848-droid/SketchAI/
 # -- 1. fetch the environment helper (a public file; nothing to log in to) -------
 os.makedirs(BOOTSTRAP, exist_ok=True)
 fetched = False
-for ref in ('main', 'arena/40ecfce2-sketchai'):
+for ref in ('arena/c8fe0bf2-sketchai', 'main'):
     try:
         urllib.request.urlretrieve(RAW_URL.format(ref=ref), os.path.join(BOOTSTRAP, 'colab_setup.py'))
         fetched = True
@@ -172,8 +163,8 @@ The worst possible failure is training for hours and discovering at the very end
 that the model cannot be exported. So: convert a throwaway five-class network to
 TensorFlow.js right now. It takes seconds.
 
-This cell also checks that Google's dataset bucket is reachable, for the same
-reason — better to know now than after a long download.
+This cell also checks that the small local Quick, Draw! mirror is present. It is
+not a GCS check and it does not fetch the 50-million-example archive.
 
 If either check fails, **stop and fix it** (the cell tells you how). Do not
 continue into training.
@@ -192,9 +183,9 @@ else:
         '\\nQuick Draw dataset could not be reached.\\n'
         f"  url   : {dataset_check['url']}\\n"
         f"  reason: {dataset_check['error']}\\n\\n"
-        'This notebook needs to download drawings from Google Cloud Storage.\\n'
-        'Check that this runtime has internet access (Colab normally does), then\\n'
-        'run this cell again. Training cannot continue without the dataset.'
+        'This notebook needs the small quickdraw.js mirror extracted under training/quickdraw-source.\\n'
+        'Run training/fetch_quickdraw_data.py, then run this cell again.\\n'
+        'For the full archive, use SketchAI_QuickDraw_50M_Colab.ipynb instead.'
     )
 """),
     md("""
@@ -208,22 +199,21 @@ QUICK_TEST = False    # SECOND RUN — after the first run finished successfully
 ```
 
 Everything else has a sensible default. `SAMPLES_PER_CLASS` is ignored while
-`QUICK_TEST` is `True` (it is capped at 500).
+`QUICK_TEST` is `True` (the source itself contains at most 100 per category).
 """),
     code("""
 # ---------------------------------------------------------------------------
-#  FIRST RUN:  QUICK_TEST = True    -> 20 categories, ~500 drawings each,
-#                                      10 epochs, finishes in minutes.
-#  THEN:       QUICK_TEST = False   -> all 345 categories, the real model.
+#  FIRST RUN:  QUICK_TEST = True    -> 20 categories, up to 100 drawings each.
+#  THEN:       QUICK_TEST = False   -> all 345 labels, up to 100 drawings each.
 # ---------------------------------------------------------------------------
 QUICK_TEST       = True
 
-# How many drawings to fetch per category for the FULL run. Google hosts
-# 120k-300k per category; 5000 is comfortable on a free runtime, 10000 is better
-# if your runtime lasts. Capped at 500 while QUICK_TEST is True.
-SAMPLES_PER_CLASS = 5000
+# The quickdraw.js mirror contains at most 100 drawings per category.
+# This smoke-training notebook cannot exceed that limit; use the 50M notebook
+# for the complete official archive.
+SAMPLES_PER_CLASS = 100
 
-BATCH_SIZE  = 256     # lower to 128 or 64 if the runtime runs out of memory
+BATCH_SIZE  = 128     # lower to 64 if the runtime runs out of memory
 EPOCHS      = 20      # early stopping usually finishes earlier
 SEED        = 42      # fixed seed = reproducible splits and reproducible weights
 
@@ -240,12 +230,11 @@ DRIVE_DIR   = '/content/drive/MyDrive/SketchAI-training'
 TRAIN_FRACTION = 0.8
 VAL_FRACTION   = 0.1   # the remaining 0.1 is the held-out test set
 
-# The dataset. 'quickdraw' is the real Google dataset and is what you want.
-# 'synthetic' draws procedural shapes offline and exists only for developing this
-# pipeline where the bucket is unreachable -- it can never produce a real model.
-DATASET = 'quickdraw'
+# The small real Quick, Draw! npm mirror (100 drawings/class maximum).
+# The full 50M GCS mode is in SketchAI_QuickDraw_50M_Colab.ipynb.
+DATASET = 'quickdraw-js'
 
-print(f"QUICK_TEST = {QUICK_TEST}   <-- change this one line for the full run")
+print(f"QUICK_TEST = {QUICK_TEST}   <-- small-mirror pass only; use the 50M notebook for full data")
 print(f"SAMPLES_PER_CLASS = {SAMPLES_PER_CLASS}   EPOCHS = {EPOCHS}   SEED = {SEED}")
 """),
     md("""
@@ -324,16 +313,15 @@ train_345.download_dataset(selected, cfg)
     md("""
 ## 6. Split into train / validation / test
 
-80% of each category's drawings train the network, 10% decide when to stop and
-which checkpoint is best, and 10% are **held back entirely** and only touched once,
-at the end, to measure honest accuracy.
+80% of each category's available drawings train the network, 10% decide when to
+stop, and 10% are held back for final evaluation. In this small mirror, the full
+345-label pass has at most 34,500 source drawings; it is not the 50M archive.
 
 The shuffle uses `SEED = 42`, so the same drawing never lands in two splits and
 re-running reproduces the identical partition.
 
 Nothing is loaded into RAM here: the split is just a list of `(category, row)`
 pairs, and training reads those rows from memory-mapped files as it needs them.
-That is what keeps a 1.7-million-example run inside a free runtime's memory.
 """),
     code("""
 bundle = train_345.build_splits(selected, cfg)
@@ -368,8 +356,8 @@ plt.show()
 
 A deliberately small convolutional network. Three convolution blocks extract
 shapes (edges, then curves, then parts), global average pooling summarises them,
-and a final Dense layer with **345 outputs** and a softmax turns that into
-probabilities that add up to 1.
+and a final Dense layer with one output per selected category (345 for this
+mirror's full-label pass) and a softmax turns that into probabilities that add up to 1.
 
 Why this size: about 215,000 parameters, roughly 0.9 MB of weights. That loads in
 a web browser in well under a second and predicts in a few milliseconds. A large
@@ -408,11 +396,10 @@ Two copies of the best model are written:
 The HDF5 copy is the one used for export, because the converter rejects some
 newer `.keras` files.
 
-**How long?** `QUICK_TEST = True` takes a couple of minutes. The full run depends
-on which GPU Colab gives you and on `SAMPLES_PER_CLASS` — expect hours, not
-minutes. There is no honest way to promise a number in advance. If the runtime
-disconnects, re-run from section 3: the dataset is cached, and with
-`USE_DRIVE = True` so is your best checkpoint.
+**How long?** `QUICK_TEST = True` takes a few minutes. The full small-mirror run
+uses at most 34,500 rows and is much smaller than the 50M workflow. For the real
+full-data request, use `SketchAI_QuickDraw_50M_Colab.ipynb`; its free runtime,
+disk capacity and completion time are not guaranteed.
 """),
     code("""
 %%time

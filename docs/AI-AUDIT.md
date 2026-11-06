@@ -1,18 +1,26 @@
-# AI recognition audit — SketchAI
+# Historical AI recognition audit — 100-class fallback
 
-This document records the engineering and machine-learning audit of SketchAI's
-doodle recognition: what model is used, how the drawing reaches it, what was
-wrong, what was changed, and what the measured results are. Application-test
-results below are historical; PNG export was subsequently removed as an
-intentional product decision when accepted illustrations became editable scene
-objects. See the current editor and export decision in [README.md](../README.md).
+**Archive note (2026-11): this is a historical audit of the original third-party
+100-class model in `public/model/`, not a report on the current primary
+345-class model.** The current app loads the project-trained model from
+`public/model-345/` first and falls back to this 100-class model only if the
+primary model cannot be loaded or validated. The preprocessing bug investigation
+and its 31-doodle measurements below belong to the 100-class model and its
+profile; do not apply those numbers to the current primary model. Current model
+identity, metrics and a recent small smoke test are in the main
+[README](../README.md) and [training guide](../training/README.md).
 
-**Summary: the model is fine and the labels are correct. The preprocessing was
-wrong.** Screen-resolution strokes were being shrunk into near-transparent
-sub-pixel lines, so the network saw an almost empty 28 × 28 image and guessed
-from fragments. Fixing the pixel pipeline took the same model from about
-6–10% top-1 accuracy to ~81% top-1 / ~84% top-3 on the same test set, and from
-10% to ~87% for thin pens.
+This document preserves the older engineering audit: what was wrong with the
+original fallback path, how preprocessing was changed, and what the historical
+test harness measured. Its application-test results and PNG-export notes are
+archival; PNG export is not a current capability. The product's current editor
+and export decision are documented in the [README](../README.md).
+
+**Historical summary:** the fallback model's original preprocessing was
+mismatched. Screen-resolution strokes were being shrunk into near-transparent
+sub-pixel lines. The old audit reported that correcting that pipeline improved
+its measurements on the audit's synthetic/canonical tests; those figures are
+not current primary-model metrics or a broad real-user accuracy guarantee.
 
 ## 1. The model
 

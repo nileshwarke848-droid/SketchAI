@@ -1,14 +1,10 @@
-"""Loader for the real Google Quick, Draw! bitmaps shipped by the `quickdraw.js`
-npm package (CC BY 4.0, data © Google, Inc.).
+"""Loader for the small Quick, Draw! mirror shipped by `quickdraw.js`.
 
-Why this source
----------------
-The canonical Quick, Draw! mirror -- Google Cloud Storage
-(`storage.googleapis.com/quickdraw_dataset/...`) -- and Hugging Face
-(`huggingface.co/datasets/google/quickdraw`) are both unreachable from this
-sandbox (TLS connections are dropped). The `quickdraw.js` npm package is a
-redistribution of the *same* official data: 345 gzipped NDJSON files, one per
-category, whose names match SketchAI's canonical category list exactly.
+This supports the `quickdraw-js` smoke-training mode only (100 rows per category
+maximum). Full-dataset training uses `quickdraw_gcs.py` to read official public
+GCS bitmap objects in bounded ranges. The npm package is a licensed redistribution
+of the same official data: 345 gzipped NDJSON files, one per category, whose names
+match SketchAI's canonical category list exactly.
 
 Its own LICENSE file states:
 

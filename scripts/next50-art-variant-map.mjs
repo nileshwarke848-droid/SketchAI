@@ -1,0 +1,38 @@
+// Curated supplemental licensed art for canonical categories 51–100.
+// Every entry is an exact subject, an intentional subtype/view, and not a
+// replacement for the existing primary. Sources and licenses are in
+// scripts/oss-art-sources.mjs and the generated batch-1 credits registry.
+export const NEXT50_ART_VARIANT_MAP = {
+  cake: [['mdi', 'cake-variant'], ['gameicons', 'cake-slice']],
+  calculator: [['lucide', 'calculator'], ['gameicons', 'calculator']],
+  calendar: [['mdi', 'calendar-month'], ['lucide', 'calendar-days']],
+  camel: [['gameicons', 'camel-head']],
+  camera: [['gameicons', 'photo-camera'], ['mdi', 'camera-front-variant']],
+  campfire: [['gameicons', 'campfire']],
+  candle: [['gameicons', 'candles']],
+  cannon: [['gameicons', 'pirate-cannon']],
+  car: [['mdi', 'car-side'], ['gameicons', 'race-car']],
+  carrot: [['gameicons', 'carrot']],
+  castle: [['gameicons', 'castle-ruins'], ['tabler', 'building-castle']],
+  'cell phone': [['mdi', 'cellphone-basic'], ['lucide', 'smartphone']],
+  chair: [['tabler', 'rocking-chair'], ['lucide', 'armchair']],
+  church: [['gameicons', 'viking-church'], ['tabler', 'building-church']],
+  clarinet: [['gameicons', 'clarinet']],
+  clock: [['gameicons', 'alarm-clock'], ['mdi', 'watch']],
+  'coffee cup': [['gameicons', 'coffee-mug'], ['mdi', 'coffee-to-go']],
+  compass: [['mdi', 'compass-rose'], ['gameicons', 'compass']],
+  computer: [['tabler', 'device-desktop']],
+  cookie: [['gameicons', 'cookie']],
+  couch: [['mdi', 'sofa']],
+  cow: [['gameicons', 'cow']],
+  crab: [['gameicons', 'sad-crab']],
+  crown: [['gameicons', 'imperial-crown']],
+  cup: [['mdi', 'cup-water']],
+  diamond: [['mdi', 'diamond-stone']],
+  dishwasher: [['mdi', 'dishwasher']],
+  donut: [['gameicons', 'donut']],
+  door: [['gameicons', 'doorway']],
+  dragon: [['gameicons', 'dragon-head']],
+  drill: [['gameicons', 'drill'], ['tabler', 'hammer-drill']],
+  duck: [['gameicons', 'plastic-duck']],
+};

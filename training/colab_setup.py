@@ -41,14 +41,12 @@ REPO_DIR = "/content/SketchAI"
 # what stops the silent "clone succeeded, notebook dies later" failure.
 PIPELINE_FILE = ("training", "train_345.py")
 
-# Tried in order; the first ref that actually contains the pipeline wins. `main`
-# is first so that the notebook keeps working unchanged once the work is merged.
-CANDIDATE_REFS = ("main", "arena/40ecfce2-sketchai")
+# Tried in order; the first ref that actually contains the pipeline wins. Keep
+# the active working branch here until its full-data path is merged to main.
+CANDIDATE_REFS = ("arena/c8fe0bf2-sketchai", "main")
 
-# The drawings are read from the local Quick, Draw! NDJSON mirror described in
-# `quickdraw_ndjson.py` and downloaded by `fetch_quickdraw_data.py`. Google's own
-# bucket and Hugging Face are unreachable from many sandboxed networks, and are
-# deliberately not used.
+# Used by the legacy small-mirror notebook's check_dataset() helper only. The
+# full-data notebook uses quickdraw_gcs.py and does not probe this local directory.
 QUICKDRAW_SOURCE_DIR = Path(__file__).resolve().parent / "quickdraw-source" / "drawings"
 
 

@@ -1,9 +1,10 @@
 # SketchAI
 
-SketchAI is a small, browser-based drawing studio. Draw a rough object, see a
-pretrained neural network's top guesses and their confidence scores, and accept
-a clean illustration as an editable scene object. No account, backend,
-API key, or paid service is required. Your drawing stays in your browser.
+SketchAI is a browser-based drawing studio inspired by AutoDraw. Draw a rough
+object, see a neural network's ranked guesses and scores, and accept a clean
+illustration as an editable scene object. No account, backend, API key or paid
+service is required; recognition runs locally in the browser. The current editor
+does not save or export a drawing, so work lasts only for the open page session.
 
 ## Features
 
@@ -11,8 +12,9 @@ API key, or paid service is required. Your drawing stays in your browser.
 - Text is a structured scene object: add it inline, edit by double-clicking, then move, resize, rotate, recolor, change its safe font family, size, weight and alignment, duplicate, reorder or delete it.
 - Zoom from 25% to 400% with pointer-anchored wheel zoom, step controls and reset. Pan with Space + drag or the Hand tool; view navigation never changes document coordinates.
 - Flood-fill enclosed regions on a dedicated raster layer beneath editable scene objects. Set the entire canvas background separately, with one-step undo/redo and Reset to White.
-- Local AI recognition after a 600 ms pause; the top 10 probabilities drive a
-  horizontally scrollable strip of up to 10 clean suggestion cards.
+- Local AI recognition after a 600 ms pause; the 345-class model's top 10 ranked
+  classes drive a horizontally scrollable strip of up to 12 cards (primary artwork
+  plus a few distinct variants). The fallback model covers 100 classes.
 - "AI thinks you might be drawing…" framing: the panel reports the model's
   uncertainty (for example `Cat 54% · Dog 31% · Tiger 8%`) instead of claiming a
   certain answer.
@@ -50,14 +52,14 @@ was produced by `training/train_345.py` in this repository.
 | --- | --- |
 | Files | `public/model-345/model.json` + `public/model-345/group1-shard1of1.bin` (0.83 MB, one shard) |
 | Dataset | [Google Quick, Draw!](https://github.com/googlecreativelab/quickdraw-dataset) — CC BY 4.0, © Google, Inc. |
-| Data access path | `quickdraw.js@1.0.6` npm package (MIT wrapper redistributing the official dataset). The canonical Google Cloud Storage bucket and Hugging Face were both unreachable from the training environment, so this mirror was used instead; its own licence file carries the CC BY 4.0 attribution to Google. |
+| Data access path | The checked-in model used the licensed `quickdraw.js@1.0.6` npm redistribution. A full-data, chunked public-GCS Colab workflow is now prepared in `training/SketchAI_QuickDraw_50M_Colab.ipynb`, but has not been run; the current weights still use the 100/class mirror. |
 | Examples per class | **100** — the maximum that mirror provides (34,500 drawings total, not the full 50 M) |
 | Split | 27,600 train / 3,450 validation / 3,450 test, stratified per class, `SEED = 42` |
 | Input | `[1, 28, 28, 1]` float32, white ink on black, values 0–1 |
 | Output | 345 softmax probabilities |
 | Parameters | 214,649 |
 | Test accuracy | **top-1 37.7% · top-3 58.1% · top-10 76.1%** (held-out split; random baseline 0.29%) |
-| Hand-drawn doodles | top-1 7/16 · top-3 9/16 · top-10 12/16 on 16 hand-drawn test doodles |
+| In-repository 16-doodle smoke test | top-1 7/16 · top-3 8/16 · top-5 10/16 · top-10 14/16 (manually authored stroke paths; not an independent benchmark) |
 
 Architecture (unchanged from the design target):
 
@@ -81,16 +83,19 @@ machine (no GPU) with TensorFlow 2.21.0 / Python 3.11 — about 12.5 minutes.
 Augmentation was light translation and rotation (±5%, ±2.9°) plus deliberate
 **pen-width invariance**: Quick, Draw! strokes are ~1.5 px wide on the 28×28
 grid, while a browser pen on SketchAI's 1200×720 canvas is only ~0.3–0.6 px, so
-each training image was randomly thickened, thinned or gamma-shifted. Without
-that, the model scored 41.9% top-1 on the clean test split but only 9/16 top-10
-on real hand-drawn doodles; with it the doodle score rose to 12/16.
+each training image was randomly thickened, thinned or gamma-shifted. The model's
+held-out test score is recorded above. For a separate, small smoke test on
+manually authored stroke paths, run `node scripts/demo-test.mjs`; its current
+results are listed above. These datasets and methods differ; do not compare them
+as if they were one benchmark.
 
 See [Training our own 345-class model](#training-our-own-345-class-model) for how
-to reproduce it, and `training/export/model-345/ATTRIBUTION.txt` for the
-attribution shipped alongside the weights.
+to reproduce it and the [training attribution notes](training/README.md#attribution).
+The generated training export includes attribution metadata; the checked-in app
+assets are documented separately below.
 
-**Fallback model (bundled).** SketchAI does not redistribute a model it trained
-here; the bundled one is pretrained:
+**100-class fallback model (bundled).** This is the third-party pretrained model
+kept as a fallback; it is distinct from the project's primary 345-class model.
 
 | | |
 | --- | --- |
@@ -118,7 +123,11 @@ model's 100 outputs were trained with; SketchAI loads the list from the same
 release as the weights and refuses to run if the two disagree on class count.
 The displayed percentages come straight from the model's softmax output.
 
-### Supported classes (100)
+### Supported classes of the 100-class fallback
+
+The following list belongs only to the third-party fallback model. The primary
+345-class model uses the complete official Quick, Draw! category list in
+`public/model-345/classes.txt`.
 
 ```
 drums, sun, laptop, anvil, baseball_bat, ladder, eyeglasses, grapes, book, dumbbell
@@ -133,10 +142,11 @@ donut, bird, circle, beard, coffee_cup, butterfly, bench, rifle, cat, sock
 ice_cream, moustache, suitcase, hammer, rainbow, knife, cookie, baseball, lightning, bicycle
 ```
 
-Both `flower` and `sun` are in the list. Classes such as `house`, `fish`, `dog`
-and `heart` are **not** predicted by this model — it can only answer with one of
-the 100 above, which is why an unsupported object is answered with the closest
-supported shape.
+Both `flower` and `sun` are in the fallback list. Classes such as `house`,
+`fish`, `dog` and `heart` are not predicted by this 100-class model; it can only
+return one of the listed labels. The primary 345-class model has broader coverage,
+but it still always ranks one of its known classes and has no explicit unknown-
+object rejection.
 
 ### Suggestion artwork
 
@@ -150,12 +160,18 @@ icon in `src/data/icons.js`:
 | B | Recognisable stand-in | 58 |
 | C | No honest icon — the card shows the category name as typography | 22 |
 
-Icons come from Fluent Emoji Flat (MIT), Noto Emoji (Apache-2.0) and Material
-Design Icons (Apache-2.0), bundled locally, no network requests. Categories are
-chosen by hand and reviewed against a rendered sheet, because a wrong picture is
-worse than no picture. With the 345-class model installed, any of the 345 official
-categories can appear; the 100-class fallback narrows that to the 100 classes it
-knows.
+Artwork comes from Fluent Emoji Flat (MIT), Noto Emoji (Apache-2.0) and Material
+Design Icons (Apache-2.0), plus separately credited imported and derived line art;
+all assets are bundled locally. Categories and artwork are reviewed against
+rendered sheets. With the 345-class model, any official category can be predicted,
+but 22 categories have no insertable illustration and appear as typographic cards.
+The fallback can predict only its own 100 labels. For the first 50 canonical
+categories, the variant pool now has at least three distinct additional SVG
+options plus a separate line-art option. The original drawings live in
+`src/data/first50-artwork.js`; source versions and licenses are pinned in
+`scripts/oss-art-sources.mjs`, with the generated icon map and per-icon
+attribution records in `src/data/imported-art-variants.js` and
+`scripts/oss-art-variant-credits.json`.
 
 ![Artwork coverage for the 345 categories](docs/images/artwork-coverage.png)
 
@@ -182,11 +198,14 @@ problem just because a repository is public, SketchAI **trains its own** classif
 on the Quick, Draw! dataset itself — the dataset is CC BY 4.0 and explicitly
 redistributable, so the resulting weights are ours to ship.
 
-The honest trade-off: the reachable mirror of the dataset provides 100 drawings per
-class rather than the tens of thousands available from Google's own bucket, so this
-model is trained on 34,500 drawings, not millions. That is why its top-1 accuracy
-(37.7%) is below published Quick, Draw! numbers, and why the app shows a ranked
-top-10 rather than a single verdict.
+The honest trade-off: the checked-in model was trained from a mirror that provides
+100 drawings per class, so it used 34,500 drawings—not the full 50 million. Its
+top-1 accuracy is 37.7% on that model's held-out split. Free-only Colab
+workflows are prepared for an interim run with 200 training examples/class plus
+held-out data (`training/SketchAI_QuickDraw_200_Colab.ipynb`) and the full official
+archive (`training/SketchAI_QuickDraw_50M_Colab.ipynb`). Neither has been run here; the
+checked-in weights remain unchanged, and no new training or accuracy improvement
+is claimed until a run completes and is evaluated.
 
 The rest of the app is built to be class-count agnostic:
 
@@ -196,8 +215,9 @@ The rest of the app is built to be class-count agnostic:
   (top 10, live count in the status pill);
 - the artwork library covers 323 of the 345 categories already.
 
-The 100-class model's own predictions are what you see; nothing is padded or
-faked to look like broader coverage.
+The app loads the project's 345-class model first and reports the active class
+count. The 100-class third-party model is a real fallback, not a padded extension;
+if it is active, the UI reports 100 classes and explains the fallback.
 
 ### Training our own 345-class model
 
@@ -207,22 +227,26 @@ complete pipeline lives in [`training/`](training/README.md) and has been run �
 the result is the 345-class model described above.
 
 ```
-training/train_345.py                  the training pipeline (start here)
-training/quickdraw_ndjson.py           loads + normalises the real drawings
-training/fetch_quickdraw_data.py       downloads the dataset mirror
-training/manual_test.py                sixteen hand-drawn doodles -> top 10
+training/train_345.py                  training and app-compatible export pipeline
+training/quickdraw_gcs.py              chunked full-archive GCS range loader
+training/SketchAI_QuickDraw_200_Colab.ipynb  free-only 200/class Colab run (not yet run)
+training/SketchAI_QuickDraw_50M_Colab.ipynb  free-only full-data Colab workflow (not yet run)
+training/quickdraw_ndjson.py           loads + normalises the small local mirror
+training/fetch_quickdraw_data.py       downloads the small dataset mirror
+training/manual_test.py                16 authored doodle paths -> top 10
 scripts/install-model-345.mjs          validate + install a trained model
 scripts/audit-app.mjs                  end-to-end app checks (no browser needed)
-training/SketchAI_345_Training.ipynb   the same pipeline as a Colab notebook
+training/SketchAI_345_Training.ipynb   small-mirror smoke notebook
 ```
 
 Real Quick, Draw! drawings -> re-normalised into SketchAI's own 28×28 geometry ->
 memory-mapped batches (never the whole dataset in RAM) -> a 214,649-parameter CNN
 -> TensorFlow.js export -> `public/model-345/`.
 
-Training runs fine on a **CPU**; the run documented above took about 12.5 minutes
-without a GPU. `SAMPLES_PER_CLASS` and `QUICK_TEST` are the two switches that
-matter, and the category order always comes from
+The **small-mirror** training run documented above took about 12.5 minutes on a
+CPU; that timing does not apply to the full 50M archive. For full data, use the
+free-only Colab workflow linked above; Google may not offer enough GPU time or
+disk, so completion is not guaranteed. The category order always comes from
 `src/data/quickdraw-categories.txt`, never from a directory listing.
 
 ### Two models, one app
@@ -234,12 +258,12 @@ matter, and the category order always comes from
 | Preprocessing | profile `"345"` | profile `"100"` (frozen) |
 | Status pill | "AI ready — 345 objects" | "AI ready — 100 objects" |
 
-The 345-class model is tried first. If its files are absent — `public/model-345/`
-is not committed, so a plain checkout starts on the fallback — or if any
-validation check fails, the app quietly falls back and shows
+The 345-class model is tried first. Its model, weights and labels are committed
+under `public/model-345/`, so a normal checkout uses it. If those files cannot
+be loaded or fail validation, the app falls back to `public/model/` and shows
 "Extended AI unavailable — using 100-object model". Drawing, object editing and
-undo/redo are unaffected either way. Each model has its own preprocessing
-function so the fallback can never be degraded by work on the new one.
+undo/redo remain available either way. Each model has its own preprocessing
+profile because the models were trained differently.
 
 ## How AI recognition works
 
@@ -257,30 +281,33 @@ illustrations never reach the model.
    and the padding keeps petals, rays, wheels and antennae inside the frame.
 4. **Resample** – each of the 28 × 28 cells is an area average of the source
    pixels, so thin strokes fade rather than disappear.
-5. **Contrast normalisation** – a browser pen is much thinner (relative to the
-   drawing) than the Quick, Draw! pen, which leaves pale, sub-pixel strokes the
-   model has never seen. Ink intensities are gamma-corrected so the 97th
-   percentile is ~0.9 opaque, restoring the ink density of the training bitmaps
-   without moving any geometry.
-6. **Inference** – `tf.tensor4d(ink, [1, 28, 28, 1])` is passed to
-   `model.predict()` inside `tf.tidy()`, the probabilities are sorted, and the top
-   ten are kept. The panel shows the best guess plus four alternatives; the strip
-   shows up to ten cards. Scores below 0.5% are shown as `<1%` rather than a
-   misleading `0%`, and a best guess under 45% changes the wording to
-   “AI isn't completely sure. Maybe:”. WebGL is used when available and the CPU backend
-   otherwise.
+5. **Contrast normalisation** – browser strokes can become pale after resampling.
+   The primary 345-class profile raises the 97th-percentile ink value to 1.0
+   (with a minimum gamma of 0.25), matching its full-opacity training bitmaps.
+   The separate 100-class fallback profile targets 0.9 with a 0.15 minimum gamma.
+   Both adjust intensity without moving the sketch geometry.
+6. **Inference** – `tf.tensor4d(ink, [1, 28, 28, 1])` is passed once to the
+   active model's `predict()` inside `tf.tidy()`, the scores are sorted, and the
+   top ten classes are kept. The 345-class primary and 100-class fallback are not
+   ensembled: the fallback is loaded only when the primary cannot be used. The
+   panel shows the best guess plus four alternatives; the strip can show up to 12
+   cards including distinct artwork variants. Scores below 0.5% are shown as
+   `<1%` rather than `0%`, and a best guess under 45% changes the wording to
+   “AI isn't completely sure. Maybe:”. WebGL is used when available and the CPU
+   backend otherwise.
 
 Recognition is debounced: one prediction runs ~600 ms after drawing stops, and a
 new stroke cancels the pending timer, so the interface stays responsive.
 
 ![What the network receives for a flower sketch, before and after the preprocessing fix](docs/images/preprocessing-flower.png)
 
-These numbers are model confidence scores, **not guaranteed accuracy**. The model
-recognises 100 classes and can make mistakes; simple, centered, single-object
-doodles tend to work best. Accepted illustrations are rendered deterministically
-from the editable scene-object list. A separate temporary sketch canvas feeds the
-recognizer, so clean objects never enter the model input and rough drawing never
-changes accepted artwork.
+The displayed values are ranked softmax scores, **not calibrated guarantees of
+correctness**. The primary model recognizes 345 classes and can still make
+mistakes; the fallback recognizes 100. Simple, centered, single-object doodles
+tend to work best, and neither model has an explicit unknown-class response.
+Accepted illustrations are rendered deterministically from the editable scene
+objects. A separate temporary sketch canvas feeds the recognizer, so accepted
+artwork never enters the model input and rough drawing never changes it.
 
 ## Editable workspace and export decision
 
@@ -338,12 +365,29 @@ including for the model, so it works under a repository subpath. On Vercel use
 `npm run build` as the build command and `dist` as the output directory.
 TensorFlow.js ships as its own chunk (`assets/tfjs-*.js`, ~1.6 MB / 250 kB gzipped).
 
+## Testing
+
+There is no `npm test` script yet. After `npm ci`, the repository checks can be
+run directly:
+
+```bash
+npm run build
+for f in scripts/test-*.mjs; do node "$f" || exit 1; done
+node scripts/audit-app.mjs
+node scripts/audit-app.mjs --force-fallback
+node scripts/demo-test.mjs
+node scripts/demo-test.mjs --force-fallback
+```
+
+The app audit uses a DOM/canvas harness and the demos run inference on CPU; these
+checks are not a substitute for testing real browsers, WebGL, touch or stylus
+hardware.
+
 ## Audit and measurements
 
-`docs/AI-AUDIT.md` records the recognition audit: how the model and its label
-order were verified, the Quick, Draw! rasterisation the preprocessing now
-reproduces, before/after measurements across pen widths and drawing sizes, the
-problems found, and the application test results.
+`docs/AI-AUDIT.md` is a historical audit of the original 100-class fallback's
+preprocessing and test results. Its accuracy figures are not current metrics for
+the primary 345-class model.
 
 ## Release notes
 
@@ -353,24 +397,28 @@ It also notes that its PNG export feature has since been intentionally retired.
 
 ## Limitations
 
-- The classifier is a small CNN trained on only ~5,000 images per class; it is
-  noticeably weaker than Google's Quick, Draw! production model. Expect
-  occasional misses, especially for unusual drawing styles.
-- 28 × 28 grayscale input means fine detail is lost; texture, colour and small
-  features do not contribute to the prediction.
-- Only the 100 Quick, Draw! classes above are recognised. Anything else (a house,
-  a dog, a fish, a heart) can only be guessed at as a similar supported class —
-  in testing, a drawn bus came back as "Car 83%" and a crayon as "Knife 79%".
-  Suggestions are therefore useful for supported objects and unreliable for
-  everything else; the app never claims a 345-class model.
-- The suggestion library is larger than the model: 323 categories have artwork,
-  but only the 100 predicted classes can currently surface as cards.
-- Recognition looks at the current unfinalised sketch. If two different objects
-  are drawn before inserting an illustration, they are classified together.
-- Inference time depends on the device: WebGL is fast, the CPU fallback is usable
-  but slower.
-- Very thick pens on a very small drawing can over-fill the frame; the contrast
-  normalisation only repairs strokes that are too thin, not ones that are too fat.
+- The primary CNN was trained on 100 drawings per class (34,500 total), not the
+  much larger complete Quick, Draw! dataset. Its held-out test accuracy is
+  top-1 37.7%, top-3 58.1% and top-10 76.1%. Expect misses, especially on unusual
+  styles. The in-repository 16-doodle smoke test is small and is not a benchmark.
+- 28 × 28 grayscale input loses fine detail; texture, color and small features do
+  not contribute to recognition.
+- The primary model predicts among 345 Quick, Draw! labels; the fallback is
+  restricted to its 100 labels. Neither model rejects unknown objects, so an
+  unsupported or ambiguous drawing can receive a confident but incorrect guess.
+- 323 of 345 categories have artwork in the library; 22 appear as typographic
+  cards without insertable illustration. The 100-class fallback can surface only
+  its own labels.
+- Recognition uses the current unfinalized sketch as one image. Multiple objects
+  drawn before accepting a suggestion are classified together.
+- The interface has no save/load or export feature. Work is held in browser
+  memory and can be lost when the page is refreshed or closed; PNG export was
+  intentionally removed.
+- Inference speed and backend availability depend on the device. WebGL is used
+  when available, with a CPU fallback; real-browser and real-device performance
+  should be tested on target hardware.
+- Very thick pens on very small drawings can overfill the frame; intensity
+  normalization cannot recover details that have already merged.
 
 ## Model attribution
 
@@ -379,8 +427,9 @@ Quick, Draw! dataset. It is not Google's model, not AutoDraw, and not a
 third-party checkpoint. SketchAI is not affiliated with or endorsed by Google.
 
 The dataset is Google's; we did not create it and did not draw any of the
-training data. Every export ships an `ATTRIBUTION.txt` restating this, and
-`training/README.md` documents the dataset source, licence, sample counts,
+training data. The model-training/export pipeline includes an `ATTRIBUTION.txt`
+with these credits. (The editor itself currently has no user-facing export.)
+`training/README.md` documents the dataset source, license, sample counts,
 architecture, preprocessing and measured metrics.
 
 ## Credits / licenses

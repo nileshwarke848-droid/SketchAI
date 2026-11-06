@@ -16,9 +16,6 @@ export const ART_VARIANT_MAP = {
     // contributes the distinct pedestal/base treatment instead.
     ['gameicons', 'anvil'],
   ],
-  arm: [
-    ['mdi', 'arm-flex'],
-  ],
   bandage: [
     ['mdi', 'bandage'],
   ],

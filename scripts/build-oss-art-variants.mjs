@@ -11,8 +11,17 @@
 // Batch-1 alternate data file.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ART_VARIANT_MAP } from './oss-art-variant-map.mjs';
+import { ART_VARIANT_MAP as REVIEWED_BATCH_MAP } from './oss-art-variant-map.mjs';
+import { FIRST50_ART_VARIANT_MAP } from './first50-art-variant-map.mjs';
+import { NEXT50_ART_VARIANT_MAP } from './next50-art-variant-map.mjs';
 import { SOURCES } from './oss-art-sources.mjs';
+
+const ART_VARIANT_MAP = { ...REVIEWED_BATCH_MAP };
+for (const supplementalMap of [FIRST50_ART_VARIANT_MAP, NEXT50_ART_VARIANT_MAP]) {
+  for (const [label, variants] of Object.entries(supplementalMap)) {
+    ART_VARIANT_MAP[label] = [...(ART_VARIANT_MAP[label] ?? []), ...variants];
+  }
+}
 import { buildDrawing, sourcesAvailable } from './oss-art-lib.mjs';
 
 const ROOT = process.cwd();

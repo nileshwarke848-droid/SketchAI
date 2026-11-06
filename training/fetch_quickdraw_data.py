@@ -4,13 +4,13 @@
     python training/fetch_quickdraw_data.py
     python training/fetch_quickdraw_data.py --dest training/quickdraw-source
 
-Why this source
----------------
-The dataset's canonical home, `storage.googleapis.com/quickdraw_dataset/`, and the
-Hugging Face mirror are both unreachable from many sandboxed networks (TLS
-connections are dropped). The `quickdraw.js` npm package is a verbatim
-redistribution of the official data — 345 gzipped NDJSON files, one per category,
-each line a 784-float 28x28 bitmap — and its LICENSE file states:
+Small-mirror mode only
+----------------------
+This fetcher supplies the `quickdraw-js` smoke-training mode with a small local
+mirror; it is not the 50M source. Full-data Colab training uses the separate
+`quickdraw_gcs.py` public byte-range loader. The `quickdraw.js` npm package is a
+licensed redistribution of the official data — 345 gzipped NDJSON files, one per
+category, each line a 784-float 28x28 bitmap — and its LICENSE file states:
 
     This data made available by Google, Inc. under the Creative Commons
     Attribution 4.0 International license.
