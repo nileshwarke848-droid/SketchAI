@@ -19,6 +19,7 @@ are no third-party weights and no licensing grey areas.
 | --- | --- |
 | `SketchAI_345_Training.ipynb` | The Colab notebook. **Start here.** |
 | `train_345.py` | The training pipeline as a normal Python script (the notebook calls it). |
+| `prepare_kaggle_data.py` | Converts Kaggle-hosted Quick, Draw! data (stroke NDJSON or the competition CSV) into the `.ndjson.gz` bitmaps `train_345.py` reads. |
 | `colab_setup.py` | Keeps the notebook alive on a real Colab runtime: dependency handling that never downgrades TensorFlow, repository cloning, and pre-flight checks. |
 | `build_notebook.py` | Regenerates the notebook from source, so the notebook and the code cannot drift apart. |
 | `manual_test.py` | Runs sixteen hand-drawn doodles through a trained model and prints the top ten guesses. |
@@ -188,6 +189,90 @@ model is correctly installed and the label order is right.
 
 ---
 
+## Running on Kaggle
+
+Kaggle works, and a free Kaggle GPU (T4 or P100, ~30 h/week) is a better deal
+than Colab's free tier. Two things differ from Colab, and both bite if you skip
+them: `/kaggle/input` is **read-only**, and what people upload there is usually
+the *stroke* NDJSON, not the bitmaps this pipeline reads.
+
+### 1. Uploading the drawings
+
+Yes — Kaggle accepts `.ndjson` files. A dataset can hold any file type; `.ndjson`
+simply gets no table preview and cannot be queried with the Kaggle SQL editor,
+which is normal and harmless. Attach the dataset to a notebook and it appears
+read-only under `/kaggle/input/<dataset-slug>/`.
+
+What matters is *which* `.ndjson` you uploaded:
+
+| Source | A line looks like | Readable by `train_345.py`? |
+| --- | --- | --- |
+| Google `raw/` or `simplified/` NDJSON | `{"word": "cat", "drawing": [[x…], [y…]], …}` — strokes | no, needs rasterising |
+| Kaggle competition CSV (`train_simplified.csv`) | `word` + 784 space-separated ints | no, needs reshaping |
+| `quickdraw.js` mirror | `[0.0, 0.0, 0.31, …]` — 784 floats | yes, as-is |
+
+`prepare_kaggle_data.py` handles all three and writes the one shape the loader
+wants (`<category>.ndjson.gz`, 784 floats per line, 0–1), so `train_345.py` never
+changes:
+
+```bash
+python training/prepare_kaggle_data.py --source /kaggle/input/<dataset-slug> --per-class 3000
+```
+
+It reports every category it wrote, skips files whose names are not among the 345
+official classes, drops blank and (by default) unaccepted drawings, and finally
+reads a file back through `load_class_samples()` — the exact function training
+calls — so a bad conversion fails in the prep cell rather than ten seconds into
+the training run. Add `--keep-unrecognised` to keep drawings Google's recogniser
+rejected, and `--per-class 0` to convert everything (watch disk: ~430 bytes per
+drawing compressed).
+
+### 2. A notebook that trains
+
+```python
+!git clone https://github.com/nileshwarke848-droid/SketchAI.git /kaggle/working/SketchAI
+%cd /kaggle/working/SketchAI
+
+# Kaggle images ship Keras 3; train_345.py asks TensorFlow for legacy Keras
+# (TF_USE_LEGACY_KERAS=1), so the package behind that flag must exist.
+!pip install -q tf_keras
+!pip install -q tensorflowjs --no-deps
+```
+
+```python
+!python training/prepare_kaggle_data.py --source /kaggle/input/quickdraw-ndjson --per-class 3000
+!python training/train_345.py --samples-per-class 3000 --epochs 60
+```
+
+The converted drawings land inside the cloned repo
+(`training/quickdraw-source/drawings/`), which is on `/kaggle/working`, so the
+default paths work and nothing needs `--dest`. The finished model is written to
+`training/export/sketchai-model-345.zip` — pick it up from the notebook's
+**Output** panel and install it locally with
+`node scripts/install-model-345.mjs ./model-345` after unzipping.
+
+Notes that save a wasted session:
+
+- **`--per-class` is the real lever.** This repository's published model saw 100
+  drawings per class. At 2,000–3,000 per class the same architecture and the same
+  37.7% top-1 stop meaning anything: expect a large jump, especially on
+  top-1, because the model finally sees variation within a class.
+- **Disk.** `/kaggle/working` is ~20 GB and is also where the training cache
+  (`training/work/`) goes. 3,000/class costs roughly 1.3 GB of bitmaps plus ~1 GB
+  of cache; the full corpus does not fit and does not need to.
+- **Time.** Kaggle GPU sessions cap at ~9 h. 3,000/class × 60 epochs on a P100 is
+  comfortably inside that; 20,000/class is not. Save a checkpoint
+  (`--drive-dir` is Google-Drive-specific and unused here) by keeping the session
+  under the limit, or lower `--epochs` — `EarlyStopping` usually fires first.
+- **The `--quick-test` flag still applies**: run it once before the real run, on
+  Kaggle too, to prove the environment before spending GPU hours.
+- **Licence.** The drawings are Google's, CC BY 4.0 — keep the attribution in
+  `ATTRIBUTION.txt` and in your Kaggle dataset description. The weights you
+  produce are yours to license; CC BY 4.0 or Apache-2.0 are the choices that do
+  not tie anyone's hands later.
+
+---
+
 ## Alternative: run it from the command line
 
 If you have a machine with Python 3.9+ and `tensorflowjs` installed:
@@ -250,6 +335,12 @@ and refuses to continue unless the category names match
 **What the files contain.** One gzipped NDJSON file per category, each line a
 784-float array — a 28×28 greyscale bitmap, white ink on black, values 0–1.
 So the drawings are *already rasterised*; no vector rendering is needed.
+
+Bringing drawings from somewhere else — Kaggle, Google's own downloads, a
+different mirror — means matching that contract first. Google's NDJSON holds
+stroke vectors, not bitmaps, and the Kaggle competition CSV holds 784
+space-separated integers; neither loads as-is. `prepare_kaggle_data.py` converts
+either of them into exactly these files: see [Running on Kaggle](#running-on-kaggle).
 
 **The honest limit.** This mirror ships **100 drawings per category** — 34,500 in
 total, not the full 50 million. That is the ceiling for `SAMPLES_PER_CLASS` here,

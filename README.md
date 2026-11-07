@@ -210,6 +210,7 @@ the result is the 345-class model described above.
 training/train_345.py                  the training pipeline (start here)
 training/quickdraw_ndjson.py           loads + normalises the real drawings
 training/fetch_quickdraw_data.py       downloads the dataset mirror
+training/prepare_kaggle_data.py        Kaggle NDJSON/CSV -> the loader's format
 training/manual_test.py                sixteen hand-drawn doodles -> top 10
 scripts/install-model-345.mjs          validate + install a trained model
 scripts/audit-app.mjs                  end-to-end app checks (no browser needed)
