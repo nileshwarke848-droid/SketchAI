@@ -231,6 +231,61 @@ const doodles = blobs.map((blob, index) => createBitmapSceneObject({
 check('every converted doodle is fully addressable',
   doodles.every((item) => hitTestScene(doodles, getObjectCenter(item))?.id === item.id));
 
+console.log('\nText objects can be erased too');
+
+const textObject = {
+  id: 'text-1',
+  type: 'text',
+  text: 'Hello',
+  x: 100,
+  y: 100,
+  width: 240,
+  height: 90,
+  rotation: 0,
+  color: '#242422',
+  flipX: false,
+  fontSize: 64,
+  fontFamily: 'Arial, sans-serif',
+  fontWeight: 'normal',
+  textAlign: 'left',
+  zIndex: 0,
+};
+const textRaster = renderObjectRaster({ object: textObject, image: null, canvasFactory });
+check('text renders into a raster instead of staying blank', countAlpha(textRaster) > 100,
+  `${countAlpha(textRaster)} glyph px`);
+
+// A stroke through the glyphs must erase some of them.
+const textMask = maskFor(textObject, textRaster, [
+  { x: 120, y: 148 }, { x: 320, y: 148 },
+], 8);
+check('a stroke across text overlaps real glyph pixels', maskOverlapsInk({ canvas: textRaster, mask: textMask }));
+const textSurvivor = eraseWithMask({ canvas: textRaster, mask: textMask, canvasFactory });
+check('text survives a partial erase as a remainder', Boolean(textSurvivor.canvas),
+  `${textSurvivor.remaining} px left`);
+check('the text remainder is cropped to the untouched glyphs',
+  textSurvivor.bounds.height < textRaster.height,
+  `${textSurvivor.bounds.width}×${textSurvivor.bounds.height} of ${textRaster.width}×${textRaster.height}`);
+
+// The glyphs must sit where renderScene draws them (centred), not at (0,0).
+const glyphRows = (() => {
+  const { data } = textRaster.getContext('2d').getImageData(0, 0, textRaster.width, textRaster.height);
+  let top = -1;
+  let bottom = -1;
+  for (let y = 0; y < textRaster.height; y += 1) {
+    for (let x = 0; x < textRaster.width; x += 1) {
+      if (data[(y * textRaster.width + x) * 4 + 3] > 8) {
+        if (top < 0) top = y;
+        bottom = y;
+        break;
+      }
+    }
+  }
+  return { top, bottom, height: textRaster.height };
+})();
+check('glyphs are vertically centred in the object box',
+  glyphRows.top > 5 && glyphRows.bottom < glyphRows.height - 5,
+  `rows ${glyphRows.top}..${glyphRows.bottom} of ${glyphRows.height}`);
+
 console.log('\nRendering and caching a remnant');
 
 const target = createCanvas(240, 160);

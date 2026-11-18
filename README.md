@@ -9,11 +9,12 @@ API key, or paid service is required. Your drawing stays in your browser.
 
 - Mouse, trackpad, stylus and touch input with select, pencil, text, fill, eraser and pan tools; fill, background and object colors include custom pickers.
 - Two eraser modes. **Classic** erases sketch ink and removes any object the
-  stroke crosses. **Doodle** is a brush-like eraser: it shaves pixels off a
-  drawing and keeps whatever survives as a normal editable object that can be
-  moved, resized, rotated, recolored, duplicated, flipped, reordered or deleted.
-  Rubbing out part of a pencil doodle converts the remaining ink into editable
-  doodle objects too, so nothing you draw is ever trapped as flat pixels.
+  stroke crosses. **Doodle** is a brush-like eraser that trims live while you
+  drag: it shaves pixels off illustrations, text and doodle remnants, and keeps
+  whatever survives as a normal editable object that can be moved, resized,
+  rotated, recolored, duplicated, flipped, reordered or deleted. Rubbing out
+  part of a pencil doodle converts the remaining ink into editable doodle
+  objects too, so nothing you draw is ever trapped as flat pixels.
 - Text is a structured scene object: add it inline, edit by double-clicking, then move, resize, rotate, recolor, change its safe font family, size, weight and alignment, duplicate, reorder or delete it.
 - Zoom from 25% to 400% with pointer-anchored wheel zoom, step controls and reset. Pan with Space + drag or the Hand tool; view navigation never changes document coordinates.
 - Flood-fill enclosed regions on a dedicated raster layer beneath editable scene objects. Set the entire canvas background separately, with one-step undo/redo and Reset to White.

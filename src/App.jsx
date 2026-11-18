@@ -478,11 +478,14 @@ function App() {
     let erasedWhole = 0;
     let trimmed = 0;
     for (const id of ids) {
-      if (!next.some((object) => object.id === id)) continue;
       const source = stroke.originals.get(id);
+      if (!source) continue;
+      // The original object is gone once this gesture has trimmed it; its
+      // remnant is what the scene holds now.
+      if (!next.some((object) => object.id === id || object.id === stroke.remnants.get(id))) continue;
       const image = source.type === 'bitmap'
         ? bitmapCacheRef.current.get(source.bitmapId)
-        : imageCacheRef.current.get(source.artworkId, source.color);
+        : source.type === 'text' ? null : imageCacheRef.current.get(source.artworkId, source.color);
       const raster = renderObjectRaster({ object: source, image });
       const mask = createEraseMask({
         width: raster.width,
@@ -500,6 +503,11 @@ function App() {
       if (!maskOverlapsInk({ canvas: raster, mask })) continue;
       const survivor = eraseWithMask({ canvas: raster, mask });
       next = deleteSceneObject(next, id);
+      const previousRemnantId = stroke.remnants.get(id);
+      if (previousRemnantId) {
+        next = deleteSceneObject(next, previousRemnantId);
+        bitmapCacheRef.current.delete(stroke.remnantBitmapIds.get(id));
+      }
       if (!survivor.canvas) {
         erasedWhole += 1;
         continue;
@@ -525,6 +533,8 @@ function App() {
       // Keep the original stack position so erasing never changes layering.
       const index = Math.min(source.zIndex, next.length);
       next = [...next.slice(0, index), remnant, ...next.slice(index)];
+      stroke.remnants.set(id, remnant.id);
+      stroke.remnantBitmapIds.set(id, bitmapId);
       stroke.remnantIds.push(remnant.id);
     }
     if (!erasedWhole && !trimmed) return false;
@@ -542,11 +552,15 @@ function App() {
     doodleStrokeRef.current = {
       points: [],
       originals: new Map(sceneObjectsRef.current
-        .filter((object) => object.type === 'artwork' || object.type === 'bitmap')
+        .filter((object) => ['artwork', 'bitmap', 'text'].includes(object.type))
         .map((object) => [object.id, object])),
       trimmed: 0,
       erasedWhole: 0,
       remnantIds: [],
+      // original object id -> its current survivor, so a live stroke can be
+      // replayed from the original geometry without stacking duplicates.
+      remnants: new Map(),
+      remnantBitmapIds: new Map(),
     };
   };
 
@@ -863,11 +877,19 @@ function App() {
     } else if (gesture.kind === 'doodle') {
       eraseSketchAlong(gesture.previousPoint, p);
       gesture.previousPoint = p;
+      gesture.changed = true;
       const stroke = doodleStrokeRef.current;
-      if (stroke) {
-        // Coalesce near-identical pointer samples so long gestures stay cheap.
-        const last = stroke.points[stroke.points.length - 1];
-        if (!last || Math.hypot(p.x - last.x, p.y - last.y) >= 2) stroke.points.push(p);
+      if (!stroke) return;
+      // Coalesce near-identical pointer samples so long gestures stay cheap.
+      const last = stroke.points[stroke.points.length - 1];
+      if (last && Math.hypot(p.x - last.x, p.y - last.y) < 2) return;
+      stroke.points.push(p);
+      // Trim live so the drawing visibly disappears under the brush instead of
+      // only updating when the stroke ends. The pass is always replayed from the
+      // gesture's original geometry, so repeated calls cannot double-erase.
+      if (applyDoodleErase()) {
+        // Re-select the survivor so the selection box tracks the new shape.
+        if (stroke.remnantIds.length === 1) chooseObject(stroke.remnantIds[0]);
         gesture.changed = true;
       }
     } else if (gesture.kind === 'move') {
@@ -931,7 +953,7 @@ function App() {
       // Selecting the survivor makes the promise visible: it is a normal object
       // now. Only do it for a single remnant so a wide drag never steals a
       // multi-object selection.
-      if (stroke?.remnantIds?.length === 1) chooseObject(stroke.remnantIds[0]);
+      if (stroke?.remnants?.size === 1) chooseObject([...stroke.remnants.values()][0]);
       if (stroke?.trimmed) {
         setMessage(`Doodle eraser trimmed ${stroke.trimmed} object${stroke.trimmed === 1 ? '' : 's'} — the rest is still selectable and editable.`);
       } else if (stroke?.erasedWhole) {

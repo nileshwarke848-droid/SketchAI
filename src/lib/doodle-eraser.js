@@ -52,6 +52,12 @@ export function renderObjectRaster({ object, image, pixelScale = ERASE_PIXEL_SCA
   const context = canvas.getContext('2d');
   if (!context) return canvas;
   context.clearRect(0, 0, width, height);
+  // Text has no decoded image; paint its glyphs so the eraser can shave them
+  // exactly like artwork pixels. Layout mirrors renderScene, in local space.
+  if (object.type === 'text') {
+    renderTextGlyphs({ context, object, pixelScale });
+    return canvas;
+  }
   if (image) {
     context.drawImage(image, 0, 0, width, height);
     if (object.color && object.color !== 'original') {
@@ -62,6 +68,27 @@ export function renderObjectRaster({ object, image, pixelScale = ERASE_PIXEL_SCA
     }
   }
   return canvas;
+}
+
+/** Draw a text object's glyphs into a local-space raster centred on the canvas. */
+export function renderTextGlyphs({ context, object, pixelScale = ERASE_PIXEL_SCALE }) {
+  const scale = pixelScale;
+  const width = Math.round(object.width * scale);
+  const height = Math.round(object.height * scale);
+  const padding = Math.min(10, object.width / 8) * scale;
+  context.save();
+  // renderScene draws text around the object's centre; the raster's centre is
+  // the same point, so mirror that transform here.
+  context.translate(width / 2, height / 2);
+  context.fillStyle = object.color;
+  context.font = `${object.fontWeight === 'bold' ? 'bold' : 'normal'} ${object.fontSize * scale}px ${object.fontFamily}`;
+  context.textAlign = object.textAlign;
+  context.textBaseline = 'middle';
+  const textX = object.textAlign === 'left' ? -width / 2 + padding
+    : object.textAlign === 'right' ? width / 2 - padding : 0;
+  context.fillText(object.text, textX, 0, Math.max(1, width - padding * 2));
+  context.restore();
+  return context;
 }
 
 /**
