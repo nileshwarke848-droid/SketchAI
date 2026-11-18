@@ -171,3 +171,10 @@
 .artwork-source-list{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin:0;padding:0;list-style:none}
 .artwork-source-list a{display:inline-flex;padding:5px 8px;border:1px solid #e9ebe5;border-radius:999px;color:#65735f;background:#fafbf8;font-size:9px;text-decoration:none}
 .artwork-source-list a:hover{border-color:#d8977e;color:#9b604a}
+
+/* Eraser modes: classic removes whole objects, doodle brush-erases and keeps the rest editable. */
+.eraser-mode{gap:5px}
+.mode-button{border:1px solid #e7e9e2;border-radius:6px;background:#fff;padding:5px 9px;color:#71786e;font-size:9px;font-weight:700;letter-spacing:.3px}
+.mode-button:hover{border-color:#d8977e;background:#fdf6f2;color:#a45d45}
+.mode-button.selected{border-color:#d89176;background:#faeee8;color:#a45d45}
+.canvas-wrap.tool-eraser.eraser-doodle{cursor:cell}
