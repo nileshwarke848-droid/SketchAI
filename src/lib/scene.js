@@ -335,6 +335,21 @@ export function reorderSceneObjects(objects, ids, direction) {
   return changed ? renumberSceneObjects(next) : objects;
 }
 
+/**
+ * Re-insert a replacement object at the stack slot the original occupied.
+ *
+ * `objects` is the array *after* the original was deleted; `slot` is the deleted
+ * object's zIndex. Rendering order is array order, so this also renumbers the
+ * survivors: deleting shifts them down while they keep their old zIndex labels,
+ * and leaving those stale makes the stack harder to reason about even though the
+ * painted result is unchanged.
+ */
+export function insertSceneObjectAt(objects, object, slot) {
+  const base = renumberSceneObjects(objects);
+  const insertAt = Math.min(Math.max(0, Math.trunc(slot) || 0), base.length);
+  return renumberSceneObjects([...base.slice(0, insertAt), { ...object }, ...base.slice(insertAt)]);
+}
+
 export function getObjectCenter(object) {
   return { x: object.x + object.width / 2, y: object.y + object.height / 2 };
 }

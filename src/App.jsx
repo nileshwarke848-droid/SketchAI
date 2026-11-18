@@ -56,6 +56,7 @@ import {
   getTransformedCorners,
   hitTestScene,
   objectLocalToWorld,
+  insertSceneObjectAt,
   renderScene,
   resizeSceneObject,
   updateSceneObject,
@@ -531,8 +532,7 @@ function App() {
       // draw it; decoding never has to win a race against the next pointer move.
       bitmapCacheRef.current.put(bitmapId, survivor.canvas);
       // Keep the original stack position so erasing never changes layering.
-      const index = Math.min(source.zIndex, next.length);
-      next = [...next.slice(0, index), remnant, ...next.slice(index)];
+      next = insertSceneObjectAt(next, remnant, source.zIndex);
       stroke.remnants.set(id, remnant.id);
       stroke.remnantBitmapIds.set(id, bitmapId);
       stroke.remnantIds.push(remnant.id);

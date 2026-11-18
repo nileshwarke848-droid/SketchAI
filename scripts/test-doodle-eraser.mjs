@@ -23,8 +23,10 @@ import {
   createBitmapSceneObject,
   createSceneImageCache,
   createSceneObject,
+  deleteSceneObject,
   getObjectCenter,
   hitTestScene,
+  insertSceneObjectAt,
   objectLocalToWorld,
   renderScene,
   worldToObjectLocal,
@@ -285,6 +287,45 @@ const glyphRows = (() => {
 check('glyphs are vertically centred in the object box',
   glyphRows.top > 5 && glyphRows.bottom < glyphRows.height - 5,
   `rows ${glyphRows.top}..${glyphRows.bottom} of ${glyphRows.height}`);
+
+console.log('\nStack order survives trimming');
+
+// Rendering order is array order, so the test asserts what actually matters:
+// a remnant takes the trimmed object's slot, and zIndex labels stay in step with
+// the array instead of drifting out of sync after a delete.
+{
+  const stackArt = (id) => ({ id, w: 100, h: 100, origin: 'imported', b: '<rect width="100" height="100"/>' });
+  const make = (id, z) => ({
+    ...createSceneObject({ id, artwork: stackArt(id), label: id, x: 10, y: 10, width: 100, height: 100, zIndex: z }),
+    zIndex: z,
+  });
+  // Uses the same helper the app uses, so this test fails if the rule regresses.
+  const trim = (objects, id) => {
+    const source = objects.find((object) => object.id === id);
+    const removed = deleteSceneObject(objects, id);
+    const remnant = createBitmapSceneObject({
+      bitmapId: `bmp-${id}`,
+      bitmap: 'data:image/png;base64,AA==',
+      label: source.label,
+      x: source.x, y: source.y, width: 50, height: 100,
+      zIndex: source.zIndex,
+    });
+    return insertSceneObjectAt(removed, remnant, source.zIndex);
+  };
+  const label = (object) => (['A', 'B', 'C'].includes(object.id) ? object.id : 'REM');
+
+  let stack = [make('A', 0), make('B', 1), make('C', 2)];
+  stack = trim(stack, 'B');
+  check('trimming the middle keeps A < REM < C',
+    stack.map(label).join('<') === 'A<REM<C', stack.map(label).join('<'));
+
+  stack = trim(stack, 'C');
+  check('trimming the top-most object keeps its remnant on top',
+    stack.map(label).join('<') === 'A<REM<REM', stack.map(label).join('<'));
+  check('stack indices stay contiguous and unique after re-insertion',
+    stack.every((object, index) => object.zIndex === index),
+    stack.map((object) => object.zIndex).join(','));
+}
 
 console.log('\nRendering and caching a remnant');
 

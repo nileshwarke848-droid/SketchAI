@@ -1145,6 +1145,57 @@ async function main() {
   await sleep(150);
   check('one undo rolls back an entire live doodle gesture', countObjects(canvas) === 1);
 
+  section('Doodle eraser: stacked objects stay intact');
+
+  // Trim a three-deep stack in one gesture. Rendering order is array order, so
+  // the useful assertions are: every object yields a remainder, nothing is
+  // duplicated, and one undo puts the whole stack back.
+  [...document.querySelectorAll('button')].find((button) => /Clear canvas/i.test(button.textContent ?? ''))
+    ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(150);
+  click(window, 'button[aria-label="Pencil"]');
+  await sleep(40);
+  drawCircle(window, canvas, 600, 360, 150);
+  await sleep(2300);
+  const stackCard = [...document.querySelectorAll('button.s-card')]
+    .find((card) => card.querySelector('.s-card-art svg')
+      && /circle|moon|sun|ball|coin|ring/i.test(card.querySelector('.s-card-name')?.textContent ?? ''));
+  stackCard?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(200);
+  click(window, 'button[aria-label="Duplicate selected object"]');
+  await sleep(150);
+  click(window, 'button[aria-label="Duplicate selected object"]');
+  await sleep(150);
+  check('three stacked objects exist', countObjects(canvas) === 3, `${countObjects(canvas)}`);
+  const stackGeometry = selectedGeometry(document);
+  const stackHashBefore = canvasHash(canvas);
+
+  click(window, 'button[aria-label="Eraser"]');
+  await sleep(40);
+  click(window, 'button[aria-label^="Doodle eraser mode"]');
+  await sleep(40);
+  const stackX = Number(stackGeometry?.svg?.getAttribute('data-object-x') ?? stackGeometry?.x);
+  const stackY = Number(stackGeometry?.svg?.getAttribute('data-object-y') ?? stackGeometry?.y);
+  const stackW = Number(stackGeometry?.svg?.getAttribute('data-object-width') ?? stackGeometry?.width);
+  const stackH = Number(stackGeometry?.svg?.getAttribute('data-object-height') ?? stackGeometry?.height);
+  const stackSliceY = stackY + stackH * 0.08;
+  drawLine(window, canvas, stackX + 6, stackSliceY, stackX + stackW - 6, stackSliceY);
+  await sleep(300);
+  check('trimming a stack keeps every object as a remainder', countObjects(canvas) === 3,
+    `${countObjects(canvas)} objects`);
+  check('the stack actually changed on screen', canvasHash(canvas) !== stackHashBefore);
+  check('no extra objects were created by the trim', countObjects(canvas) === 3, `${countObjects(canvas)}`);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(200);
+  check('one undo restores all three originals', countObjects(canvas) === 3, `${countObjects(canvas)}`);
+  check('the restored stack renders exactly as it did before the trim',
+    canvasHash(canvas) === stackHashBefore);
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(100);
+  check('the restored stack is editable artwork again',
+    selectedGeometry(document)?.svg?.dataset.objectType === 'artwork',
+    selectedGeometry(document)?.svg?.dataset.objectType ?? 'none');
+
   section('Clear and export decision');
   const clearButton = [...document.querySelectorAll('button')].find((button) => /Clear canvas/i.test(button.textContent ?? ''));
   check('clear control exists', Boolean(clearButton));
