@@ -36,6 +36,31 @@ API key, or paid service is required. Your drawing stays in your browser.
   prioritizes keeping clean artwork editable instead of flattening it into a file.
 - A short “How it works” explanation for a school demonstration.
 
+## Search and AI-crawler setup
+
+The page includes a descriptive title and summary, Open Graph/Twitter metadata,
+SoftwareApplication and FAQ structured data, crawlable product/FAQ copy, a
+permissive `robots.txt`, `llms.txt` with a factual project overview, and the
+Google Search Console HTML verification file. After deployment, the
+verification file should be available at
+`/googleacdd14b6f7c7efb9.html`. The sitemap and canonical URL are generated
+only when the deployment's real HTTPS origin is configured; this avoids
+publishing a guessed Vercel URL or a non-canonical preview URL.
+
+For production on Vercel, add the project environment variable
+`VITE_SITE_URL` with the canonical origin only (for example,
+`https://sketchai.example`, with no path or trailing slash), then redeploy. The
+build will add canonical/Open Graph URLs, the absolute application URL in
+structured data, social-card image URLs, and `sitemap.xml` plus its `robots.txt`
+reference. Use the stable production hostname (a custom domain or Vercel's
+production `*.vercel.app` hostname), not a per-deployment preview URL. Without
+this setting, the build omits canonical URLs and the sitemap rather than
+emitting placeholders.
+
+These files improve crawlability and machine-readable context, but do not
+promise search ranking or rich-result placement. Google and other search
+engines control indexing and feature eligibility.
+
 ## Technologies used
 
 React, Vite, JavaScript, TensorFlow.js and the HTML Canvas API. Lucide provides

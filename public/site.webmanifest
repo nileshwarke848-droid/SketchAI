@@ -1,0 +1,17 @@
+{
+  "name": "SketchAI — AI Drawing Studio",
+  "short_name": "SketchAI",
+  "description": "A free browser-based drawing studio with local AI sketch recognition.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#f8f8f6",
+  "theme_color": "#f8f8f6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
