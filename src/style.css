@@ -178,3 +178,19 @@
 .mode-button:hover{border-color:#d8977e;background:#fdf6f2;color:#a45d45}
 .mode-button.selected{border-color:#d89176;background:#faeee8;color:#a45d45}
 .canvas-wrap.tool-eraser.eraser-doodle{cursor:cell}
+
+/* Crawlable product guide below the interactive studio; it is also useful to visitors. */
+.search-content{margin:clamp(36px,7vw,88px) auto 0;padding:clamp(28px,6vw,72px) 24px;background:#fff;border-top:1px solid #e9ebe5}
+.search-content-inner{max-width:820px;margin:0 auto;color:#42483e;font-size:15px;line-height:1.75}
+.search-content h1,.search-content h2{color:#30362d;line-height:1.2;letter-spacing:-.025em}
+.search-content .search-main-heading{max-width:720px;margin:0 0 18px;font-family:'DM Serif Display',Georgia,serif;font-size:clamp(32px,5vw,50px);font-weight:400}
+.search-content h2{margin:38px 0 12px;font-size:22px}
+.search-content p{margin:0 0 16px}
+.search-content ol{padding-left:24px}
+.search-content li{padding-left:5px;margin:8px 0}
+.search-eyebrow{margin:0 0 12px!important;color:#a45d45;font-size:11px;font-weight:700;letter-spacing:1.7px;text-transform:uppercase}
+.search-content details{padding:14px 0;border-top:1px solid #e9ebe5}
+.search-content details:last-child{border-bottom:1px solid #e9ebe5}
+.search-content summary{color:#343a32;font-weight:700;cursor:pointer}
+.search-content details p{margin:9px 0 0}
+@media(max-width:700px){.search-content{padding:32px 20px}.search-content-inner{font-size:14px}.search-content h2{font-size:20px}}

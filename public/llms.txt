@@ -1,0 +1,18 @@
+# SketchAI
+
+> SketchAI is a free, browser-based AI drawing studio. It recognizes rough doodles locally in the browser and suggests illustrations that can be added as editable objects.
+
+## What it does
+
+- Lets people draw with pencil, text, fill, eraser, selection, zoom and pan tools.
+- Uses a TensorFlow.js neural-network classifier in the browser to return ranked object guesses and confidence estimates.
+- Keeps sketch ink, fills and accepted artwork on separate editable layers.
+- Requires no account, application backend, API key or drawing upload.
+
+## Accuracy and limitations
+
+AI results are guesses, not guaranteed identifications. The classifier can misunderstand unusual drawings and sketches containing multiple objects. SketchAI is an independent project and is not affiliated with or endorsed by Google; its project-trained classifier uses the Google Quick, Draw! dataset.
+
+## Technical notes
+
+The web client is built with React, Vite, TensorFlow.js and the HTML Canvas API. Set `VITE_SITE_URL` to the deployed HTTPS origin at build time to add canonical metadata and generate a sitemap for that domain.

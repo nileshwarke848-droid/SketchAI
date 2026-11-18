@@ -1,1 +1,124 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="theme-color" content="#f8f8f6"/><title>SketchAI — A little help for your big ideas</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f8f8f6" />
+    <meta name="color-scheme" content="light" />
+    <meta name="description" content="SketchAI is a free, browser-based AI drawing studio. Sketch an object, get local AI guesses, and add clean editable illustrations to your canvas. No account or upload required." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="application-name" content="SketchAI" />
+    <title>SketchAI — Free AI Drawing Studio &amp; Sketch Recognition</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SketchAI" />
+    <meta property="og:title" content="SketchAI — Free AI Drawing Studio" />
+    <meta property="og:description" content="Draw a rough idea, get instant AI object guesses, and add editable illustrations. Your sketch is recognized locally in your browser." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SketchAI — Free AI Drawing Studio" />
+    <meta name="twitter:description" content="Sketch an object, get AI-powered ideas, and build an editable drawing in your browser." />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "SketchAI",
+            "description": "A free browser-based drawing studio that recognizes rough sketches locally and suggests clean editable illustrations.",
+            "applicationCategory": "DesignApplication",
+            "operatingSystem": "Any device with a modern web browser",
+            "browserRequirements": "Requires JavaScript and a modern browser with HTML Canvas support.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "featureList": [
+              "Local AI sketch recognition with ranked guesses and confidence estimates",
+              "Browser-based drawing with pencil, text, fill, eraser, selection, zoom and pan tools",
+              "Editable illustrations that can be moved, resized, rotated and recolored",
+              "No account, API key or drawing upload required"
+            ],
+            "isAccessibleForFree": true
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is SketchAI?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "SketchAI is a free, browser-based drawing studio. Sketch an object, see ranked AI guesses, then add a clean illustration to your canvas as an editable object."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does SketchAI upload or store my drawings?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Sketch recognition runs locally in your browser. SketchAI does not require an account, backend, API key or drawing upload. Your drawing stays in your browser."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does the AI recognize a sketch?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "After you pause drawing, SketchAI crops and normalizes the sketch and runs it through a neural-network classifier in your browser. It shows ranked guesses with confidence estimates; recognition can be wrong, especially for unusual or multi-object sketches."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Are SketchAI's suggestions editable?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Inserted illustrations and text remain separate scene objects that you can select, move, resize, rotate, recolor, duplicate, reorder or delete."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p>SketchAI is a free browser-based AI drawing studio. Enable JavaScript to draw, recognize sketches locally, and add editable illustrations to your canvas.</p>
+    </noscript>
+    <section class="search-content" aria-labelledby="about-sketchai-title">
+      <div class="search-content-inner">
+        <p class="search-eyebrow">A free, private drawing studio</p>
+        <h2 id="about-sketchai-title" class="search-main-heading">Turn a quick sketch into a creative idea with SketchAI</h2>
+        <p>SketchAI is a browser-based AI drawing app for turning rough doodles into editable compositions. Draw an object on the canvas and the built-in classifier suggests what it might be; choose a suggestion to add clean artwork to your scene. No sign-up, API key or drawing upload is required.</p>
+        <h2>How SketchAI works</h2>
+        <ol>
+          <li>Draw a simple object with the pencil tool using a mouse, trackpad, stylus or touch screen.</li>
+          <li>Pause briefly while the browser crops and normalizes the sketch for its local neural-network classifier.</li>
+          <li>Review a ranked list of possible objects and confidence estimates. AI guesses are suggestions, not guaranteed identifications.</li>
+          <li>Choose an illustration to add it as an editable object. Move, resize, rotate, recolor, duplicate, reorder or delete it independently.</li>
+        </ol>
+        <h2>Drawing and editing tools</h2>
+        <p>The canvas includes pencil, text, fill, selection, classic eraser and brush-style doodle eraser tools. Separate sketch, fill and object layers make it possible to edit accepted illustrations without flattening the whole scene. Zoom and pan the canvas while keeping its document coordinates intact.</p>
+        <h2>Privacy and AI recognition</h2>
+        <p>SketchAI performs sketch recognition in the browser using a TensorFlow.js model. The classifier returns likely labels and confidence estimates; it can misunderstand abstract, unusual or multiple-object sketches. Sketches are not sent to a SketchAI server because no application backend is required.</p>
+        <h2>Frequently asked questions</h2>
+        <details>
+          <summary>What is SketchAI?</summary>
+          <p>SketchAI is a free, browser-based drawing studio. Sketch an object, see ranked AI guesses, then add a clean illustration to your canvas as an editable object.</p>
+        </details>
+        <details>
+          <summary>Does SketchAI upload or store my drawings?</summary>
+          <p>No. Sketch recognition runs locally in your browser. SketchAI does not require an account, backend, API key or drawing upload. Your drawing stays in your browser.</p>
+        </details>
+        <details>
+          <summary>How does the AI recognize a sketch?</summary>
+          <p>After you pause drawing, SketchAI crops and normalizes the sketch and runs it through a neural-network classifier in your browser. It shows ranked guesses with confidence estimates; recognition can be wrong, especially for unusual or multi-object sketches.</p>
+        </details>
+        <details>
+          <summary>Are SketchAI's suggestions editable?</summary>
+          <p>Yes. Inserted illustrations and text remain separate scene objects that you can select, move, resize, rotate, recolor, duplicate, reorder or delete.</p>
+        </details>
+      </div>
+    </section>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
