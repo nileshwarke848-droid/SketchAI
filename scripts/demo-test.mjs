@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Drives the hand-made doodles in training/doodles.json through the *real*
-// 345-class model and reports where the intended object actually ranks.
+// Drives the hand-made doodles in training/doodles.json through the app's
+// currently preferred model (the supplied 333-class model) and reports ranks.
 //
-//   node scripts/demo-test.mjs                 # 345-class model
-//   node scripts/demo-test.mjs --force-fallback # 100-class fallback
+//   node scripts/demo-test.mjs                  # default 345-class model
+//   node scripts/demo-test.mjs --experimental-333 # explicitly test supplied model
+//   node scripts/demo-test.mjs --force-fallback # force the original 100-class fallback
 //
 // This answers the question that matters for a suggestion bar — "could the user
 // find the intended object among the suggestions?" — rather than "was top-1
@@ -25,6 +26,7 @@ import { getArtworkVariants } from '../src/data/artwork.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const FORCE_FALLBACK = process.argv.includes('--force-fallback');
+const EXPERIMENTAL_333 = process.argv.includes('--experimental-333');
 
 const CANVAS_W = 1200;
 const CANVAS_H = 720;
@@ -33,7 +35,7 @@ const CANVAS_H = 720;
 globalThis.fetch = async (input) => {
   const raw = typeof input === 'string' ? input : String(input?.url ?? input);
   const clean = raw.replace(/^\.\//, '').replace(/^https?:\/\/[^/]+\//, '').split('?')[0];
-  if (FORCE_FALLBACK && clean.startsWith('model-345/')) {
+  if (FORCE_FALLBACK && (clean.startsWith('model-333/') || clean.startsWith('model-345/'))) {
     return { ok: false, status: 404, statusText: 'Not Found', headers: { get: () => null }, text: async () => '', json: async () => { throw new Error('404'); }, arrayBuffer: async () => new ArrayBuffer(0) };
   }
   const file = path.join(PUBLIC_DIR, clean);
@@ -80,7 +82,7 @@ const payload = JSON.parse(fs.readFileSync(path.join(ROOT, 'training', 'doodles.
 const span = Number(payload.span ?? 300);
 const lineWidth = Number(payload.lineWidth ?? 7);
 
-const loaded = await loadModel();
+const loaded = await loadModel({ allowUnverified333: EXPERIMENTAL_333 && !FORCE_FALLBACK });
 const { model, labels, profile, tier } = loaded;
 console.log(`Demo test · ${tier} model · ${labels.length} classes · profile ${profile}\n`);
 

@@ -1,0 +1,110 @@
+{
+  "name": "SketchAI 333-class MobileNetV2 model",
+  "source_branch": "nileshwarke848-droid-patch-1",
+  "source_commit": "0e6880e340cc076d42df5c91f0c44d4f4f97d81f",
+  "source_artifacts": [
+    "autodraw_333_best.zip.part001",
+    "autodraw_333_best.zip.part002"
+  ],
+  "reassembled_source": "training/backup/model-333-source/autodraw_333_best.keras",
+  "source_sha256": "2d8f8a814a9565ee52785fe63c14abdb7f2dd27cdfaf46a3e184669a809164fd",
+  "framework": "Keras 3.13.2; TensorFlow.js GraphModel conversion",
+  "input_shape": [
+    null,
+    96,
+    96,
+    1
+  ],
+  "input_format": "float32, grayscale, app preprocessing currently white ink on black with 0..1 range",
+  "output_classes": 333,
+  "classes_file": "classes.txt; order derived from attached class_indices.json indices 0..332",
+  "conversion": "inference graph preserves trained layers/weights and removes training-only RandomTranslation/RandomRotation/RandomZoom layers; source-vs-converted inference equality checked in Python",
+  "training_data": null,
+  "training_metrics": null,
+  "notes": "The branch archive lacks training-data provenance, preprocessing details, and evaluation metrics. The model is present for explicit evaluation only; its output-label map is unverified, so the verified 345-class model remains the default.",
+  "smoke_test": {
+    "set": "training/doodles.json",
+    "examples": 16,
+    "kind": "hand-drawn functional smoke test, not a held-out validation split",
+    "top1": 4,
+    "top3": 9,
+    "top5": 10,
+    "top10": 11,
+    "on_suggestion_bar_of_predicted_top10": 11
+  },
+  "comparison": {
+    "fixture": "training/doodles.json",
+    "examples": 16,
+    "protocol": "Same hand-drawn stroke inputs, rasterizer, application prediction/suggestion path, and intended labels; each model used its configured preprocessing.",
+    "not_a_benchmark": true,
+    "existing_345_class_model": {
+      "top1": 7,
+      "top3": 8,
+      "top5": 10,
+      "top10": 14,
+      "shown_when_in_top10": 14
+    },
+    "supplied_333_class_model": {
+      "top1": 4,
+      "top3": 9,
+      "top5": 10,
+      "top10": 11,
+      "shown_when_in_top10": 11
+    },
+    "interpretation": "345-class model led by 3 examples at top-1 and 3 at top-10; 333-class model led by 1 at top-3; top-5 tied. Tiny hand-drawn sample only. Interpretation also depends on the unverified 333-class label map and provisional input normalization."
+  },
+  "evaluation_400": {
+    "report": "training/evaluation-400-results.md",
+    "machine_readable_results": "training/evaluation-400-results.json",
+    "frozen_test_manifest": "training/evaluation-400-manifest.json",
+    "drawings": 400,
+    "classes": 40,
+    "selection_seed": 20261108,
+    "heldout_split_seed": 42,
+    "same_images_for_both_models": true,
+    "metrics": {
+      "333": {
+        "top1": 82,
+        "top3": 135,
+        "top5": 162,
+        "top10": 210
+      },
+      "345": {
+        "top1": 152,
+        "top3": 222,
+        "top5": 248,
+        "top10": 280
+      }
+    },
+    "difference_333_minus_345_percentage_points": {
+      "top1": -17.5,
+      "top3": -21.75,
+      "top5": -21.5,
+      "top10": -17.5
+    },
+    "paired_class_cluster_bootstrap_95_ci_percentage_points": {
+      "top1": [
+        -25.5,
+        -9.5
+      ],
+      "top3": [
+        -31.0,
+        -12.8
+      ],
+      "top5": [
+        -29.8,
+        -13.3
+      ],
+      "top10": [
+        -26.3,
+        -9.0
+      ]
+    },
+    "caveats": [
+      "333-class training-data overlap with the test set cannot be ruled out",
+      "attached 333-class output-label mapping is unverified",
+      "333-class input normalization is undocumented and app preprocessing is provisional",
+      "test set samples 40 of 333 shared categories"
+    ]
+  }
+}

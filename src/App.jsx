@@ -6,6 +6,7 @@ import SuggestionBar from './components/SuggestionBar';
 import ColorControl from './components/ColorControl';
 import { displayName, getArtworkVariants } from './data/artwork';
 import { buildSuggestions } from './lib/suggestions';
+import { SUGGESTION_SOURCE_PLAN } from './data/suggestion-source-plan';
 import {
   DEFAULT_VIEWPORT,
   MAX_VIEW_ZOOM,
@@ -891,13 +892,8 @@ function App() {
     top: Math.max(4, Math.min(canvasRect.height - 44, entryClientPoint.y - canvasRect.top)),
   } : null;
   const predictions = recognition.predictions;
-  const emptyState = status === 'loading' ? { title: 'Getting things ready', copy: 'Preparing the drawing categories…' }
-    : status === 'error' ? { title: 'AI is taking a break', copy: 'The model could not load. You can still draw and edit objects.' }
-    : recognition.status === 'tiny' ? { title: 'Keep going', copy: 'The AI needs a little more drawing before it can guess.' }
-    : recognition.status === 'error' ? { title: 'That one confused the AI', copy: 'Something went wrong reading the sketch. Keep drawing and it will try again.' }
-    : { title: 'Waiting for your sketch', copy: 'Start drawing to see AI predictions.' };
-  // Top 10 model probabilities. Cards are shown for every guess; those without an
-  // honest icon render as typographic cards instead of a misleading picture.
+  // Reuse the bundled, license-documented illustration set while additional
+  // CC0/public-domain samples are reviewed for import from the source shortlist.
   const suggestions = predictions
     .filter((prediction, index) => index === 0 || prediction.score >= 0.0005)
     .slice(0, 10)
@@ -937,7 +933,7 @@ function App() {
               </div>
             </div>
           </div>
-          <SuggestionBar cards={cards} onInsert={insert} emptyCopy={barEmptyCopy} phase={status === 'loading' ? 'loading' : 'idle'}/>
+          <SuggestionBar cards={cards} onInsert={insert} title="Did you mean…" emptyCopy={barEmptyCopy} phase={status === 'loading' ? 'loading' : 'idle'}/>
           <div className="drawing-area">
             <div className="tool-rail" aria-label="Drawing and object tools">
               <span className="rail-label">TOOLS</span>
@@ -1074,17 +1070,28 @@ function App() {
             <div className="bottom-tip"><MousePointer2 size={14}/>{tool === 'select' ? 'Edit objects' : tool === 'eraser' ? 'Erase sketch or object' : tool === 'text' ? 'Click to add editable text' : tool === 'fill' ? 'Click a connected region to fill' : tool === 'pan' ? 'Drag to pan · Space + drag also works' : 'Draw freely'}</div>
           </div>
         </div>
-        <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">A peek inside the model’s mind.</p>
-          {status === 'ready' && modelTier === 'basic' && <p className="model-note" title={fallbackReason ? `Reason: ${fallbackReason}` : undefined}><Info size={12}/> Extended AI unavailable — using 100-object model</p>}
-          {recognition.status === 'ok' ? <div aria-live="polite"><p className="prediction-verdict">{lowConfidence ? 'AI isn’t completely sure. Maybe:' : 'AI thinks you might be drawing…'}</p><div className="primary-guess"><span className="primary-name">{suggestions[0].name}</span><span className="primary-score">{Math.round(suggestions[0].score * 100)}%</span></div><div className="progress primary"><span style={{width:`${suggestions[0].score * 100}%`}}/></div>{others.length > 0 && <div className="other-guesses"><span className="other-label">Other guesses</span><div className="other-chips">{others.map((prediction) => <button key={prediction.label} className="other-chip" onClick={() => insert(prediction.label)} title={`Insert ${displayName(prediction.label)}`}>{displayName(prediction.label)} <em>{formatScore(prediction.score)}</em></button>)}</div></div>}<p className="prediction-footnote">Top {shownClasses} guesses from the model. Confidence is an estimate, not a promise.</p></div> : <div className="empty-predictions" aria-live="polite"><div className="empty-sparkle"><Sparkles size={20}/></div><strong>{emptyState.title}</strong><span>{emptyState.copy}</span></div>}
+        <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">Choose a clean illustration from the strip above.</p>
+          {status === 'ready' && fallbackReason && <p className="model-note" title={`Reason: ${fallbackReason}`}><Info size={12}/> Using fallback model — {classCount} objects</p>}
+          {recognition.status === 'ok' ? <div aria-live="polite"><p className="prediction-verdict">{lowConfidence ? 'AI isn’t completely sure. Maybe:' : 'AI thinks you might be drawing…'}</p><div className="primary-guess"><span className="primary-name">{suggestions[0].name}</span><span className="primary-score">{Math.round(suggestions[0].score * 100)}%</span></div><div className="progress primary"><span style={{width:`${suggestions[0].score * 100}%`}}/></div>{others.length > 0 && <div className="other-guesses"><span className="other-label">Other guesses</span><div className="other-chips">{others.map((prediction) => <span key={prediction.label} className="other-chip" title={`${displayName(prediction.label)} · ${formatScore(prediction.score)}`}>{displayName(prediction.label)} <em>{formatScore(prediction.score)}</em></span>)}</div></div>}<p className="prediction-footnote">Top {shownClasses} guesses from the model. Confidence is an estimate, not a promise.</p></div> : <div className="empty-predictions" aria-live="polite"><div className="empty-sparkle"><Sparkles size={20}/></div><strong>{status === 'loading' ? 'Getting things ready' : status === 'error' ? 'AI is taking a break' : recognition.status === 'tiny' ? 'Keep going' : 'Waiting for your sketch'}</strong><span>{status === 'loading' ? 'Preparing the drawing categories…' : status === 'error' ? 'The model could not load. You can still draw and edit objects.' : recognition.status === 'tiny' ? 'The AI needs a little more drawing before it can guess.' : 'Start drawing to see AI predictions.'}</span></div>}
+          <div className="source-roadmap artwork-refresh-state" aria-label="Next artwork sources">
+            <strong>Next source additions</strong>
+            <span>Current suggestions use the bundled, license-documented artwork. These sources are under review for additional assets:</span>
+            <ul className="artwork-source-list">
+              {SUGGESTION_SOURCE_PLAN.map((source) => (
+                <li key={source.name}>
+                  <a href={source.url} target="_blank" rel="noreferrer" title={source.reason}>{source.name}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
           {DEBUG_AI && recognition.debug && <DebugPanel sketch={sketchRef.current} debug={recognition.debug} open={showDebug} onToggle={() => setShowDebug(!showDebug)} backend={backend} predictions={predictions} profile={modelRef.current?.profile}/>}
-          <div className="panel-bottom"><Info size={15}/><span>Confidence is the model’s estimate, not a guarantee. The more you draw, the more it can see.</span></div>
+          <div className="panel-bottom"><Info size={15}/><span>Current suggestions use bundled artwork with documented licenses. New source files are added only after item-level reuse checks.</span></div>
         </aside>
       </div>
       {message && <div className="notice" role="status">{message}</div>}
       <div className="page-bottom"><span><span className="tiny-star">✳</span> Made for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
-    {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>Sketch with the pencil, add editable text with the Text tool, or use Fill on a connected region. Sketch ink, fills and objects stay on separate layers.</li><li>SketchAI crops, centers and resizes the sketch into a 28 × 28 image, matching the way its training data was drawn.</li><li>A neural network looks for patterns in the pixels.</li><li>A Quick, Draw! classifier trained for this project looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Choose an illustration to add an editable object. Select artwork or text to move, resize, rotate, recolor, duplicate, reorder or delete it. Text can be edited inline and artwork can be flipped. Zoom with the controls or wheel, and pan with Space + drag or the Hand tool; view changes never alter document coordinates.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your rough sketch stays separate from clean objects.</div><button className="primary-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
+    {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>Sketch with the pencil, add editable text with the Text tool, or use Fill on a connected region. Sketch ink, fills and objects stay on separate layers.</li><li>SketchAI crops, centers and normalizes the sketch for the active model: 96 × 96 for the supplied 333-class model, or 28 × 28 for the retained fallback models.</li><li>A neural network looks for patterns in the pixels.</li><li>The active drawing classifier looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Choose an illustration to add an editable object. Select artwork or text to move, resize, rotate, recolor, duplicate, reorder or delete it. Text can be edited inline and artwork can be flipped. Zoom with the controls or wheel, and pan with Space + drag or the Hand tool; view changes never alter document coordinates.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your rough sketch stays separate from clean objects.</div><button className="primary-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
   </div>;
 }
 

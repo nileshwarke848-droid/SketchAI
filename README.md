@@ -34,11 +34,34 @@ the vector icons.
 
 ## The AI model
 
-SketchAI can run two classifiers. The **345-class model** is SketchAI's own: it
-was trained for this project on Google's Quick, Draw! dataset and is used
-whenever its files are present. The **100-class fallback** below is a
-third-party model and takes over automatically if the 345-class files are
-missing, incomplete or fail validation.
+SketchAI uses its verified **345-class project-trained model** by default,
+then the original **100-class third-party fallback**. A supplied **333-class
+model** is included for evaluation, but it is not selected automatically until
+its attached class-index map is verified against the learned output ordering.
+Each enabled candidate is validated at load time; if it is missing, incomplete
+or invalid, the app advances to the next one. The 333-class model's conversion
+is verified against the source model, but its label semantics and training-data
+provenance are not. A 400-drawing paired evaluation currently favors the
+345-class model by 17.5 percentage points at top-1 and top-10; see the
+[evaluation report](training/evaluation-400-results.md). Because the 333 model's
+label map and normalization remain unverified, keep its results provisional.
+To opt in for evaluation, build with `VITE_ENABLE_UNVERIFIED_333_MODEL=true`.
+
+### Supplied 333-class model (provisional)
+
+| | |
+| --- | --- |
+| Files | `public/model-333/` (GraphModel, weight shards and 333 labels) |
+| Source | Joined Keras archive and attached class map in `training/backup/model-333-source/` |
+| Input / output | `[1, 96, 96, 1]` grayscale input / 333 softmax outputs |
+| Label ordering | `classes.txt` is sorted by the attached map's indices (0–332); its alignment with the trained output neurons remains unverified |
+| Training provenance | Dataset, normalization details and held-out evaluation metrics were not included in the source artifact |
+| Paired 400-drawing test | 333-class: 20.5% top-1, 33.8% top-3, 40.5% top-5, 52.5% top-10; 345-class: 38.0%, 55.5%, 62.0%, 70.0%. Full protocol and uncertainty limits: [evaluation report](training/evaluation-400-results.md). |
+
+The conversion was checked on a random input against the joined Keras model
+(maximum absolute output difference below 8e-8). This verifies conversion
+fidelity, not label semantics or predictive quality. See
+[`public/model-333/manifest.json`](public/model-333/manifest.json).
 
 ### The 345-class model (trained for this project)
 
@@ -141,25 +164,27 @@ supported shape.
 ### Suggestion artwork
 
 Every one of the 345 official categories has metadata (display name, icon key,
-tier, source) in `src/data/categories.js`, and 323 of them have a bundled vector
-icon in `src/data/icons.js`:
+tier, source) in `src/data/categories.js`, and every category now has at least
+one bundled drawing available for suggestion cards. Icon metadata tiers are:
 
 | Tier | Meaning | Count |
 | --- | --- | --- |
 | A | Icon depicts the object | 265 |
-| B | Recognisable stand-in | 58 |
-| C | No honest icon — the card shows the category name as typography | 22 |
+| B | Recognisable stand-in | 56 |
+| C | No suitable bundled icon; reviewed line art or an original fallback drawing is used | 24 |
 
 Icons come from Fluent Emoji Flat (MIT), Noto Emoji (Apache-2.0) and Material
-Design Icons (Apache-2.0), bundled locally, no network requests. Categories are
-chosen by hand and reviewed against a rendered sheet, because a wrong picture is
-worse than no picture. With the 345-class model installed, any of the 345 official
-categories can appear; the 100-class fallback narrows that to the 100 classes it
-knows.
+Design Icons (Apache-2.0), bundled locally, no network requests. Twelve labels
+that previously had no artwork variant now use original hand-authored line
+drawings in `src/data/fallback-art.js`, so every suggestion card can show an
+icon. Categories are chosen by hand and reviewed against a rendered sheet,
+because a wrong picture is worse than no picture. The 333-class model can produce suggestions for its mapped 333 labels (with
+label-order provenance still unverified); the 345-class model covers all 345
+official categories, while the 100-class fallback is limited to its 100 labels.
 
 ![Artwork coverage for the 345 categories](docs/images/artwork-coverage.png)
 
-### Why SketchAI trains its own 345-class model instead of bundling one
+### Why SketchAI still maintains its own 345-class model
 
 All 345 official Quick, Draw! categories need a model with 345 outputs. The obvious
 candidate, [yining1023/doodleNet](https://github.com/yining1023/doodleNet)
@@ -175,12 +200,14 @@ candidate, [yining1023/doodleNet](https://github.com/yining1023/doodleNet)
 - It also has a malformed first layer, and its training data is described as
   "50k per class" rather than the definitive Quick Draw counts.
 
-A search for an alternative found no browser-ready 345-class model with a
-redistribution licence (other Quick, Draw! CNN projects on GitHub carry no licence,
-`NOASSERTION`, or ship code only, with no weights). Rather than ignore the licensing
-problem just because a repository is public, SketchAI **trains its own** classifier
-on the Quick, Draw! dataset itself — the dataset is CC BY 4.0 and explicitly
-redistributable, so the resulting weights are ours to ship.
+When the project-trained 345-class model was created, a search found no
+browser-ready 345-class alternative with clear redistribution terms (other
+Quick, Draw! CNN projects carried no licence, `NOASSERTION`, or code only).
+That is why SketchAI maintains its own reproducible classifier trained on the
+CC BY 4.0 Quick, Draw! dataset. The separately supplied 333-class artifact is
+now also integrated, but its dataset provenance and class-index alignment have
+not been established; it does not replace the 345-class model's known label
+order or evaluation record.
 
 The honest trade-off: the reachable mirror of the dataset provides 100 drawings per
 class rather than the tens of thousands available from Google's own bucket, so this
@@ -196,8 +223,10 @@ The rest of the app is built to be class-count agnostic:
   (top 10, live count in the status pill);
 - the artwork library covers 323 of the 345 categories already.
 
-The 100-class model's own predictions are what you see; nothing is padded or
-faked to look like broader coverage.
+The active profile's predictions are what you see; labels are never padded or
+faked to look like broader coverage. If the supplied model is selected, its
+labels follow the attached mapping, whose semantic alignment still needs
+verification.
 
 ### Training our own 345-class model
 
@@ -225,21 +254,19 @@ without a GPU. `SAMPLES_PER_CLASS` and `QUICK_TEST` are the two switches that
 matter, and the category order always comes from
 `src/data/quickdraw-categories.txt`, never from a directory listing.
 
-### Two models, one app
+### Model profiles, one app
 
-| | Primary | Fallback |
-| --- | --- | --- |
-| Classes | 345 (ours, trained here) | 100 (MIT third-party) |
-| Location | `public/model-345/` | `public/model/` |
-| Preprocessing | profile `"345"` | profile `"100"` (frozen) |
-| Status pill | "AI ready — 345 objects" | "AI ready — 100 objects" |
+| Default order | Model | Location | Input profile |
+| --- | --- | --- | --- |
+| 1 | Project-trained 345-class model | `public/model-345/` | profile `"345"`, 28 × 28 |
+| 2 | Original 100-class fallback | `public/model/` | profile `"100"`, 28 × 28 |
 
-The 345-class model is tried first. If its files are absent — `public/model-345/`
-is not committed, so a plain checkout starts on the fallback — or if any
-validation check fails, the app quietly falls back and shows
-"Extended AI unavailable — using 100-object model". Drawing, object editing and
-undo/redo are unaffected either way. Each model has its own preprocessing
-function so the fallback can never be degraded by work on the new one.
+The supplied 333-class profile (`public/model-333/`, 96 × 96 grayscale) is
+excluded from automatic selection until its labels are verified. Set
+`VITE_ENABLE_UNVERIFIED_333_MODEL=true` only to evaluate it; in that mode it is
+tried before the 345-class model. Every enabled candidate is validated, and a
+failed candidate falls through to the next. Each profile keeps its own
+preprocessing. The selected fallback is reported in the status notice.
 
 ## How AI recognition works
 
@@ -353,18 +380,18 @@ It also notes that its PNG export feature has since been intentionally retired.
 
 ## Limitations
 
-- The classifier is a small CNN trained on only ~5,000 images per class; it is
-  noticeably weaker than Google's Quick, Draw! production model. Expect
-  occasional misses, especially for unusual drawing styles.
-- 28 × 28 grayscale input means fine detail is lost; texture, colour and small
-  features do not contribute to the prediction.
-- Only the 100 Quick, Draw! classes above are recognised. Anything else (a house,
-  a dog, a fish, a heart) can only be guessed at as a similar supported class —
-  in testing, a drawn bus came back as "Car 83%" and a crayon as "Knife 79%".
-  Suggestions are therefore useful for supported objects and unreliable for
-  everything else; the app never claims a 345-class model.
-- The suggestion library is larger than the model: 323 categories have artwork,
-  but only the 100 predicted classes can currently surface as cards.
+- The two documented project classifiers are small CNNs trained on limited data
+  compared with Google's production model; expect occasional misses, especially
+  for unusual drawing styles. The supplied 333-class model has no held-out
+  evaluation metrics, and its output-label alignment remains unverified.
+- The supplied model uses 96 × 96 grayscale input; the two retained models use
+  28 × 28. All lose fine detail, texture and colour.
+- The selected profile only predicts labels represented in its own classes file.
+  The 345-class model covers the official Quick, Draw! classes, while the
+  100-class fallback is limited to its 100 labels. The 333-class model's mapping
+  is provisional until its ordering is verified.
+- The suggestion library covers all 345 categories, but only labels predicted
+  by the active model can surface as cards.
 - Recognition looks at the current unfinalised sketch. If two different objects
   are drawn before inserting an illustration, they are classified together.
 - Inference time depends on the device: WebGL is fast, the CPU fallback is usable

@@ -83,8 +83,8 @@ export default function SuggestionBar({
                 {card.illustrated ? (
                   <VariantArt variant={card.variant} size={46} />
                 ) : (
-                  // No honest illustration exists for this class: a typographic
-                  // card, never a broken image or a blank tile.
+                  // Defensive fallback only: every canonical category now has a
+                  // bundled drawing, so this should not appear in normal use.
                   <span className="s-card-initial" aria-hidden="true">
                     {card.name.charAt(0)}
                   </span>

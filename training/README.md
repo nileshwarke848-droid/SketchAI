@@ -3,9 +3,12 @@
 This folder contains everything needed to train a drawing classifier on
 **Google's Quick, Draw! dataset** and install it into SketchAI.
 
-The app currently ships with a 100-class model. The goal here is a model that
-recognises **all 345 official Quick, Draw! categories**, trained by us, so there
-are no third-party weights and no licensing grey areas.
+The app uses the project's 345-class Quick, Draw! model by default, then the
+original 100-class fallback. The supplied 333-class model is integrated as an
+evaluation-only opt-in because its output-label ordering is not verified. This
+folder documents how to train and install the full **345 official Quick, Draw!
+class** model; the 333-class artifact is recorded separately below because its
+training metadata was not included with the model files.
 
 > **Everything is free.** Training runs on a free Google Colab runtime; the
 > finished model is downloaded to your computer and runs offline in the user's
@@ -25,6 +28,28 @@ are no third-party weights and no licensing grey areas.
 | `doodles.json` | Those sixteen doodles, as stroke data shared with `scripts/manual-test-345.mjs`. |
 | `work/` | Scratch space (cached data, checkpoints, plots). Created on first run; not committed. |
 | `export/model-345/` | Where a finished 345-class model is written. Not committed. |
+
+## Integrated 333-class model
+
+A separate supplied model is installed at `public/model-333/` and can be
+selected for evaluation by setting `VITE_ENABLE_UNVERIFIED_333_MODEL=true`.
+It is not enabled by default because its label ordering is unverified. The source branch `nileshwarke848-droid-patch-1` contained two
+parts of a Keras archive; they were joined into
+`training/backup/model-333-source/autodraw_333_best.keras` and converted to a
+TensorFlow.js GraphModel. Its output labels are the 333 entries in the attached
+`class_indices.json`, reordered by the explicit output indices—not the canonical
+345-label order. It takes `96 × 96 × 1` grayscale input; the app keeps the
+existing 345-class and 100-class models as fallbacks.
+
+The supplied archive did not include the training script, dataset description,
+sample counts, or held-out metrics. Thus this repository does not assert that
+this model used all 50 million drawings or that it is more accurate. The larger
+paired 400-drawing evaluation favored the 345-class model (38.0% vs 20.5% top-1,
+70.0% vs 52.5% top-10). See [`evaluation-400-results.md`](evaluation-400-results.md)
+for the sampling protocol, intervals, per-drawing outputs and limitations; in
+particular, the 333-class result depends on an unverified label map, unknown
+training overlap, and provisional normalization. The verified 345-class model
+remains the default; the original 100-class model remains as fallback.
 
 ---
 

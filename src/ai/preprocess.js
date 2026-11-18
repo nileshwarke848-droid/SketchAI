@@ -194,26 +194,33 @@ export function preprocessSketch(
 // Model-specific preprocessing profiles
 // ---------------------------------------------------------------------------------------
 //
-// SketchAI ships two classifiers and they were *not* trained the same way, so each
-// one gets its own pixel profile instead of a shared guess:
+// SketchAI now has three model-specific preprocessing profiles. They were not
+// trained or exported the same way, so do not collapse them into one pipeline:
 //
-//   100-class (fallback)  Trained by a third party; the profile below is the one the
-//                         audit measured to work best for it (top-1 81% on its test
-//                         doodles). It is frozen — do not "improve" it, because that
-//                         would change the accuracy of the model that has to keep
-//                         working when the big model is missing.
+//   100-class (fallback)  Third-party model; the audit-tuned 28x28 profile below
+//                         is frozen because changing it changes the fallback's
+//                         measured behavior.
 //
-//   345-class (ours)      Trained here on Google's Quick, Draw! 28x28 numpy bitmaps:
-//                         fully opaque white ink (255 -> 1.0 after dividing by 255),
-//                         1.5 px pen, drawing bbox scaled to 84% of the frame. The
-//                         geometry is identical to the profile above (both reproduce
-//                         the Quick, Draw! renderer), but the *ink intensity* target is
-//                         higher and the darkest gamma allowed is stricter, because
-//                         our training pixels really are at full opacity. A browser
-//                         pen is thinner, so its antialiased strokes would otherwise
-//                         sit at ~0.3-0.5 where the model only ever saw ~1.0.
+//   345-class (project)   Trained on Google's Quick, Draw! 28x28 numpy bitmaps,
+//                         with fully opaque white ink and the geometry documented
+//                         above. A thinner browser pen needs contrast recovery.
+//
+//   333-class (supplied)  Converted MobileNetV2 expects 96x96x1 floats. Its archive
+//                         did not include training normalization notes, so this
+//                         provisional profile uses white-on-black 0..1 input; it
+//                         must be reevaluated when the training pipeline is supplied.
 
 export const PREPROCESS_PROFILES = Object.freeze({
+  '333': Object.freeze({
+    id: '333',
+    size: 96,
+    padding: CROP_PADDING,
+    // The supplied model consumes normalized grayscale floats at 96×96.
+    // Raise thin browser strokes into the full-opacity range while preserving shape.
+    targetInkPeak: 1.0,
+    minGamma: 0.25,
+    source: 'reassembled user-supplied 333-class Keras model; training normalization not included with artifact',
+  }),
   '100': Object.freeze({
     id: '100',
     size: INPUT_SIZE,
@@ -233,6 +240,17 @@ export const PREPROCESS_PROFILES = Object.freeze({
     source: 'Google Quick, Draw! 28x28 numpy bitmaps (this project\'s own training run)',
   }),
 });
+
+/** Preprocessing for the 333-class 96×96 grayscale model. */
+export function preprocessFor333Model(canvas) {
+  const profile = PREPROCESS_PROFILES['333'];
+  return preprocessSketch(canvas, {
+    size: profile.size,
+    padding: profile.padding,
+    targetInkPeak: profile.targetInkPeak,
+    minGamma: profile.minGamma,
+  });
+}
 
 /** Preprocessing for the 100-class fallback model (unchanged legacy behaviour). */
 export function preprocessFor100Model(canvas) {
@@ -258,5 +276,6 @@ export function preprocessFor345Model(canvas) {
 
 /** Dispatch by profile id, with the 100-class profile as the safe default. */
 export function preprocessForModel(canvas, profileId = '100') {
+  if (profileId === '333') return preprocessFor333Model(canvas);
   return profileId === '345' ? preprocessFor345Model(canvas) : preprocessFor100Model(canvas);
 }
