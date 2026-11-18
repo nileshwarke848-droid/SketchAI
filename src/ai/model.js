@@ -1,23 +1,29 @@
 import * as tf from '@tensorflow/tfjs';
 import { INPUT_SIZE, preprocessForModel } from './preprocess.js';
 
-// SketchAI can run two classifiers:
-//
-//   extended  345 classes — trained for this project on Google's Quick, Draw!
-//             28x28 numpy bitmaps (see training/README.md). Ships in
-//             public/model-345/ and is the primary model.
-//   basic     100 classes — the original fallback model. It stays in
-//             public/model/ and is used automatically whenever the extended
-//             model is missing, incomplete or fails validation.
-//
-// Both read 28x28x1 white-ink-on-black images with values 0..1, but each one uses
-// its own pixel profile (see preprocess.js) because they were trained differently.
+// The verified 345-class project model is preferred by default, followed by
+// the original 100-class fallback. The supplied 333-class GraphModel (96x96x1)
+// remains available only as an explicit evaluation opt-in until its output
+// labels are verified. Each profile has its own preprocessing; see preprocess.js.
 
 export const MODEL_PROFILES = Object.freeze({
+  kaggle333: Object.freeze({
+    id: '333',
+    tier: 'extended',
+    modelType: 'graph',
+    classes: 333,
+    inputSize: 96,
+    modelPath: 'model-333/model.json',
+    labelsPath: 'model-333/classes.txt',
+    label: '333 objects',
+  }),
+  // Previous, project-trained 345-class model is retained as the first fallback.
   extended: Object.freeze({
     id: '345',
-    tier: 'extended',
+    tier: 'legacy',
+    modelType: 'layers',
     classes: 345,
+    inputSize: INPUT_SIZE,
     modelPath: 'model-345/model.json',
     labelsPath: 'model-345/classes.txt',
     label: '345 objects',
@@ -25,7 +31,9 @@ export const MODEL_PROFILES = Object.freeze({
   basic: Object.freeze({
     id: '100',
     tier: 'basic',
+    modelType: 'layers',
     classes: 100,
+    inputSize: INPUT_SIZE,
     modelPath: 'model/model.json',
     labelsPath: 'model/classes.txt',
     label: '100 objects',
@@ -85,8 +93,9 @@ async function readLabels(path, base) {
  * silently show the wrong object names, so it is rejected instead.
  */
 export async function loadProfile(profile, { base = '' } = {}) {
+  const modelLoader = profile.modelType === 'graph' ? tf.loadGraphModel : tf.loadLayersModel;
   const [model, labels] = await Promise.all([
-    tf.loadLayersModel(`${base}${profile.modelPath}`),
+    modelLoader(`${base}${profile.modelPath}`),
     readLabels(profile.labelsPath, base),
   ]);
 
@@ -97,48 +106,83 @@ export async function loadProfile(profile, { base = '' } = {}) {
 
   const inputShape = model.inputs?.[0]?.shape ?? [];
   const [, height, width, channels] = inputShape;
-  if (height !== INPUT_SIZE || width !== INPUT_SIZE || channels !== 1) {
+  const expectedSize = profile.inputSize ?? INPUT_SIZE;
+  if (height !== expectedSize || width !== expectedSize || channels !== 1) {
     reject(
-      `The ${profile.label} model expects ${JSON.stringify(inputShape)} input, but SketchAI feeds ${INPUT_SIZE}x${INPUT_SIZE}x1.`,
+      `The ${profile.label} model expects ${JSON.stringify(inputShape)} input, but SketchAI feeds ${expectedSize}x${expectedSize}x1.`,
     );
   }
 
-  const outputs = model.outputs[0].shape;
-  const classCount = outputs[outputs.length - 1];
-  if (classCount !== labels.length) {
-    reject(`The ${profile.label} model predicts ${classCount} classes but ${labels.length} labels were loaded.`);
+  if (profile.modelType === 'graph') {
+    // GraphModel output signatures do not consistently expose shape metadata
+    // across converter versions, so verify one real forward pass instead.
+    const probe = tf.zeros([1, expectedSize, expectedSize, 1]);
+    let result;
+    try {
+      result = model.execute(probe);
+      const output = Array.isArray(result)
+        ? result[0]
+        : result instanceof tf.Tensor
+          ? result
+          : Object.values(result ?? {})[0];
+      const classCount = output?.shape?.at(-1);
+      if (classCount !== labels.length) {
+        reject(`The ${profile.label} model predicts ${classCount} classes but ${labels.length} labels were loaded.`);
+      }
+    } catch (error) {
+      model.dispose();
+      throw new Error(`The ${profile.label} graph model failed its output check: ${error.message}`);
+    } finally {
+      probe.dispose();
+      if (Array.isArray(result)) result.forEach((tensor) => tensor?.dispose?.());
+      else if (result instanceof tf.Tensor) result.dispose();
+      else if (result && typeof result === 'object') Object.values(result).forEach((tensor) => tensor?.dispose?.());
+    }
+  } else {
+    const outputs = model.outputs[0].shape;
+    const classCount = outputs[outputs.length - 1];
+    if (classCount !== labels.length) {
+      reject(`The ${profile.label} model predicts ${classCount} classes but ${labels.length} labels were loaded.`);
+    }
   }
   if (profile.classes && labels.length !== profile.classes) {
     reject(`Expected ${profile.classes} labels for the ${profile.label} model but found ${labels.length}.`);
   }
 
-  return { model, labels, profile: profile.id, tier: profile.tier, modelPath: profile.modelPath };
+  return { model, labels, profile: profile.id, tier: profile.tier, modelType: profile.modelType ?? 'layers', modelPath: profile.modelPath };
 }
 
 /**
- * Loads the best available model.
- *
- * The 345-class model is tried first. If its files are absent (a plain checkout of
- * this repository with no trained model yet), unreadable or inconsistent, the
- * 100-class model is loaded instead and `fallbackReason` explains why — the app
- * keeps working instead of breaking.
+ * Uses the verified 345-class project model by default, then the original
+ * 100-class fallback. The supplied 333-class model can be enabled explicitly
+ * for evaluation, but its attached output-label ordering is not yet verified.
  */
-export async function loadModel({ base = import.meta.env?.BASE_URL ?? './', onBackend, onProfile } = {}) {
+export async function loadModel({
+  base = import.meta.env?.BASE_URL ?? './',
+  onBackend,
+  onProfile,
+  allowUnverified333 = import.meta.env?.VITE_ENABLE_UNVERIFIED_333_MODEL === 'true',
+} = {}) {
   const backend = await ensureBackend();
   onBackend?.(backend);
 
-  let fallbackReason = null;
-  try {
-    const loaded = await loadProfile(MODEL_PROFILES.extended, { base });
-    onProfile?.({ tier: loaded.tier, classes: loaded.labels.length, fallbackReason: null });
-    return { ...loaded, backend, fallbackReason: null };
-  } catch (error) {
-    // Not an application error: the extended model is optional by design.
-    fallbackReason = error?.message ?? String(error);
-    console.info('Extended 345-class model unavailable, using the 100-class model:', fallbackReason);
-    onProfile?.({ tier: 'basic', fallbackReason });
+  const failures = [];
+  const candidates = allowUnverified333
+    ? [MODEL_PROFILES.kaggle333, MODEL_PROFILES.extended]
+    : [MODEL_PROFILES.extended];
+  for (const profile of candidates) {
+    try {
+      const loaded = await loadProfile(profile, { base });
+      const fallbackReason = failures.length ? failures.join(' | ') : null;
+      onProfile?.({ tier: loaded.tier, classes: loaded.labels.length, fallbackReason });
+      return { ...loaded, backend, fallbackReason };
+    } catch (error) {
+      failures.push(`${profile.label}: ${error?.message ?? String(error)}`);
+      console.info(`${profile.label} unavailable; trying the next model:`, error);
+    }
   }
 
+  const fallbackReason = failures.join(' | ');
   const loaded = await loadProfile(MODEL_PROFILES.basic, { base });
   onProfile?.({ tier: loaded.tier, classes: loaded.labels.length, fallbackReason });
   return { ...loaded, backend, fallbackReason };
@@ -170,14 +214,24 @@ export function toProbabilities(scores) {
 export function predict(model, labels, sketch, { topK = MAX_PREDICTIONS, profile = '100' } = {}) {
   const pre = preprocessForModel(sketch, profile);
   if (!pre.ok) return { status: pre.reason, predictions: [], debug: pre };
-  if (labels.length !== model.outputs[0].shape.at(-1)) {
+  const isGraphModel = profile === '333';
+  if (!isGraphModel && labels.length !== model.outputs[0].shape.at(-1)) {
     return { status: 'error', predictions: [], debug: pre, error: new Error('Model and labels disagree.') };
   }
   let scores;
   try {
     scores = tf.tidy(() => {
-      const input = tf.tensor4d(pre.ink, [1, INPUT_SIZE, INPUT_SIZE, 1], 'float32');
-      return Array.from(model.predict(input).dataSync());
+      const input = tf.tensor4d(pre.ink, [1, pre.size, pre.size, 1], 'float32');
+      const result = isGraphModel ? model.execute(input) : model.predict(input);
+      const output = Array.isArray(result)
+        ? result[0]
+        : result instanceof tf.Tensor
+          ? result
+          : Object.values(result ?? {})[0];
+      if (!output || output.shape.at(-1) !== labels.length) {
+        throw new Error(`Model output and labels disagree (${output?.shape?.at(-1)} outputs, ${labels.length} labels).`);
+      }
+      return Array.from(output.dataSync());
     });
   } catch (error) {
     return { status: 'error', predictions: [], debug: pre, error };

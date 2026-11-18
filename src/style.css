@@ -164,3 +164,10 @@
 .fill-active-color output,.background-current output{font-size:9px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#697166}
 .fill-active-color .control-label,.background-current .control-label{margin:0;white-space:nowrap}
 @media(max-width:700px){.active-color-control{flex-basis:100%}.active-color-control legend{flex-basis:100%}.active-color-editors{gap:4px}.quick-color-swatches{gap:6px}.brush-control{border:0;padding:0;flex-basis:100%}.object-color-apply{padding:0 2px}.fill-controls{align-items:flex-start}.fill-active-color,.background-current{flex-wrap:wrap}}
+
+/* Compact source shortlist shown while additional licensed artwork is curated. */
+.artwork-refresh-state{gap:9px;padding:14px 4px}
+.artwork-refresh-state span{max-width:235px}
+.artwork-source-list{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin:0;padding:0;list-style:none}
+.artwork-source-list a{display:inline-flex;padding:5px 8px;border:1px solid #e9ebe5;border-radius:999px;color:#65735f;background:#fafbf8;font-size:9px;text-decoration:none}
+.artwork-source-list a:hover{border-color:#d8977e;color:#9b604a}

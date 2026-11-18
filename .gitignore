@@ -26,3 +26,12 @@ training/quickdraw-source/
 
 # Durable model backups (committed on purpose - see .gitignore note above)
 # training/backup/ is tracked; do not ignore it.
+
+# Artwork curation scratch (review sheets and downloaded candidates, not shipped)
+artwork-review/
+image-search/
+
+# 333-class source Keras archive (32 MB): provenance is kept via README +
+# class_indices.json; the binary itself is not shipped in git. The converted
+# evaluation model in public/model-333/ is the shipped artifact.
+training/backup/model-333-source/autodraw_333_best.keras

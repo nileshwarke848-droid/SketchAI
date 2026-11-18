@@ -4,7 +4,7 @@
 //
 // The product goal is NOT "was top-1 correct" — a 37.7% top-1 model is only
 // useful if the user can find what they meant somewhere on the bar. So we spend
-// our ~10 cards across the top few classes rather than showing ten near-identical
+// our 12 cards across the top few classes rather than showing twelve near-identical
 // options for one guess, and we never show the same picture twice.
 
 import { displayName, getArtworkVariants, normaliseLabel } from '../data/artwork.js';

@@ -1,0 +1,1625 @@
+{
+  "name": "SketchAI 400-drawing comparative evaluation set",
+  "source": "Google Quick, Draw! official bitmaps via quickdraw.js@1.0.6 (CC BY 4.0)",
+  "source_files": "one NDJSON file per official class; first 100 records used by the 345-class model",
+  "selection": {
+    "class_count": 40,
+    "drawings_per_class": 10,
+    "class_sampling": "uniform without replacement from the 333 labels shared by both model profiles",
+    "class_seed": 20261108
+  },
+  "heldout_split": {
+    "seed": 42,
+    "train_validation_test": [
+      0.8,
+      0.1,
+      0.1
+    ],
+    "row_rule": "For each canonical class, NumPy default_rng(42).permutation(100); rows 90\u201399 of the resulting order are held out test rows. Matches the 345-model training split implementation.",
+    "independent_of_345_training": true,
+    "independence_from_333_training": "unknown; supplied model training provenance was not included"
+  },
+  "total_drawings": 400,
+  "records": [
+    {
+      "label": "arm",
+      "source_row": 26
+    },
+    {
+      "label": "arm",
+      "source_row": 48
+    },
+    {
+      "label": "arm",
+      "source_row": 27
+    },
+    {
+      "label": "arm",
+      "source_row": 74
+    },
+    {
+      "label": "arm",
+      "source_row": 23
+    },
+    {
+      "label": "arm",
+      "source_row": 64
+    },
+    {
+      "label": "arm",
+      "source_row": 47
+    },
+    {
+      "label": "arm",
+      "source_row": 96
+    },
+    {
+      "label": "arm",
+      "source_row": 17
+    },
+    {
+      "label": "arm",
+      "source_row": 32
+    },
+    {
+      "label": "bed",
+      "source_row": 69
+    },
+    {
+      "label": "bed",
+      "source_row": 24
+    },
+    {
+      "label": "bed",
+      "source_row": 38
+    },
+    {
+      "label": "bed",
+      "source_row": 93
+    },
+    {
+      "label": "bed",
+      "source_row": 81
+    },
+    {
+      "label": "bed",
+      "source_row": 51
+    },
+    {
+      "label": "bed",
+      "source_row": 10
+    },
+    {
+      "label": "bed",
+      "source_row": 53
+    },
+    {
+      "label": "bed",
+      "source_row": 43
+    },
+    {
+      "label": "bed",
+      "source_row": 1
+    },
+    {
+      "label": "bird",
+      "source_row": 40
+    },
+    {
+      "label": "bird",
+      "source_row": 1
+    },
+    {
+      "label": "bird",
+      "source_row": 3
+    },
+    {
+      "label": "bird",
+      "source_row": 27
+    },
+    {
+      "label": "bird",
+      "source_row": 69
+    },
+    {
+      "label": "bird",
+      "source_row": 68
+    },
+    {
+      "label": "bird",
+      "source_row": 70
+    },
+    {
+      "label": "bird",
+      "source_row": 20
+    },
+    {
+      "label": "bird",
+      "source_row": 41
+    },
+    {
+      "label": "bird",
+      "source_row": 72
+    },
+    {
+      "label": "brain",
+      "source_row": 86
+    },
+    {
+      "label": "brain",
+      "source_row": 77
+    },
+    {
+      "label": "brain",
+      "source_row": 65
+    },
+    {
+      "label": "brain",
+      "source_row": 37
+    },
+    {
+      "label": "brain",
+      "source_row": 49
+    },
+    {
+      "label": "brain",
+      "source_row": 52
+    },
+    {
+      "label": "brain",
+      "source_row": 31
+    },
+    {
+      "label": "brain",
+      "source_row": 27
+    },
+    {
+      "label": "brain",
+      "source_row": 61
+    },
+    {
+      "label": "brain",
+      "source_row": 59
+    },
+    {
+      "label": "broccoli",
+      "source_row": 90
+    },
+    {
+      "label": "broccoli",
+      "source_row": 45
+    },
+    {
+      "label": "broccoli",
+      "source_row": 4
+    },
+    {
+      "label": "broccoli",
+      "source_row": 24
+    },
+    {
+      "label": "broccoli",
+      "source_row": 67
+    },
+    {
+      "label": "broccoli",
+      "source_row": 78
+    },
+    {
+      "label": "broccoli",
+      "source_row": 30
+    },
+    {
+      "label": "broccoli",
+      "source_row": 33
+    },
+    {
+      "label": "broccoli",
+      "source_row": 23
+    },
+    {
+      "label": "broccoli",
+      "source_row": 94
+    },
+    {
+      "label": "bucket",
+      "source_row": 79
+    },
+    {
+      "label": "bucket",
+      "source_row": 31
+    },
+    {
+      "label": "bucket",
+      "source_row": 62
+    },
+    {
+      "label": "bucket",
+      "source_row": 7
+    },
+    {
+      "label": "bucket",
+      "source_row": 25
+    },
+    {
+      "label": "bucket",
+      "source_row": 82
+    },
+    {
+      "label": "bucket",
+      "source_row": 81
+    },
+    {
+      "label": "bucket",
+      "source_row": 56
+    },
+    {
+      "label": "bucket",
+      "source_row": 23
+    },
+    {
+      "label": "bucket",
+      "source_row": 71
+    },
+    {
+      "label": "candle",
+      "source_row": 31
+    },
+    {
+      "label": "candle",
+      "source_row": 16
+    },
+    {
+      "label": "candle",
+      "source_row": 59
+    },
+    {
+      "label": "candle",
+      "source_row": 0
+    },
+    {
+      "label": "candle",
+      "source_row": 66
+    },
+    {
+      "label": "candle",
+      "source_row": 55
+    },
+    {
+      "label": "candle",
+      "source_row": 14
+    },
+    {
+      "label": "candle",
+      "source_row": 51
+    },
+    {
+      "label": "candle",
+      "source_row": 20
+    },
+    {
+      "label": "candle",
+      "source_row": 9
+    },
+    {
+      "label": "cat",
+      "source_row": 13
+    },
+    {
+      "label": "cat",
+      "source_row": 35
+    },
+    {
+      "label": "cat",
+      "source_row": 79
+    },
+    {
+      "label": "cat",
+      "source_row": 70
+    },
+    {
+      "label": "cat",
+      "source_row": 67
+    },
+    {
+      "label": "cat",
+      "source_row": 68
+    },
+    {
+      "label": "cat",
+      "source_row": 5
+    },
+    {
+      "label": "cat",
+      "source_row": 73
+    },
+    {
+      "label": "cat",
+      "source_row": 10
+    },
+    {
+      "label": "cat",
+      "source_row": 82
+    },
+    {
+      "label": "chandelier",
+      "source_row": 82
+    },
+    {
+      "label": "chandelier",
+      "source_row": 93
+    },
+    {
+      "label": "chandelier",
+      "source_row": 40
+    },
+    {
+      "label": "chandelier",
+      "source_row": 88
+    },
+    {
+      "label": "chandelier",
+      "source_row": 66
+    },
+    {
+      "label": "chandelier",
+      "source_row": 18
+    },
+    {
+      "label": "chandelier",
+      "source_row": 22
+    },
+    {
+      "label": "chandelier",
+      "source_row": 55
+    },
+    {
+      "label": "chandelier",
+      "source_row": 28
+    },
+    {
+      "label": "chandelier",
+      "source_row": 84
+    },
+    {
+      "label": "computer",
+      "source_row": 35
+    },
+    {
+      "label": "computer",
+      "source_row": 89
+    },
+    {
+      "label": "computer",
+      "source_row": 33
+    },
+    {
+      "label": "computer",
+      "source_row": 73
+    },
+    {
+      "label": "computer",
+      "source_row": 10
+    },
+    {
+      "label": "computer",
+      "source_row": 67
+    },
+    {
+      "label": "computer",
+      "source_row": 61
+    },
+    {
+      "label": "computer",
+      "source_row": 68
+    },
+    {
+      "label": "computer",
+      "source_row": 78
+    },
+    {
+      "label": "computer",
+      "source_row": 24
+    },
+    {
+      "label": "crocodile",
+      "source_row": 0
+    },
+    {
+      "label": "crocodile",
+      "source_row": 25
+    },
+    {
+      "label": "crocodile",
+      "source_row": 61
+    },
+    {
+      "label": "crocodile",
+      "source_row": 72
+    },
+    {
+      "label": "crocodile",
+      "source_row": 92
+    },
+    {
+      "label": "crocodile",
+      "source_row": 50
+    },
+    {
+      "label": "crocodile",
+      "source_row": 64
+    },
+    {
+      "label": "crocodile",
+      "source_row": 62
+    },
+    {
+      "label": "crocodile",
+      "source_row": 52
+    },
+    {
+      "label": "crocodile",
+      "source_row": 88
+    },
+    {
+      "label": "cup",
+      "source_row": 22
+    },
+    {
+      "label": "cup",
+      "source_row": 74
+    },
+    {
+      "label": "cup",
+      "source_row": 15
+    },
+    {
+      "label": "cup",
+      "source_row": 78
+    },
+    {
+      "label": "cup",
+      "source_row": 85
+    },
+    {
+      "label": "cup",
+      "source_row": 33
+    },
+    {
+      "label": "cup",
+      "source_row": 91
+    },
+    {
+      "label": "cup",
+      "source_row": 30
+    },
+    {
+      "label": "cup",
+      "source_row": 95
+    },
+    {
+      "label": "cup",
+      "source_row": 68
+    },
+    {
+      "label": "dragon",
+      "source_row": 32
+    },
+    {
+      "label": "dragon",
+      "source_row": 67
+    },
+    {
+      "label": "dragon",
+      "source_row": 15
+    },
+    {
+      "label": "dragon",
+      "source_row": 84
+    },
+    {
+      "label": "dragon",
+      "source_row": 66
+    },
+    {
+      "label": "dragon",
+      "source_row": 42
+    },
+    {
+      "label": "dragon",
+      "source_row": 10
+    },
+    {
+      "label": "dragon",
+      "source_row": 65
+    },
+    {
+      "label": "dragon",
+      "source_row": 46
+    },
+    {
+      "label": "dragon",
+      "source_row": 96
+    },
+    {
+      "label": "dresser",
+      "source_row": 60
+    },
+    {
+      "label": "dresser",
+      "source_row": 11
+    },
+    {
+      "label": "dresser",
+      "source_row": 93
+    },
+    {
+      "label": "dresser",
+      "source_row": 0
+    },
+    {
+      "label": "dresser",
+      "source_row": 76
+    },
+    {
+      "label": "dresser",
+      "source_row": 9
+    },
+    {
+      "label": "dresser",
+      "source_row": 74
+    },
+    {
+      "label": "dresser",
+      "source_row": 72
+    },
+    {
+      "label": "dresser",
+      "source_row": 28
+    },
+    {
+      "label": "dresser",
+      "source_row": 33
+    },
+    {
+      "label": "drill",
+      "source_row": 64
+    },
+    {
+      "label": "drill",
+      "source_row": 79
+    },
+    {
+      "label": "drill",
+      "source_row": 69
+    },
+    {
+      "label": "drill",
+      "source_row": 43
+    },
+    {
+      "label": "drill",
+      "source_row": 29
+    },
+    {
+      "label": "drill",
+      "source_row": 45
+    },
+    {
+      "label": "drill",
+      "source_row": 0
+    },
+    {
+      "label": "drill",
+      "source_row": 14
+    },
+    {
+      "label": "drill",
+      "source_row": 90
+    },
+    {
+      "label": "drill",
+      "source_row": 32
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 42
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 17
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 18
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 65
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 68
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 6
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 84
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 70
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 37
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 19
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 79
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 12
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 68
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 44
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 62
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 36
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 47
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 32
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 45
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 30
+    },
+    {
+      "label": "foot",
+      "source_row": 2
+    },
+    {
+      "label": "foot",
+      "source_row": 26
+    },
+    {
+      "label": "foot",
+      "source_row": 91
+    },
+    {
+      "label": "foot",
+      "source_row": 85
+    },
+    {
+      "label": "foot",
+      "source_row": 95
+    },
+    {
+      "label": "foot",
+      "source_row": 97
+    },
+    {
+      "label": "foot",
+      "source_row": 40
+    },
+    {
+      "label": "foot",
+      "source_row": 67
+    },
+    {
+      "label": "foot",
+      "source_row": 51
+    },
+    {
+      "label": "foot",
+      "source_row": 56
+    },
+    {
+      "label": "frog",
+      "source_row": 17
+    },
+    {
+      "label": "frog",
+      "source_row": 94
+    },
+    {
+      "label": "frog",
+      "source_row": 76
+    },
+    {
+      "label": "frog",
+      "source_row": 58
+    },
+    {
+      "label": "frog",
+      "source_row": 10
+    },
+    {
+      "label": "frog",
+      "source_row": 18
+    },
+    {
+      "label": "frog",
+      "source_row": 55
+    },
+    {
+      "label": "frog",
+      "source_row": 50
+    },
+    {
+      "label": "frog",
+      "source_row": 26
+    },
+    {
+      "label": "frog",
+      "source_row": 86
+    },
+    {
+      "label": "hammer",
+      "source_row": 0
+    },
+    {
+      "label": "hammer",
+      "source_row": 17
+    },
+    {
+      "label": "hammer",
+      "source_row": 33
+    },
+    {
+      "label": "hammer",
+      "source_row": 75
+    },
+    {
+      "label": "hammer",
+      "source_row": 95
+    },
+    {
+      "label": "hammer",
+      "source_row": 99
+    },
+    {
+      "label": "hammer",
+      "source_row": 91
+    },
+    {
+      "label": "hammer",
+      "source_row": 69
+    },
+    {
+      "label": "hammer",
+      "source_row": 43
+    },
+    {
+      "label": "hammer",
+      "source_row": 67
+    },
+    {
+      "label": "headphones",
+      "source_row": 24
+    },
+    {
+      "label": "headphones",
+      "source_row": 51
+    },
+    {
+      "label": "headphones",
+      "source_row": 35
+    },
+    {
+      "label": "headphones",
+      "source_row": 88
+    },
+    {
+      "label": "headphones",
+      "source_row": 7
+    },
+    {
+      "label": "headphones",
+      "source_row": 73
+    },
+    {
+      "label": "headphones",
+      "source_row": 44
+    },
+    {
+      "label": "headphones",
+      "source_row": 31
+    },
+    {
+      "label": "headphones",
+      "source_row": 63
+    },
+    {
+      "label": "headphones",
+      "source_row": 62
+    },
+    {
+      "label": "helicopter",
+      "source_row": 90
+    },
+    {
+      "label": "helicopter",
+      "source_row": 55
+    },
+    {
+      "label": "helicopter",
+      "source_row": 10
+    },
+    {
+      "label": "helicopter",
+      "source_row": 99
+    },
+    {
+      "label": "helicopter",
+      "source_row": 2
+    },
+    {
+      "label": "helicopter",
+      "source_row": 65
+    },
+    {
+      "label": "helicopter",
+      "source_row": 89
+    },
+    {
+      "label": "helicopter",
+      "source_row": 98
+    },
+    {
+      "label": "helicopter",
+      "source_row": 44
+    },
+    {
+      "label": "helicopter",
+      "source_row": 52
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 11
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 75
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 96
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 29
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 98
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 31
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 83
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 53
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 8
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 94
+    },
+    {
+      "label": "lightning",
+      "source_row": 82
+    },
+    {
+      "label": "lightning",
+      "source_row": 21
+    },
+    {
+      "label": "lightning",
+      "source_row": 97
+    },
+    {
+      "label": "lightning",
+      "source_row": 17
+    },
+    {
+      "label": "lightning",
+      "source_row": 79
+    },
+    {
+      "label": "lightning",
+      "source_row": 46
+    },
+    {
+      "label": "lightning",
+      "source_row": 89
+    },
+    {
+      "label": "lightning",
+      "source_row": 25
+    },
+    {
+      "label": "lightning",
+      "source_row": 18
+    },
+    {
+      "label": "lightning",
+      "source_row": 44
+    },
+    {
+      "label": "lobster",
+      "source_row": 49
+    },
+    {
+      "label": "lobster",
+      "source_row": 4
+    },
+    {
+      "label": "lobster",
+      "source_row": 86
+    },
+    {
+      "label": "lobster",
+      "source_row": 52
+    },
+    {
+      "label": "lobster",
+      "source_row": 32
+    },
+    {
+      "label": "lobster",
+      "source_row": 61
+    },
+    {
+      "label": "lobster",
+      "source_row": 72
+    },
+    {
+      "label": "lobster",
+      "source_row": 23
+    },
+    {
+      "label": "lobster",
+      "source_row": 21
+    },
+    {
+      "label": "lobster",
+      "source_row": 10
+    },
+    {
+      "label": "mug",
+      "source_row": 86
+    },
+    {
+      "label": "mug",
+      "source_row": 71
+    },
+    {
+      "label": "mug",
+      "source_row": 0
+    },
+    {
+      "label": "mug",
+      "source_row": 76
+    },
+    {
+      "label": "mug",
+      "source_row": 93
+    },
+    {
+      "label": "mug",
+      "source_row": 9
+    },
+    {
+      "label": "mug",
+      "source_row": 23
+    },
+    {
+      "label": "mug",
+      "source_row": 62
+    },
+    {
+      "label": "mug",
+      "source_row": 47
+    },
+    {
+      "label": "mug",
+      "source_row": 26
+    },
+    {
+      "label": "nail",
+      "source_row": 80
+    },
+    {
+      "label": "nail",
+      "source_row": 97
+    },
+    {
+      "label": "nail",
+      "source_row": 45
+    },
+    {
+      "label": "nail",
+      "source_row": 82
+    },
+    {
+      "label": "nail",
+      "source_row": 0
+    },
+    {
+      "label": "nail",
+      "source_row": 54
+    },
+    {
+      "label": "nail",
+      "source_row": 96
+    },
+    {
+      "label": "nail",
+      "source_row": 22
+    },
+    {
+      "label": "nail",
+      "source_row": 16
+    },
+    {
+      "label": "nail",
+      "source_row": 91
+    },
+    {
+      "label": "pear",
+      "source_row": 88
+    },
+    {
+      "label": "pear",
+      "source_row": 9
+    },
+    {
+      "label": "pear",
+      "source_row": 0
+    },
+    {
+      "label": "pear",
+      "source_row": 8
+    },
+    {
+      "label": "pear",
+      "source_row": 21
+    },
+    {
+      "label": "pear",
+      "source_row": 82
+    },
+    {
+      "label": "pear",
+      "source_row": 72
+    },
+    {
+      "label": "pear",
+      "source_row": 19
+    },
+    {
+      "label": "pear",
+      "source_row": 18
+    },
+    {
+      "label": "pear",
+      "source_row": 20
+    },
+    {
+      "label": "remote control",
+      "source_row": 55
+    },
+    {
+      "label": "remote control",
+      "source_row": 30
+    },
+    {
+      "label": "remote control",
+      "source_row": 3
+    },
+    {
+      "label": "remote control",
+      "source_row": 0
+    },
+    {
+      "label": "remote control",
+      "source_row": 41
+    },
+    {
+      "label": "remote control",
+      "source_row": 88
+    },
+    {
+      "label": "remote control",
+      "source_row": 40
+    },
+    {
+      "label": "remote control",
+      "source_row": 75
+    },
+    {
+      "label": "remote control",
+      "source_row": 18
+    },
+    {
+      "label": "remote control",
+      "source_row": 19
+    },
+    {
+      "label": "sandwich",
+      "source_row": 22
+    },
+    {
+      "label": "sandwich",
+      "source_row": 74
+    },
+    {
+      "label": "sandwich",
+      "source_row": 64
+    },
+    {
+      "label": "sandwich",
+      "source_row": 94
+    },
+    {
+      "label": "sandwich",
+      "source_row": 43
+    },
+    {
+      "label": "sandwich",
+      "source_row": 93
+    },
+    {
+      "label": "sandwich",
+      "source_row": 69
+    },
+    {
+      "label": "sandwich",
+      "source_row": 60
+    },
+    {
+      "label": "sandwich",
+      "source_row": 73
+    },
+    {
+      "label": "sandwich",
+      "source_row": 29
+    },
+    {
+      "label": "saw",
+      "source_row": 46
+    },
+    {
+      "label": "saw",
+      "source_row": 92
+    },
+    {
+      "label": "saw",
+      "source_row": 10
+    },
+    {
+      "label": "saw",
+      "source_row": 53
+    },
+    {
+      "label": "saw",
+      "source_row": 5
+    },
+    {
+      "label": "saw",
+      "source_row": 45
+    },
+    {
+      "label": "saw",
+      "source_row": 52
+    },
+    {
+      "label": "saw",
+      "source_row": 63
+    },
+    {
+      "label": "saw",
+      "source_row": 29
+    },
+    {
+      "label": "saw",
+      "source_row": 47
+    },
+    {
+      "label": "scissors",
+      "source_row": 71
+    },
+    {
+      "label": "scissors",
+      "source_row": 11
+    },
+    {
+      "label": "scissors",
+      "source_row": 21
+    },
+    {
+      "label": "scissors",
+      "source_row": 4
+    },
+    {
+      "label": "scissors",
+      "source_row": 27
+    },
+    {
+      "label": "scissors",
+      "source_row": 50
+    },
+    {
+      "label": "scissors",
+      "source_row": 79
+    },
+    {
+      "label": "scissors",
+      "source_row": 74
+    },
+    {
+      "label": "scissors",
+      "source_row": 55
+    },
+    {
+      "label": "scissors",
+      "source_row": 28
+    },
+    {
+      "label": "shovel",
+      "source_row": 23
+    },
+    {
+      "label": "shovel",
+      "source_row": 4
+    },
+    {
+      "label": "shovel",
+      "source_row": 68
+    },
+    {
+      "label": "shovel",
+      "source_row": 37
+    },
+    {
+      "label": "shovel",
+      "source_row": 59
+    },
+    {
+      "label": "shovel",
+      "source_row": 24
+    },
+    {
+      "label": "shovel",
+      "source_row": 15
+    },
+    {
+      "label": "shovel",
+      "source_row": 32
+    },
+    {
+      "label": "shovel",
+      "source_row": 76
+    },
+    {
+      "label": "shovel",
+      "source_row": 85
+    },
+    {
+      "label": "snorkel",
+      "source_row": 9
+    },
+    {
+      "label": "snorkel",
+      "source_row": 49
+    },
+    {
+      "label": "snorkel",
+      "source_row": 13
+    },
+    {
+      "label": "snorkel",
+      "source_row": 66
+    },
+    {
+      "label": "snorkel",
+      "source_row": 20
+    },
+    {
+      "label": "snorkel",
+      "source_row": 84
+    },
+    {
+      "label": "snorkel",
+      "source_row": 12
+    },
+    {
+      "label": "snorkel",
+      "source_row": 11
+    },
+    {
+      "label": "snorkel",
+      "source_row": 83
+    },
+    {
+      "label": "snorkel",
+      "source_row": 24
+    },
+    {
+      "label": "stereo",
+      "source_row": 7
+    },
+    {
+      "label": "stereo",
+      "source_row": 72
+    },
+    {
+      "label": "stereo",
+      "source_row": 31
+    },
+    {
+      "label": "stereo",
+      "source_row": 5
+    },
+    {
+      "label": "stereo",
+      "source_row": 83
+    },
+    {
+      "label": "stereo",
+      "source_row": 50
+    },
+    {
+      "label": "stereo",
+      "source_row": 44
+    },
+    {
+      "label": "stereo",
+      "source_row": 63
+    },
+    {
+      "label": "stereo",
+      "source_row": 59
+    },
+    {
+      "label": "stereo",
+      "source_row": 99
+    },
+    {
+      "label": "tiger",
+      "source_row": 99
+    },
+    {
+      "label": "tiger",
+      "source_row": 10
+    },
+    {
+      "label": "tiger",
+      "source_row": 92
+    },
+    {
+      "label": "tiger",
+      "source_row": 60
+    },
+    {
+      "label": "tiger",
+      "source_row": 35
+    },
+    {
+      "label": "tiger",
+      "source_row": 43
+    },
+    {
+      "label": "tiger",
+      "source_row": 70
+    },
+    {
+      "label": "tiger",
+      "source_row": 82
+    },
+    {
+      "label": "tiger",
+      "source_row": 29
+    },
+    {
+      "label": "tiger",
+      "source_row": 40
+    },
+    {
+      "label": "tooth",
+      "source_row": 17
+    },
+    {
+      "label": "tooth",
+      "source_row": 18
+    },
+    {
+      "label": "tooth",
+      "source_row": 2
+    },
+    {
+      "label": "tooth",
+      "source_row": 15
+    },
+    {
+      "label": "tooth",
+      "source_row": 73
+    },
+    {
+      "label": "tooth",
+      "source_row": 84
+    },
+    {
+      "label": "tooth",
+      "source_row": 16
+    },
+    {
+      "label": "tooth",
+      "source_row": 77
+    },
+    {
+      "label": "tooth",
+      "source_row": 36
+    },
+    {
+      "label": "tooth",
+      "source_row": 9
+    },
+    {
+      "label": "tractor",
+      "source_row": 50
+    },
+    {
+      "label": "tractor",
+      "source_row": 65
+    },
+    {
+      "label": "tractor",
+      "source_row": 86
+    },
+    {
+      "label": "tractor",
+      "source_row": 46
+    },
+    {
+      "label": "tractor",
+      "source_row": 55
+    },
+    {
+      "label": "tractor",
+      "source_row": 32
+    },
+    {
+      "label": "tractor",
+      "source_row": 82
+    },
+    {
+      "label": "tractor",
+      "source_row": 4
+    },
+    {
+      "label": "tractor",
+      "source_row": 75
+    },
+    {
+      "label": "tractor",
+      "source_row": 73
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 54
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 10
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 32
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 88
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 18
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 65
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 21
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 92
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 20
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 4
+    },
+    {
+      "label": "violin",
+      "source_row": 62
+    },
+    {
+      "label": "violin",
+      "source_row": 8
+    },
+    {
+      "label": "violin",
+      "source_row": 33
+    },
+    {
+      "label": "violin",
+      "source_row": 61
+    },
+    {
+      "label": "violin",
+      "source_row": 27
+    },
+    {
+      "label": "violin",
+      "source_row": 12
+    },
+    {
+      "label": "violin",
+      "source_row": 44
+    },
+    {
+      "label": "violin",
+      "source_row": 14
+    },
+    {
+      "label": "violin",
+      "source_row": 98
+    },
+    {
+      "label": "violin",
+      "source_row": 96
+    }
+  ]
+}
