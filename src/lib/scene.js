@@ -129,6 +129,55 @@ export function createTextSceneObject({
   };
 }
 
+/**
+ * A doodle-erase remnant: raster pixels left after partially erasing an
+ * illustration or converting sketch ink. Stored as a PNG data URL so it is
+ * serialisable for undo history, and fully editable like artwork.
+ */
+export function createBitmapSceneObject({
+  id = createSceneObjectId(),
+  bitmap,
+  bitmapId,
+  bounds = null,
+  label,
+  x,
+  y,
+  width,
+  height,
+  rotation = 0,
+  color = 'original',
+  flipX = false,
+  zIndex = 0,
+}) {
+  if (typeof bitmap !== 'string' || !bitmap.startsWith('data:image/png')) {
+    throw new TypeError('A bitmap object requires a PNG data URL.');
+  }
+  if (![x, y, width, height, rotation].every(Number.isFinite) || width <= 0 || height <= 0) {
+    throw new TypeError('Bitmap object position and dimensions must be finite and positive.');
+  }
+  const normalizedColor = color === 'original' ? 'original' : normalizeHexColor(color);
+  if (!normalizedColor) throw new TypeError(`Bitmap object color must be a valid RGB hex value: ${color}`);
+  return {
+    id,
+    type: 'bitmap',
+    artworkId: null,
+    artwork: null,
+    bitmapId: String(bitmapId ?? id),
+    bitmap,
+    bitmapWidth: Number.isFinite(bounds?.width) ? bounds.width : null,
+    bitmapHeight: Number.isFinite(bounds?.height) ? bounds.height : null,
+    label: String(label ?? 'Doodle remnant'),
+    x,
+    y,
+    width,
+    height,
+    rotation,
+    color: normalizedColor,
+    flipX: Boolean(flipX),
+    zIndex,
+  };
+}
+
 /** Conservative canvas-independent width estimate for the inline editor. */
 export function getEstimatedTextBounds(text, fontSize, fontWeight = 'normal') {
   const value = String(text ?? '');
@@ -570,7 +619,7 @@ export function recolorSceneObjects(objects, ids, color) {
   const selected = new Set(ids);
   let changed = false;
   const next = objects.map((object) => {
-    if (!selected.has(object.id) || !['artwork', 'text'].includes(object.type) || object.color === normalizedColor) return object;
+    if (!selected.has(object.id) || !['artwork', 'text', 'bitmap'].includes(object.type) || object.color === normalizedColor) return object;
     changed = true;
     return { ...object, color: normalizedColor };
   });
@@ -579,8 +628,101 @@ export function recolorSceneObjects(objects, ids, color) {
 
 export function artworkImageKey(artworkId, color) {
   const normalizedColor = color === 'original' ? 'original' : normalizeHexColor(color);
-  if (!normalizedColor) throw new TypeError(`Artwork cache color must be a valid RGB hex value: ${color}`);
+  if (!normalizedColor) throw new TypeError('Artwork cache color must be a valid RGB hex value: ' + color);
   return `${artworkId}\u0000${normalizedColor}`;
+}
+
+/** Bitmap remnants are stored by id; their PNG data lives on the object itself. */
+export function bitmapImageKey(bitmapId) {
+  return `bitmap\u0000${bitmapId}`;
+}
+
+/**
+ * One lookup surface for both illustration SVGs and bitmap remnants, so
+ * `renderScene` needs a single cache argument.
+ */
+export function createSceneImageCache(artworkCache, bitmapCache) {
+  return {
+    get(artworkId, color) {
+      return artworkCache?.get(artworkId, color);
+    },
+    getBitmap(bitmapId) {
+      return bitmapCache?.get(bitmapId);
+    },
+    has(artworkId, color) {
+      return Boolean(artworkCache?.has(artworkId, color));
+    },
+    hasBitmap(bitmapId) {
+      return Boolean(bitmapCache?.has(bitmapId));
+    },
+    async ensure(artwork, color) {
+      return artworkCache.ensure(artwork, color);
+    },
+    async ensureBitmap(bitmapId, dataUrl) {
+      return bitmapCache.ensure(bitmapId, dataUrl);
+    },
+    putBitmap(bitmapId, source) {
+      return bitmapCache.put(bitmapId, source);
+    },
+    clear() {
+      artworkCache?.clear();
+      bitmapCache?.clear();
+    },
+  };
+}
+
+/** Decode (once) the PNG held by a bitmap scene object. */
+export function createBitmapImageCache(ImageConstructor = globalThis.Image) {
+  const images = new Map();
+  const pending = new Map();
+  return {
+    get(bitmapId) {
+      return images.get(bitmapImageKey(bitmapId));
+    },
+    has(bitmapId) {
+      return images.has(bitmapImageKey(bitmapId));
+    },
+    /** Register an already-decoded raster (a fresh remnant) and drop any PNG. */
+    put(bitmapId, source) {
+      images.set(bitmapImageKey(bitmapId), source);
+      pending.delete(bitmapImageKey(bitmapId));
+      return source;
+    },
+    delete(bitmapId) {
+      images.delete(bitmapImageKey(bitmapId));
+      pending.delete(bitmapImageKey(bitmapId));
+    },
+    async ensure(bitmapId, dataUrl) {
+      const key = bitmapImageKey(bitmapId);
+      if (images.has(key)) return images.get(key);
+      if (pending.has(key)) return pending.get(key);
+      if (typeof ImageConstructor !== 'function') throw new Error('Image decoding is unavailable.');
+      const task = (async () => {
+        const image = new ImageConstructor();
+        image.src = dataUrl;
+        if (typeof image.decode === 'function') {
+          await image.decode();
+        } else {
+          await new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = () => reject(new Error('Bitmap remnant failed to load.'));
+          });
+        }
+        images.set(key, image);
+        return image;
+      })();
+      pending.set(key, task);
+      try {
+        return await task;
+      } finally {
+        pending.delete(key);
+      }
+    },
+    clear() {
+      images.clear();
+      pending.clear();
+    },
+  };
 }
 
 export function createArtworkImageCache(ImageConstructor = globalThis.Image) {
@@ -656,6 +798,11 @@ export function renderScene(objects, canvas, imageCache) {
       const textX = object.textAlign === 'left' ? -object.width / 2 + padding
         : object.textAlign === 'right' ? object.width / 2 - padding : 0;
       context.fillText(object.text, textX, 0, Math.max(1, object.width - padding * 2));
+    } else if (object.type === 'bitmap') {
+      const image = imageCache instanceof Map
+        ? imageCache.get(bitmapImageKey(object.bitmapId))
+        : imageCache?.getBitmap?.(object.bitmapId);
+      if (image) context.drawImage(image, -object.width / 2, -object.height / 2, object.width, object.height);
     } else {
       const image = imageCache instanceof Map
         ? imageCache.get(artworkImageKey(object.artworkId, object.color))

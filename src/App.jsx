@@ -26,6 +26,9 @@ import { EditorHistory } from './lib/editor-history';
 import {
   addSceneObject,
   createArtworkImageCache,
+  createBitmapImageCache,
+  createBitmapSceneObject,
+  createSceneImageCache,
   createSceneObject,
   createSceneObjectId,
   createTextSceneObject,
@@ -57,7 +60,21 @@ import {
   resizeSceneObject,
   updateSceneObject,
   updateSelectionForClick,
+  worldToObjectLocal,
 } from './lib/scene';
+import {
+  DOODLE_RADIUS_FACTOR,
+  ERASE_PIXEL_SCALE,
+  canvasToPngDataUrl,
+  createEraseMask,
+  eraseWithMask,
+  maskOverlapsInk,
+  measureRemaining,
+  remnantPlacement,
+  renderObjectRaster,
+  sketchInkSheet,
+  splitInkBlobs,
+} from './lib/doodle-eraser';
 import DebugPanel from './dev/DebugPanel';
 
 const W = 1200, H = 720;
@@ -91,6 +108,13 @@ function App() {
   const revisionRef = useRef(0);
   const imageCacheRef = useRef(null);
   if (!imageCacheRef.current) imageCacheRef.current = createArtworkImageCache();
+  const bitmapCacheRef = useRef(null);
+  if (!bitmapCacheRef.current) bitmapCacheRef.current = createBitmapImageCache();
+  const doodleStrokeRef = useRef(null);
+  const sceneImageCacheRef = useRef(null);
+  if (!sceneImageCacheRef.current) {
+    sceneImageCacheRef.current = createSceneImageCache(imageCacheRef.current, bitmapCacheRef.current);
+  }
 
   const [tool, setTool] = useState('pencil');
   const [activeColor, setActiveColor] = useState(DEFAULT_ACTIVE_COLOR);
@@ -98,6 +122,8 @@ function App() {
   const [view, setView] = useState({ ...DEFAULT_VIEWPORT });
   const [textDraft, setTextDraft] = useState(null);
   const [size, setSize] = useState(7);
+  // Classic eraser (whole-object remove) vs doodle eraser (shave pixels, keep an editable remnant).
+  const [eraserMode, setEraserMode] = useState('classic');
   const [sceneObjects, setSceneObjects] = useState([]);
   const [selectedObjectIds, setSelectedObjectIds] = useState([]);
   const [marquee, setMarquee] = useState(null);
@@ -221,9 +247,29 @@ function App() {
     };
   }, [pushHistory, schedulePrediction]);
 
+  /**
+   * A bitmap remnant's PNG lives on the object (so undo stays serialisable),
+   * while the decoded image is cached by id. Ensure everything visible is
+   * decoded before painting; re-render once a decode lands.
+   */
+  const ensureSceneBitmaps = useCallback(async (objects) => {
+    const bitmaps = objects.filter((object) => object.type === 'bitmap' && object.bitmap);
+    if (!bitmaps.length) return;
+    const pending = bitmaps.filter((object) => !bitmapCacheRef.current.has(object.bitmapId));
+    if (!pending.length) return;
+    try {
+      await Promise.all(pending.map((object) => bitmapCacheRef.current.ensure(object.bitmapId, object.bitmap)));
+      renderScene(sceneObjectsRef.current, canvasRef.current, sceneImageCacheRef.current);
+    } catch (error) {
+      console.error('Could not decode doodle remnant:', error);
+    }
+  }, []);
+
   useEffect(() => {
-    renderScene(sceneObjects, canvasRef.current, imageCacheRef.current);
-  }, [sceneObjects]);
+    const objects = sceneObjects;
+    renderScene(objects, canvasRef.current, sceneImageCacheRef.current);
+    ensureSceneBitmaps(objects);
+  }, [sceneObjects, ensureSceneBitmaps]);
 
   const restore = useCallback((direction) => {
     clearTimeout(timerRef.current);
@@ -388,6 +434,14 @@ function App() {
     drawCanvasStrokeSegment(context, from, to, activeColor, erase ? size * 3 : size, { erase });
   };
 
+  /** Soft-erase sketch ink with the doodle stroke (pixels, not whole strokes). */
+  const eraseSketchAlong = (from, to) => {
+    const context = sketchRef.current?.getContext('2d');
+    if (!context) return false;
+    drawCanvasStrokeSegment(context, from, to, activeColor, Math.max(2, size * DOODLE_RADIUS_FACTOR) * 2, { erase: true });
+    return true;
+  };
+
   const eraseObjectsAlong = (from, to) => {
     const distance = Math.hypot(to.x - from.x, to.y - from.y);
     const steps = Math.max(1, Math.ceil(distance / Math.max(8, size * 1.5)));
@@ -404,6 +458,153 @@ function App() {
       changed = true;
     }
     if (changed && pointerRef.current) pointerRef.current.changed = true;
+  };
+
+  /**
+   * Doodle eraser: shave pixels off whatever illustration/remnant the stroke
+   * crosses and leave the survivor as a normal, fully editable object.
+   *
+   * One gesture is applied as a single accumulated pass (`doodleStrokeRef`):
+   * the stroke starts from the object's *original* geometry, so an object is
+   * rendered and trimmed once per gesture instead of once per pointer move.
+   * The trimmed rest is re-inserted at the same world position with the same
+   * rotation, flip and stack order.
+   */
+  const applyDoodleErase = (stroke = doodleStrokeRef.current) => {
+    if (!stroke?.points?.length) return false;
+    const radius = Math.max(2, size * DOODLE_RADIUS_FACTOR);
+    const ids = [...stroke.originals.keys()];
+    let next = sceneObjectsRef.current;
+    let erasedWhole = 0;
+    let trimmed = 0;
+    for (const id of ids) {
+      const source = stroke.originals.get(id);
+      if (!source) continue;
+      // The original object is gone once this gesture has trimmed it; its
+      // remnant is what the scene holds now.
+      if (!next.some((object) => object.id === id || object.id === stroke.remnants.get(id))) continue;
+      const image = source.type === 'bitmap'
+        ? bitmapCacheRef.current.get(source.bitmapId)
+        : source.type === 'text' ? null : imageCacheRef.current.get(source.artworkId, source.color);
+      const raster = renderObjectRaster({ object: source, image });
+      const mask = createEraseMask({
+        width: raster.width,
+        height: raster.height,
+        points: stroke.points,
+        radius: radius * ERASE_PIXEL_SCALE,
+        worldToLocal: (point) => {
+          const local = worldToObjectLocal(source, point);
+          return {
+            x: local.x * ERASE_PIXEL_SCALE + raster.width / 2,
+            y: local.y * ERASE_PIXEL_SCALE + raster.height / 2,
+          };
+        },
+      });
+      if (!maskOverlapsInk({ canvas: raster, mask })) continue;
+      const survivor = eraseWithMask({ canvas: raster, mask });
+      next = deleteSceneObject(next, id);
+      const previousRemnantId = stroke.remnants.get(id);
+      if (previousRemnantId) {
+        next = deleteSceneObject(next, previousRemnantId);
+        bitmapCacheRef.current.delete(stroke.remnantBitmapIds.get(id));
+      }
+      if (!survivor.canvas) {
+        erasedWhole += 1;
+        continue;
+      }
+      trimmed += 1;
+      const bitmapId = createSceneObjectId();
+      const dataUrl = canvasToPngDataUrl(survivor.canvas);
+      const remnant = createBitmapSceneObject({
+        id: createSceneObjectId(),
+        bitmapId,
+        bitmap: dataUrl,
+        bounds: survivor.bounds,
+        label: source.label,
+        color: source.type === 'bitmap' ? source.color : 'original',
+        rotation: source.rotation,
+        flipX: source.flipX,
+        zIndex: source.zIndex,
+        ...remnantPlacement({ object: source, localBounds: survivor.bounds }),
+      });
+      // Insert synchronously into the bitmap cache so the very first repaint can
+      // draw it; decoding never has to win a race against the next pointer move.
+      bitmapCacheRef.current.put(bitmapId, survivor.canvas);
+      // Keep the original stack position so erasing never changes layering.
+      const index = Math.min(source.zIndex, next.length);
+      next = [...next.slice(0, index), remnant, ...next.slice(index)];
+      stroke.remnants.set(id, remnant.id);
+      stroke.remnantBitmapIds.set(id, bitmapId);
+      stroke.remnantIds.push(remnant.id);
+    }
+    if (!erasedWhole && !trimmed) return false;
+    syncScene(next);
+    if (selectedObjectIdsRef.current.some((id) => !next.some((object) => object.id === id))) {
+      chooseObjects(selectedObjectIdsRef.current.filter((id) => next.some((object) => object.id === id)));
+    }
+    stroke.erasedWhole = erasedWhole;
+    stroke.trimmed = trimmed;
+    return true;
+  };
+
+  /** Start a doodle gesture from the current scene geometry. */
+  const beginDoodleStroke = () => {
+    doodleStrokeRef.current = {
+      points: [],
+      originals: new Map(sceneObjectsRef.current
+        .filter((object) => ['artwork', 'bitmap', 'text'].includes(object.type))
+        .map((object) => [object.id, object])),
+      trimmed: 0,
+      erasedWhole: 0,
+      remnantIds: [],
+      // original object id -> its current survivor, so a live stroke can be
+      // replayed from the original geometry without stacking duplicates.
+      remnants: new Map(),
+      remnantBitmapIds: new Map(),
+    };
+  };
+
+  /**
+   * Sketch ink is a raw canvas until it becomes an object. When a doodle erase
+   * gesture touches it, convert the surviving ink into editable doodle objects
+   * so the remainder can still be selected, moved and recoloured.
+   */
+  const convertRemainingSketchToObjects = (label = 'Doodle') => {
+    const sketch = sketchRef.current;
+    if (!sketch) return 0;
+    if (!getSketchBounds(sketch).width) return 0;
+    const sheet = sketchInkSheet({ sketch });
+    if (!measureRemaining({ canvas: sheet }).canvas) return 0;
+    const blobs = splitInkBlobs({ canvas: sheet });
+    if (!blobs.length) return 0;
+    const created = blobs.map((blob) => {
+      const bitmapId = createSceneObjectId();
+      // Encode once and register the raster immediately so the first repaint
+      // after the gesture can already draw it.
+      const dataUrl = canvasToPngDataUrl(blob.canvas);
+      bitmapCacheRef.current.put(bitmapId, blob.canvas);
+      return createBitmapSceneObject({
+        id: createSceneObjectId(),
+        bitmapId,
+        bitmap: dataUrl,
+        label,
+        color: 'original',
+        x: blob.bounds.x,
+        y: blob.bounds.y,
+        width: blob.bounds.width,
+        height: blob.bounds.height,
+        zIndex: sceneObjectsRef.current.length,
+      });
+    });
+    sketch.getContext('2d').clearRect(0, 0, W, H);
+    sketchSnapshotRef.current = sketch.getContext('2d').getImageData(0, 0, W, H);
+    setHasInk(false);
+    setRecognition(IDLE);
+    syncScene(created.reduce((objects, object) => addSceneObject(objects, object), sceneObjectsRef.current));
+    chooseObjects(created.map((object) => object.id));
+    setTool('select');
+    setMessage(`Your doodle is now ${created.length} editable object${created.length === 1 ? '' : 's'}. Move, resize, rotate or recolour it.`);
+    return created.length;
   };
 
   const setCanvasBackground = (nextColor) => {
@@ -617,6 +818,14 @@ function App() {
           setMarquee({ x: p.x, y: p.y, width: 0, height: 0 });
         }
       }
+    } else if (tool === 'eraser' && eraserMode === 'doodle') {
+      revisionRef.current += 1;
+      clearTimeout(timerRef.current);
+      pointerRef.current = { id: pointerId, kind: 'doodle', previousPoint: p, changed: false };
+      beginDoodleStroke();
+      doodleStrokeRef.current.points.push(p);
+      eraseSketchAlong(p, p);
+      pointerRef.current.changed = applyDoodleErase() || pointerRef.current.changed;
     } else if (tool === 'eraser') {
       revisionRef.current += 1;
       clearTimeout(timerRef.current);
@@ -665,6 +874,24 @@ function App() {
       eraseObjectsAlong(gesture.previousPoint, p);
       gesture.previousPoint = p;
       gesture.changed = true;
+    } else if (gesture.kind === 'doodle') {
+      eraseSketchAlong(gesture.previousPoint, p);
+      gesture.previousPoint = p;
+      gesture.changed = true;
+      const stroke = doodleStrokeRef.current;
+      if (!stroke) return;
+      // Coalesce near-identical pointer samples so long gestures stay cheap.
+      const last = stroke.points[stroke.points.length - 1];
+      if (last && Math.hypot(p.x - last.x, p.y - last.y) < 2) return;
+      stroke.points.push(p);
+      // Trim live so the drawing visibly disappears under the brush instead of
+      // only updating when the stroke ends. The pass is always replayed from the
+      // gesture's original geometry, so repeated calls cannot double-erase.
+      if (applyDoodleErase()) {
+        // Re-select the survivor so the selection box tracks the new shape.
+        if (stroke.remnantIds.length === 1) chooseObject(stroke.remnantIds[0]);
+        gesture.changed = true;
+      }
     } else if (gesture.kind === 'move') {
       const dx = p.x - gesture.startPoint.x;
       const dy = p.y - gesture.startPoint.y;
@@ -711,6 +938,31 @@ function App() {
         }));
       } else if (!gesture.additive) chooseObjects([]);
       setMarquee(null);
+    } else if (gesture.kind === 'doodle') {
+      const stroke = doodleStrokeRef.current;
+      if (stroke) {
+        const last = stroke.points[stroke.points.length - 1];
+        const end = point(event);
+        if (!last || Math.hypot(end.x - last.x, end.y - last.y) >= 1) stroke.points.push(end);
+      }
+      applyDoodleErase();
+      sketchSnapshotRef.current = sketchRef.current.getContext('2d').getImageData(0, 0, W, H);
+      const bounds = getSketchBounds(sketchRef.current);
+      setHasInk(Boolean(bounds.width));
+      setRecognition(IDLE);
+      // Selecting the survivor makes the promise visible: it is a normal object
+      // now. Only do it for a single remnant so a wide drag never steals a
+      // multi-object selection.
+      if (stroke?.remnants?.size === 1) chooseObject([...stroke.remnants.values()][0]);
+      if (stroke?.trimmed) {
+        setMessage(`Doodle eraser trimmed ${stroke.trimmed} object${stroke.trimmed === 1 ? '' : 's'} — the rest is still selectable and editable.`);
+      } else if (stroke?.erasedWhole) {
+        setMessage(`Doodle eraser removed ${stroke.erasedWhole} object${stroke.erasedWhole === 1 ? '' : 's'}.`);
+      }
+      // Turn whatever ink survived into freely editable objects.
+      if (bounds.width) convertRemainingSketchToObjects();
+      doodleStrokeRef.current = null;
+      pushHistory();
     } else if (gesture.kind === 'sketch' || gesture.kind === 'eraser') {
       sketchSnapshotRef.current = sketchRef.current.getContext('2d').getImageData(0, 0, W, H);
       const bounds = getSketchBounds(sketchRef.current);
@@ -832,7 +1084,7 @@ function App() {
     syncScene(next);
     // Redraw synchronously so artwork reflects a flip without waiting for the
     // scene effect; the cached source artwork remains untouched.
-    renderScene(next, canvasRef.current, imageCacheRef.current);
+    renderScene(next, canvasRef.current, sceneImageCacheRef.current);
     pushHistory();
   };
 
@@ -941,17 +1193,17 @@ function App() {
               <button className={`rail-button ${tool === 'pencil' ? 'selected' : ''}`} onClick={() => setTool('pencil')} aria-pressed={tool === 'pencil'} aria-label="Pencil" title="Draw a rough sketch"><Pencil size={19}/></button>
               <button className={`rail-button ${tool === 'text' ? 'selected' : ''}`} onClick={() => setTool('text')} aria-pressed={tool === 'text'} aria-label="Text tool" title="Add editable text"><Type size={19}/></button>
               <button className={`rail-button ${tool === 'fill' ? 'selected' : ''}`} onClick={() => setTool('fill')} aria-pressed={tool === 'fill'} aria-label="Fill tool" title="Fill a connected region"><PaintBucket size={19}/></button>
-              <button className={`rail-button ${tool === 'eraser' ? 'selected' : ''}`} onClick={() => setTool('eraser')} aria-pressed={tool === 'eraser'} aria-label="Eraser" title="Erase sketch marks or remove an object"><Eraser size={19}/></button>
+              <button className={`rail-button ${tool === 'eraser' ? 'selected' : ''}`} onClick={() => setTool('eraser')} aria-pressed={tool === 'eraser'} aria-label="Eraser" title="Eraser with Classic and Doodle modes"><Eraser size={19}/></button>
               <button className={`rail-button ${tool === 'pan' ? 'selected' : ''}`} onClick={() => setTool('pan')} aria-pressed={tool === 'pan'} aria-label="Pan tool" title="Pan the canvas"><Hand size={19}/></button>
               <div className="rail-divider"/>
               <button className="rail-button" disabled={!canUndo} onClick={() => restore(-1)} aria-label="Undo" title="Undo (Ctrl or Cmd + Z)"><RotateCcw size={19}/></button>
               <button className="rail-button flip" disabled={!canRedo} onClick={() => restore(1)} aria-label="Redo" title="Redo (Ctrl or Cmd + Shift + Z)"><RotateCcw size={19}/></button>
               <div className="rail-spacer"/><span className="rail-label bottom-label">SKETCH<br/>AWAY</span>
             </div>
-            <div className={`canvas-wrap tool-${tool}`} ref={canvasWrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onDoubleClick={onCanvasDoubleClick}>
+            <div className={`canvas-wrap tool-${tool}${tool === 'eraser' ? ` eraser-${eraserMode}` : ''}`} data-eraser-mode={tool === 'eraser' ? eraserMode : undefined} ref={canvasWrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onDoubleClick={onCanvasDoubleClick}>
               <div className="canvas-stage" style={{ transform: viewportTransformCss(view), backgroundColor }} data-view-zoom={view.zoom} data-view-pan-x={view.panX} data-view-pan-y={view.panY} data-background-color={backgroundColor}>
                 <canvas ref={fillRef} className="fill-canvas" width={W} height={H} aria-hidden="true"/>
-                <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil, text, fill or eraser tools." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''} data-selected-object-ids={selectedObjectIds.join(',')}/>
+                <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil, text, fill or eraser tools. The doodle eraser lets you erase part of a drawing and keep the rest editable." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''} data-selected-object-ids={selectedObjectIds.join(',')}/>
                 <canvas ref={sketchRef} className="sketch-overlay" width={W} height={H} aria-hidden="true"/>
                 {tool === 'select' && (selectedObjects.length > 0 || marquee) && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
                   aria-label={selectedObjects.length > 1 ? `${selectedObjects.length} objects selected` : selectedObject ? `Selected ${selectedObjectLabel}` : 'Selection marquee'}
@@ -1002,6 +1254,7 @@ function App() {
                   disabled={selectedObject.color === activeColor} aria-label="Apply Active Color" title={`Apply ${activeColor}`}>
                   <Check size={14}/> Apply Active Color
                 </button>
+                {selectedObject.type === 'bitmap' && selectedObject.color !== 'original' && <button className="object-action" onClick={() => recolorSelected('original')} aria-label="Restore original doodle colors" title="Restore original colors">Original</button>}
               </div>
               {selectedObject.type === 'text' && <div className="text-object-controls" role="group" aria-label="Selected text controls">
                 <button className="object-action" onClick={() => editTextObject(selectedObject)} aria-label="Edit text content" title="Edit text"><Type size={14}/> Edit text</button>
@@ -1021,7 +1274,7 @@ function App() {
               <button className="object-action" onClick={duplicateSelected} aria-label="Duplicate selected object" title="Duplicate"><Copy size={15}/> Duplicate</button>
               <button className="object-action" onClick={() => reorderSelected(1)} disabled={selectedIndex >= sceneObjects.length - 1} aria-label="Bring selected object forward" title="Bring forward one step"><ArrowUp size={15}/> Forward</button>
               <button className="object-action" onClick={() => reorderSelected(-1)} disabled={selectedIndex <= 0} aria-label="Send selected object backward" title="Send backward one step"><ArrowDown size={15}/> Back</button>
-              {selectedObject.type === 'artwork' && <button className="object-action" onClick={flipSelected} aria-label="Flip selected object horizontally" title="Flip horizontally"><FlipHorizontal2 size={15}/> Flip</button>}
+              {['artwork', 'bitmap'].includes(selectedObject.type) && <button className="object-action" onClick={flipSelected} aria-label="Flip selected object horizontally" title="Flip horizontally"><FlipHorizontal2 size={15}/> Flip</button>}
               <button className="object-action danger" onClick={deleteSelected} aria-label="Delete selected object" title="Delete"><Trash2 size={15}/> Delete</button>
             </div>
             <span className="object-edit-hint">Drag to move · corners resize proportionally · upper handle rotates · double-click text to edit</span>
@@ -1062,12 +1315,17 @@ function App() {
           </div>}
           <div className="editor-bottom">
             <ColorControl value={activeColor} onChange={setActiveColor}/>
+            {tool === 'eraser' && <div className="brush-control eraser-mode" role="group" aria-label="Eraser mode">
+              <span className="control-label">MODE</span>
+              <button className={`mode-button ${eraserMode === 'classic' ? 'selected' : ''}`} onClick={() => setEraserMode('classic')} aria-pressed={eraserMode === 'classic'} aria-label="Classic eraser mode: remove whole objects" title="Classic — erases sketch ink and removes the whole object it crosses">Classic</button>
+              <button className={`mode-button ${eraserMode === 'doodle' ? 'selected' : ''}`} onClick={() => setEraserMode('doodle')} aria-pressed={eraserMode === 'doodle'} aria-label="Doodle eraser mode: erase part of a drawing and keep the rest editable" title="Doodle — brush-erase part of a drawing; the remainder stays selectable and editable">Doodle</button>
+            </div>}
             {(tool === 'pencil' || tool === 'eraser') && <div className="brush-control">
               <span className="control-label">BRUSH SIZE</span>
               <input aria-label="Brush size" type="range" min="1" max="100" step="1" value={size} onChange={(event) => setSize(Number(event.target.value))}/>
               <output className="size-value">{size}px logical</output>
             </div>}
-            <div className="bottom-tip"><MousePointer2 size={14}/>{tool === 'select' ? 'Edit objects' : tool === 'eraser' ? 'Erase sketch or object' : tool === 'text' ? 'Click to add editable text' : tool === 'fill' ? 'Click a connected region to fill' : tool === 'pan' ? 'Drag to pan · Space + drag also works' : 'Draw freely'}</div>
+            <div className="bottom-tip"><MousePointer2 size={14}/>{tool === 'select' ? 'Edit objects' : tool === 'eraser' ? (eraserMode === 'doodle' ? 'Brush-erase a part · the rest stays editable' : 'Erase sketch or whole object') : tool === 'text' ? 'Click to add editable text' : tool === 'fill' ? 'Click a connected region to fill' : tool === 'pan' ? 'Drag to pan · Space + drag also works' : 'Draw freely'}</div>
           </div>
         </div>
         <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">Choose a clean illustration from the strip above.</p>

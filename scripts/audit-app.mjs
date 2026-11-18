@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { createCanvas, ImageData as NapiImageData } from '@napi-rs/canvas';
+import { createCanvas, ImageData as NapiImageData, loadImage } from '@napi-rs/canvas';
 import { Resvg } from '@resvg/resvg-js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -72,13 +72,25 @@ function makeCanvasShim(window) {
       this.__backing = createCanvas(width, height);
     }
     const context = this.__backing.getContext('2d');
-    if (!context.__patched) {
-      context.__patched = true;
+    // @napi-rs/canvas returns a fresh wrapper on every getContext call, so the
+    // patch marker must live on the backing canvas rather than the wrapper.
+    if (!this.__backing.__patched) {
+      this.__backing.__patched = true;
       const drawImage = context.drawImage.bind(context);
       context.drawImage = (source, ...rest) =>
         drawImage(source && (source.__backing ?? source._raster) ? (source.__backing ?? source._raster) : source, ...rest);
     }
     return context;
+  };
+  // jsdom's own toDataURL throws; the real browser canvas (and our app) needs it
+  // for doodle-erase remnants, which are stored as PNG data URLs.
+  proto.toDataURL = function toDataURL(type = 'image/png') {
+    const width = this.width || 300;
+    const height = this.height || 150;
+    if (!this.__backing || this.__backing.width !== width || this.__backing.height !== height) {
+      this.__backing = createCanvas(width, height);
+    }
+    return this.__backing.toDataURL(type);
   };
   const canvasRect = () => {
     const bounds = window.__auditCanvasRect ?? { left: 0, top: 0, width: CANVAS_W, height: CANVAS_H };
@@ -108,9 +120,14 @@ function makeImageShim(window) {
     constructor() {
       this._raster = null;
       this._src = '';
+      this._png = null;
     }
     set src(value) {
       this._src = value;
+      if (/^data:image\/png;base64,/.test(value)) {
+        this._png = Buffer.from(value.replace(/^data:image\/png;base64,/, ''), 'base64');
+        return;
+      }
       if (!/^data:image\/svg\+xml/.test(value)) return;
       const svg = decodeURIComponent(value.replace(/^data:image\/svg\+xml[^,]*,/, ''));
       const rendered = new Resvg(svg, { fitTo: { mode: 'width', value: 320 } }).render();
@@ -125,6 +142,13 @@ function makeImageShim(window) {
     get height() { return this._raster?.height ?? 0; }
     get complete() { return this.width > 0; }
     async decode() {
+      if (this._png) {
+        const image = await loadImage(this._png);
+        const canvas = createCanvas(image.width, image.height);
+        canvas.getContext('2d').drawImage(image, 0, 0);
+        this._raster = canvas;
+        this._png = null;
+      }
       if (!this._raster?.width) throw new Error('The artwork could not be rasterised.');
     }
   }
@@ -392,6 +416,7 @@ async function main() {
   section('Layered drawing and prediction');
   const canvas = document.querySelector('.art-canvas');
   const sketch = document.querySelector('.sketch-overlay');
+  const canvasWrap = document.querySelector('.canvas-wrap');
   check('clean-art canvas is mounted', Boolean(canvas), canvas ? `${canvas.width}x${canvas.height}` : 'missing');
   check('temporary sketch canvas is mounted separately', Boolean(sketch), sketch ? `${sketch.width}x${sketch.height}` : 'missing');
   check('clean scene starts blank', inkPixels(canvas) === 0, `${inkPixels(canvas)} ink pixels`);
@@ -905,19 +930,237 @@ async function main() {
   await sleep(100);
   check('one redo reapplies that eraser gesture', countObjects(canvas) === 2);
 
+  section('Doodle eraser: partial erase keeps an editable remainder');
+  // Start clean so the geometry below is unambiguous.
+  [...document.querySelectorAll('button')].find((button) => /Clear canvas/i.test(button.textContent ?? ''))
+    ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(150);
+  click(window, 'button[aria-label="Pencil"]');
+  await sleep(40);
+  drawCircle(window, canvas, 600, 360, 150);
+  await sleep(2200);
+  // Wait for a fresh card for the circle, and click that one (not a stale card
+  // left over from the earlier objects).
+  const findCircleCard = () => [...document.querySelectorAll('button.s-card')]
+    .find((card) => card.querySelector('.s-card-art svg')
+      && /circle|moon|sun|ball|coin|ring/i.test(card.querySelector('.s-card-name')?.textContent ?? ''));
+  let doodleCard = null;
+  for (let attempt = 0; attempt < 30 && !doodleCard; attempt += 1) {
+    await sleep(150);
+    doodleCard = findCircleCard();
+  }
+  doodleCard?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(200);
+  const placedObject = document.querySelector('.selection-overlay');
+  check('a clean object exists before doodle erasing', countObjects(canvas) === 1);
+  const objectBeforeDoodle = canvasHash(canvas);
+
+  click(window, 'button[aria-label="Eraser"]');
+  await sleep(60);
+  check('eraser exposes two modes', Boolean(document.querySelector('button[aria-label^="Classic eraser mode"]')
+    && document.querySelector('button[aria-label^="Doodle eraser mode"]')));
+  check('classic mode is the default', document.querySelector('button[aria-label^="Classic eraser mode"]')?.getAttribute('aria-pressed') === 'true');
+  click(window, 'button[aria-label^="Doodle eraser mode"]');
+  await sleep(60);
+  check('doodle mode can be selected', document.querySelector('button[aria-label^="Doodle eraser mode"]')?.getAttribute('aria-pressed') === 'true');
+  check('the canvas reports its eraser mode', canvasWrap.getAttribute('data-eraser-mode') === 'doodle');
+
+  const placedX = Number(placedObject?.getAttribute('data-object-x'));
+  const placedY = Number(placedObject?.getAttribute('data-object-y'));
+  const placedW = Number(placedObject?.getAttribute('data-object-width'));
+  const placedH = Number(placedObject?.getAttribute('data-object-height'));
+  // Slice across the object's top edge so most of the drawing must survive.
+  const sliceY = placedY + 12;
+  drawLine(window, canvas, placedX + placedW * 0.15, sliceY, placedX + placedW * 0.85, sliceY);
+  await sleep(200);
+  check('a partial doodle erase keeps the object instead of deleting it', countObjects(canvas) === 1);
+  check('the doodle-erased object changed on screen', canvasHash(canvas) !== objectBeforeDoodle);
+  // The selection overlay only renders for the Select tool.
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(80);
+  const trimmedSvg = document.querySelector('.selection-overlay');
+  check('the remainder is auto-selected as an editable object',
+    Boolean(trimmedSvg) && trimmedSvg.getAttribute('data-object-type') === 'bitmap',
+    trimmedSvg?.getAttribute('data-object-type') ?? 'none');
+  const trimmedWidth = Number(trimmedSvg?.getAttribute('data-object-width'));
+  const trimmedHeight = Number(trimmedSvg?.getAttribute('data-object-height'));
+  check('the remainder keeps a usable size', trimmedWidth > 20 && trimmedHeight > 20,
+    `${trimmedWidth.toFixed(0)}×${trimmedHeight.toFixed(0)}`);
+  check('the remainder stays inside the original box', trimmedWidth < 260 || trimmedHeight < 260,
+    `${trimmedWidth.toFixed(0)}×${trimmedHeight.toFixed(0)} of the original`);
+
+  // A trimmed remnant must behave like any other object: move, recolour, undo.
+  const beforeMove = canvasHash(canvas);
+  const centerX = Number(trimmedSvg?.getAttribute('data-object-x')) + trimmedWidth / 2;
+  const centerY = Number(trimmedSvg?.getAttribute('data-object-y')) + trimmedHeight / 2;
+  pointer(window, canvas, 'pointerdown', centerX, centerY);
+  pointer(window, canvas, 'pointermove', centerX + 60, centerY + 20);
+  pointer(window, canvas, 'pointerup', centerX + 60, centerY + 20);
+  await sleep(150);
+  check('the remainder can be moved like a normal object', canvasHash(canvas) !== beforeMove);
+  check('moving the remainder does not create extra objects', countObjects(canvas) === 1);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(150);
+  check('one undo restores the position after the partial erase',
+    countObjects(canvas) === 1 && canvasHash(canvas) === beforeMove);
+  click(window, 'button[aria-label="Redo"]');
+  await sleep(150);
+  check('redo keeps a single editable remainder', countObjects(canvas) === 1);
+
+  // Undo past the trim must bring the whole original illustration back.
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(120);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(150);
+  check('undoing the trim restores the intact illustration',
+    countObjects(canvas) === 1 && canvasHash(canvas) === objectBeforeDoodle);
+  check('the restored object is artwork again, not a remnant',
+    document.querySelector('.selection-overlay')?.getAttribute('data-object-type') === 'artwork',
+    document.querySelector('.selection-overlay')?.getAttribute('data-object-type') ?? 'none');
+
+  // Doodle-erasing a doodle (sketch ink) must convert the survivor into objects.
+  [...document.querySelectorAll('button')].find((button) => /Clear canvas/i.test(button.textContent ?? ''))
+    ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(120);
+  click(window, 'button[aria-label="Pencil"]');
+  await sleep(40);
+  drawLine(window, canvas, 300, 200, 700, 200);
+  await sleep(80);
+  check('sketch ink exists before doodle erasing it', inkPixels(sketch) > 100);
+  click(window, 'button[aria-label="Eraser"]');
+  await sleep(40);
+  click(window, 'button[aria-label^="Doodle eraser mode"]');
+  await sleep(40);
+  drawLine(window, canvas, 690, 200, 710, 200);
+  await sleep(250);
+  check('doodle-erasing sketch ink clears the overlay', inkPixels(sketch) === 0);
+  check('the surviving doodle becomes editable objects', countObjects(canvas) > 0);
+
+  section('Doodle eraser: text and live dragging');
+
+  // 1) Text must be erasable. Build a text object with the real inline editor.
+  [...document.querySelectorAll('button')].find((button) => /Clear canvas/i.test(button.textContent ?? ''))
+    ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(150);
+  click(window, 'button[aria-label="Text tool"]');
+  await sleep(30);
+  let textPoint = logicalToClient(window, 380, 240);
+  pointer(window, canvasWrap, 'pointerdown', textPoint.x, textPoint.y);
+  pointer(window, canvasWrap, 'pointerup', textPoint.x, textPoint.y);
+  await sleep(50);
+  const doodleTextInput = document.querySelector('input[aria-label="Enter canvas text"]');
+  setControlValue(window, doodleTextInput, 'Erase me');
+  await sleep(30);
+  doodleTextInput?.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }));
+  await sleep(120);
+  check('a text object exists before doodle erasing', countObjects(canvas) === 1);
+  const textGeometryBefore = selectedGeometry(document);
+  check('the text object is selected and typed as text', textGeometryBefore?.svg.dataset.objectType === 'text');
+  const textHashBefore = canvasHash(canvas);
+
+  click(window, 'button[aria-label="Eraser"]');
+  await sleep(40);
+  click(window, 'button[aria-label^="Doodle eraser mode"]');
+  await sleep(40);
+  const textBox = {
+    x: Number(textGeometryBefore?.svg.getAttribute('data-object-x')),
+    y: Number(textGeometryBefore?.svg.getAttribute('data-object-y')),
+    width: Number(textGeometryBefore?.svg.getAttribute('data-object-width')),
+    height: Number(textGeometryBefore?.svg.getAttribute('data-object-height')),
+  };
+  // Slice through the middle of the glyphs.
+  drawLine(window, canvas, textBox.x + 4, textBox.y + textBox.height / 2, textBox.x + textBox.width - 4, textBox.y + textBox.height / 2);
+  await sleep(200);
+  check('doodle erasing can cut through text', canvasHash(canvas) !== textHashBefore);
+  check('the text is not simply deleted', countObjects(canvas) === 1);
+  check('what remains of the text is an editable object', countObjects(canvas) === 1);
+
+  // 2) Erasing must continue while the pointer is still moving (live trimming).
+  [...document.querySelectorAll('button')].find((button) => /Clear canvas/i.test(button.textContent ?? ''))
+    ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(150);
+  click(window, 'button[aria-label="Pencil"]');
+  await sleep(40);
+  drawCircle(window, canvas, 600, 360, 150);
+  await sleep(2200);
+  const liveCard = [...document.querySelectorAll('button.s-card')]
+    .find((card) => card.querySelector('.s-card-art svg')
+      && /circle|moon|sun|ball|coin|ring/i.test(card.querySelector('.s-card-name')?.textContent ?? ''));
+  liveCard?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(200);
+  check('a fresh object exists for the live-drag test', countObjects(canvas) === 1);
+  const liveGeometry = document.querySelector('.selection-overlay');
+  const liveX = Number(liveGeometry?.getAttribute('data-object-x'));
+  const liveY = Number(liveGeometry?.getAttribute('data-object-y'));
+  const liveW = Number(liveGeometry?.getAttribute('data-object-width'));
+  const liveH = Number(liveGeometry?.getAttribute('data-object-height'));
+  const liveHashBefore = canvasHash(canvas);
+
+  click(window, 'button[aria-label="Eraser"]');
+  await sleep(40);
+  click(window, 'button[aria-label^="Doodle eraser mode"]');
+  await sleep(40);
+  const liveSliceY = liveY + liveH * 0.1;
+  const sliceStartX = liveX + liveW * 0.1;
+  const sliceEndX = liveX + liveW * 0.9;
+  pointer(window, canvas, 'pointerdown', sliceStartX, liveSliceY);
+  for (let step = 1; step <= 6; step += 1) {
+    const x = sliceStartX + ((sliceEndX - sliceStartX) * step) / 6;
+    pointer(window, canvas, 'pointermove', x, liveSliceY);
+    await sleep(30);
+  }
+  // Inspect BEFORE lifting the pointer: the trim must already be visible.
+  const hashMidDrag = canvasHash(canvas);
+  const objectsMidDrag = countObjects(canvas);
+  check('the drawing is erased while the pointer is still down', hashMidDrag !== liveHashBefore);
+  check('the object is replaced by one remainder mid-drag, not deleted', objectsMidDrag === 1);
+  pointer(window, canvas, 'pointerup', sliceEndX, liveSliceY);
+  await sleep(200);
+  const hashAfterDrag = canvasHash(canvas);
+  check('lifting the pointer does not undo the live work', hashAfterDrag !== liveHashBefore);
+  check('dragging leaves exactly one editable remainder', countObjects(canvas) === 1);
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(100);
+  check('the live remnant is a selectable bitmap object',
+    document.querySelector('.selection-overlay')?.getAttribute('data-object-type') === 'bitmap',
+    document.querySelector('.selection-overlay')?.getAttribute('data-object-type') ?? 'none');
+  const liveWidth = Number(document.querySelector('.selection-overlay')?.getAttribute('data-object-width'));
+  check('the live remnant is smaller than the original drawing',
+    Number.isFinite(liveWidth) && liveWidth < liveW, `width=${Number.isFinite(liveWidth) ? liveWidth.toFixed(0) : 'none'} of ${liveW.toFixed(0)}`);
+
+  // A long single-gesture sweep must not leave duplicate remnants behind.
+  click(window, 'button[aria-label="Eraser"]');
+  await sleep(40);
+  pointer(window, canvas, 'pointerdown', liveX + liveW * 0.2, liveY + liveH * 0.95);
+  for (let step = 1; step <= 10; step += 1) {
+    const y = liveY + liveH * 0.95 - (liveH * 0.5 * step) / 10;
+    pointer(window, canvas, 'pointermove', liveX + liveW * 0.2 + step * 4, y);
+    await sleep(20);
+  }
+  pointer(window, canvas, 'pointerup', liveX + liveW * 0.2, liveY + liveH * 0.45);
+  await sleep(200);
+  check('a long sweep still leaves a single object, not a stack of copies', countObjects(canvas) === 1,
+    `${countObjects(canvas)} objects`);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(150);
+  check('one undo rolls back an entire live doodle gesture', countObjects(canvas) === 1);
+
   section('Clear and export decision');
   const clearButton = [...document.querySelectorAll('button')].find((button) => /Clear canvas/i.test(button.textContent ?? ''));
   check('clear control exists', Boolean(clearButton));
   click(window, 'button[aria-label="Pencil"]');
   await sleep(40);
   drawCircle(window, canvas, 250, 520, 45);
+  const objectsBeforeClear = countObjects(canvas);
   clearButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(150);
   check('clear removes every scene object', countObjects(canvas) === 0);
   check('clear removes temporary rough pixels', inkPixels(sketch) === 0);
   click(window, 'button[aria-label="Undo"]');
   await sleep(120);
-  check('undo restores the complete pre-clear scene and sketch', countObjects(canvas) === 2 && inkPixels(sketch) > 0);
+  check('undo restores the complete pre-clear scene and sketch',
+    countObjects(canvas) === objectsBeforeClear && inkPixels(sketch) > 0,
+    `${countObjects(canvas)} of ${objectsBeforeClear} objects`);
   check('there is no download/export/transparent UI or retry link',
     ![...document.querySelectorAll('button, a')].some((element) => /download|export|transparent|save the png/i.test(
       `${element.textContent ?? ''} ${element.getAttribute('aria-label') ?? ''}`,
