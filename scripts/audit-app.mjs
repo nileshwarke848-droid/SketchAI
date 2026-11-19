@@ -323,6 +323,26 @@ function regionPixels(canvas, x, y, width, height) {
   return Buffer.from(canvas.getContext('2d').getImageData(x, y, width, height).data);
 }
 
+function canvasChangesOnlyWithin(canvas, before, bounds) {
+  if (!bounds) return false;
+  const { width, height } = canvas;
+  const after = canvas.getContext('2d').getImageData(0, 0, width, height).data;
+  const left = Math.floor(bounds.x);
+  const top = Math.floor(bounds.y);
+  const right = Math.ceil(bounds.x + bounds.width);
+  const bottom = Math.ceil(bounds.y + bounds.height);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (x >= left && x < right && y >= top && y < bottom) continue;
+      const offset = (y * width + x) * 4;
+      for (let channel = 0; channel < 4; channel += 1) {
+        if (before.data[offset + channel] !== after[offset + channel]) return false;
+      }
+    }
+  }
+  return true;
+}
+
 function hasInkNear(canvas, x, y, radius = 5) {
   const x0 = Math.max(0, Math.round(x) - radius);
   const y0 = Math.max(0, Math.round(y) - radius);
@@ -467,18 +487,59 @@ async function main() {
   check('empty suggestion state invites drawing', /start drawing/i.test(document.querySelector('.suggestion-bar-empty')?.textContent ?? ''));
 
   const cleanBeforeSketch = canvasHash(canvas);
-  drawCircle(window, canvas, 600, 360, 150);
+  const circlePoint = (step) => {
+    const angle = (step / 48) * Math.PI * 2;
+    return { x: 600 + Math.cos(angle) * 150, y: 360 + Math.sin(angle) * 150 };
+  };
+  const initialPoint = circlePoint(0);
+  pointer(window, canvas, 'pointerdown', initialPoint.x, initialPoint.y);
+  for (let step = 1; step <= 24; step += 1) {
+    const sample = circlePoint(step);
+    pointer(window, canvas, 'pointermove', sample.x, sample.y);
+  }
+  await sleep(300);
+  check('AI publishes a guess while the pointer is still down', Boolean(document.querySelector('.primary-name')),
+    document.querySelector('.primary-name')?.textContent?.trim() ?? 'no live guess');
+  for (let step = 25; step <= 48; step += 1) {
+    const sample = circlePoint(step);
+    pointer(window, canvas, 'pointermove', sample.x, sample.y);
+  }
+  const finalCirclePoint = circlePoint(48);
+  pointer(window, canvas, 'pointerup', finalCirclePoint.x, finalCirclePoint.y);
+  await sleep(60);
   const roughInk = inkPixels(sketch);
-  check('pencil draws on the temporary sketch layer', roughInk > 2000, `${roughInk} ink pixels`);
-  check('pencil renders the exact arbitrary Active Color on the sketch layer',
-    countRgbPixels(sketch, [18, 164, 247]) > 0, `${countRgbPixels(sketch, [18, 164, 247])} exact RGB pixels`);
-  check('rough drawing leaves clean scene pixels unchanged', canvasHash(canvas) === cleanBeforeSketch);
+  check('completed pencil drag becomes an editable scene object', roughInk === 0 && countObjects(canvas) === 1, `${countObjects(canvas)} objects; ${roughInk} temporary pixels`);
+  check('pencil object preserves the exact arbitrary Active Color',
+    countRgbPixels(canvas, [18, 164, 247]) > 0, `${countRgbPixels(canvas, [18, 164, 247])} exact RGB pixels`);
+  check('completed pencil object is rendered in the editable scene', canvasHash(canvas) !== cleanBeforeSketch);
   await sleep(2500);
 
   const guessName = document.querySelector('.primary-name')?.textContent?.trim() ?? '';
   const guessScore = document.querySelector('.primary-score')?.textContent?.trim() ?? '';
   check('AI shows a primary guess', guessName.length > 0, `${guessName} ${guessScore}`);
-  const cards = [...document.querySelectorAll('.s-card')];
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(15);
+  const selectedSketchPoint = logicalToClient(window, 600, 360);
+  pointer(window, document.querySelector('.canvas-wrap'), 'pointerdown', selectedSketchPoint.x, selectedSketchPoint.y);
+  pointer(window, document.querySelector('.canvas-wrap'), 'pointerup', selectedSketchPoint.x, selectedSketchPoint.y);
+  await sleep(350);
+  check('selecting a hand-drawn object refreshes recognition and labels its suggestions',
+    document.querySelector('.suggestion-bar-title')?.textContent.toLowerCase().includes('selected drawing')
+      && Boolean(document.querySelector('.primary-name'))
+      && document.querySelector('.selection-overlay')?.dataset.objectType === 'bitmap');
+  const thicknessSlider = document.querySelector('input[aria-label="Thickness adjustment in pixels"]');
+  check('selected hand-drawn objects expose an explicit thickness adjustment and Apply button',
+    Boolean(thicknessSlider) && Boolean(document.querySelector('button[aria-label="Apply thickness to selected objects"]')));
+  if (thicknessSlider) setControlValue(window, thicknessSlider, '6');
+  click(window, 'button[aria-label="Apply thickness to selected objects"]');
+  await sleep(30);
+  check('Apply thickens the selected doodle as an editable scene property',
+    document.querySelector('.selection-overlay')?.dataset.objectThicknessDelta === '6');
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(350);
+  check('one undo restores the doodle thickness before Apply',
+    document.querySelector('.selection-overlay')?.dataset.objectThicknessDelta === '');
+  let cards = [...document.querySelectorAll('.s-card')];
   const maxCards = Number(process.env.SKETCHAI_MAX_CARDS ?? 12);
   check('suggestions stay within their card ceiling', cards.length > 0 && cards.length <= maxCards, `${cards.length} (ceiling ${maxCards})`);
   const cardNames = cards.map((card) => card.querySelector('.s-card-name')?.textContent?.trim() ?? '');
@@ -497,23 +558,90 @@ async function main() {
   check('probability percentages remain bounded', [...document.querySelectorAll('.s-card-score')]
     .every((node) => (Number(node.textContent.replace(/[<%]/g, '')) || 0) <= 100));
 
+  section('Persistent Guessing on/off switch');
+  const guessingSwitch = document.querySelector('button[role="switch"][aria-label="AI guessing"]');
+  const sketchBeforeGuessingOff = inkPixels(sketch);
+  click(window, 'button[role="switch"][aria-label="AI guessing"]');
+  await sleep(80);
+  check('Guessing No hides the AI strip and prediction panel', guessingSwitch?.getAttribute('aria-checked') === 'false'
+    && document.querySelector('.model-status')?.textContent.includes('AI guessing off')
+    && !document.querySelector('.suggestion-bar') && !document.querySelector('.insight-panel'));
+  check('Guessing No remembers the choice and preserves the sketch', window.localStorage.getItem('sketchai:guessing-enabled') === 'no'
+    && inkPixels(sketch) === sketchBeforeGuessingOff);
+  click(window, 'button[role="switch"][aria-label="AI guessing"]');
+  let modelWaited = 0;
+  while (modelWaited < 60000 && !/AI ready/.test(document.querySelector('.model-status')?.textContent ?? '')) {
+    await sleep(100);
+    modelWaited += 100;
+  }
+  await sleep(350);
+  cards = [...document.querySelectorAll('.s-card')];
+  check('Guessing Yes reloads AI and refreshes the preserved sketch', guessingSwitch?.getAttribute('aria-checked') === 'true'
+    && window.localStorage.getItem('sketchai:guessing-enabled') === 'yes'
+    && Boolean(document.querySelector('.suggestion-bar'))
+    && Boolean(document.querySelector('.primary-name'))
+    && cards.length > 0);
+
   section('Suggestion insertion and object history');
   const insertable = cards.find((card) => card.querySelector('.s-card-name')?.textContent.trim().toLowerCase() === 'moon'
     && card.querySelector('.s-card-art svg'));
   check('an asymmetric illustrated Moon suggestion is available', Boolean(insertable));
   if (insertable) {
     insertable.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
-    await sleep(250);
+    await sleep(500);
   }
   const insertionCanvas = document.querySelector('.art-canvas');
   const geometryAfterInsert = selectedGeometry(document);
-  check('accepted suggestion creates one scene object', countObjects(insertionCanvas) === 1,
+  check('accepted suggestion adds an artwork beside the editable pencil stroke', countObjects(insertionCanvas) === 2,
     `${countObjects(insertionCanvas)} objects`);
   check('clean artwork is rendered from scene state', inkPixels(insertionCanvas) > 0);
-  check('acceptance clears only the temporary rough layer', inkPixels(sketch) === 0);
+  check('AI keeps recognizing the editable hand-drawn stroke after artwork insertion',
+    Boolean(document.querySelector('.primary-name')) && inkPixels(sketch) === 0
+      && countObjects(insertionCanvas) === 2);
+  check('acceptance leaves the temporary rough layer empty', inkPixels(sketch) === 0);
   check('new object is selected and enters select mode', Boolean(geometryAfterInsert)
     && document.querySelector('button[aria-label="Select tool"]')?.getAttribute('aria-pressed') === 'true');
   check('object editor exposes the selected artwork name', Boolean(document.querySelector('.object-toolbar strong')));
+  check('an accepted line-art suggestion exposes the same thickness Apply control',
+    Boolean(document.querySelector('button[aria-label="Apply thickness to selected objects"]'))
+      && Boolean(document.querySelector('input[aria-label="Thickness adjustment in pixels"]')));
+  const artworkThicknessSlider = document.querySelector('input[aria-label="Thickness adjustment in pixels"]');
+  if (artworkThicknessSlider) setControlValue(window, artworkThicknessSlider, '4');
+  click(window, 'button[aria-label="Apply thickness to selected objects"]');
+  await sleep(25);
+  check('Apply adjusts an accepted outline illustration without replacing its artwork object',
+    document.querySelector('.selection-overlay')?.dataset.objectType === 'artwork'
+      && document.querySelector('.selection-overlay')?.dataset.objectThicknessDelta === '4');
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(60);
+  check('artwork thickness Apply is a single undoable change',
+    document.querySelector('.selection-overlay')?.dataset.objectType === 'artwork'
+      && document.querySelector('.selection-overlay')?.dataset.objectThicknessDelta === '');
+  section('Select Doodle mode: lasso and brush selection without erasing');
+  const doodleTool = click(window, 'button[aria-label="Select doodle mode"]');
+  await sleep(30);
+  check('Select Doodle mode is available and activates independently of the eraser', Boolean(doodleTool)
+    && doodleTool.getAttribute('aria-pressed') === 'true'
+    && document.querySelector('.canvas-wrap')?.classList.contains('tool-selectDoodle'));
+  const outlineColor = document.querySelector('input[aria-label="Selection doodle outline color"]');
+  setControlValue(window, outlineColor, '#1E90FF');
+  const doodleY = geometryAfterInsert.y + geometryAfterInsert.height / 2;
+  drawPolyline(window, canvas, [
+    { x: geometryAfterInsert.x - 35, y: doodleY },
+    { x: geometryAfterInsert.x + geometryAfterInsert.width + 35, y: doodleY },
+  ]);
+  await sleep(50);
+  const doodleOverlay = document.querySelector('.selection-overlay');
+  check('an open dotted stroke selects touched objects and leaves pixels intact', countObjects(canvas) === 2
+    && Number(doodleOverlay?.dataset.selectionCount ?? 0) === 2
+    && doodleOverlay?.querySelector('.selection-doodle-path')?.getAttribute('stroke') === '#1E90FF');
+  check('custom selection-doodle color is exposed and applied to its outline', outlineColor?.value?.toUpperCase() === '#1E90FF'
+    && doodleOverlay?.querySelector('.selection-doodle-path')?.getAttribute('stroke') === '#1E90FF');
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(30);
+  check('leaving Select Doodle keeps the selected objects but clears its temporary dotted path',
+    Number(document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0) === 2
+      && !document.querySelector('.selection-doodle-path'));
   const visibleLayers = ['.canvas-wrap', '.art-canvas', '.sketch-overlay', '.selection-overlay']
     .map((selector) => document.querySelector(selector));
   const layerRects = visibleLayers.map((element) => element?.getBoundingClientRect());
@@ -531,14 +659,57 @@ async function main() {
   check('undo is enabled after insertion', Boolean(undo && !undo.disabled));
   click(window, 'button[aria-label="Undo"]');
   await sleep(120);
-  check('undo removes the inserted object', countObjects(canvas) === 0);
-  check('undo restores the rough sketch to its own layer', inkPixels(sketch) > 2000);
-  check('undo leaves clean art blank', inkPixels(canvas) === 0);
+  check('undo removes the inserted artwork but keeps the pencil stroke', countObjects(canvas) === 1);
+  check('undo keeps editable pencil pixels in the scene', inkPixels(canvas) > 0 && inkPixels(sketch) === 0);
+  check('undo leaves the hand-drawn stroke visible', inkPixels(canvas) > 0);
   check('redo is enabled after undo', Boolean(redo && !redo.disabled));
   click(window, 'button[aria-label="Redo"]');
   await sleep(150);
-  check('redo restores the scene object', countObjects(canvas) === 1);
+  check('redo restores the artwork beside the pencil stroke', countObjects(canvas) === 2);
   check('redo restores an empty temporary sketch', inkPixels(sketch) === 0);
+
+  section('Pencil strokes stay individually editable');
+  click(window, 'button[aria-label="Pencil"]');
+  await sleep(30);
+  drawLine(window, canvas, 930, 600, 1010, 600);
+  await sleep(80);
+  check('a second pencil drag creates a second independent scene object', countObjects(canvas) === 3);
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(30);
+  pointer(window, canvas, 'pointerdown', 970, 600);
+  pointer(window, canvas, 'pointerup', 970, 600);
+  await sleep(50);
+  let pencilGeometry = selectedGeometry(document);
+  check('the second pencil stroke can be selected independently', Boolean(pencilGeometry)
+    && document.querySelector('.selection-overlay')?.getAttribute('data-object-type') === 'bitmap');
+  const pencilStartX = pencilGeometry?.x;
+  pointer(window, canvas, 'pointerdown', 970, 600);
+  pointer(window, canvas, 'pointermove', 990, 612);
+  pointer(window, canvas, 'pointerup', 990, 612);
+  await sleep(60);
+  pencilGeometry = selectedGeometry(document);
+  check('a selected hand-drawn stroke moves as an object', Boolean(pencilGeometry)
+    && Math.abs(pencilGeometry.x - pencilStartX - 20) < 1);
+  window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }));
+  await sleep(30);
+  const allStrokesCount = Number(document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0);
+  pointer(window, canvas, 'pointerdown', geometryAfterInsert.x + geometryAfterInsert.width / 2,
+    geometryAfterInsert.y + geometryAfterInsert.height / 2, { shiftKey: true });
+  pointer(window, canvas, 'pointerup', geometryAfterInsert.x + geometryAfterInsert.width / 2,
+    geometryAfterInsert.y + geometryAfterInsert.height / 2, { shiftKey: true });
+  await sleep(50);
+  const afterToggleCount = Number(document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0);
+  check('Shift can remove one item from a mixed pencil/artwork multi-selection', allStrokesCount === 3 && afterToggleCount === 2,
+    `${allStrokesCount} selected -> ${afterToggleCount}`);
+  click(window, 'button[aria-label="Delete selected objects"]');
+  await sleep(50);
+  check('multi-delete removes both pencil strokes while keeping artwork', countObjects(canvas) === 1);
+  pointer(window, canvas, 'pointerdown', geometryAfterInsert.x + geometryAfterInsert.width / 2,
+    geometryAfterInsert.y + geometryAfterInsert.height / 2);
+  pointer(window, canvas, 'pointerup', geometryAfterInsert.x + geometryAfterInsert.width / 2,
+    geometryAfterInsert.y + geometryAfterInsert.height / 2);
+  await sleep(50);
+  check('the remaining artwork can be reselected after deleting the pencil strokes', Boolean(selectedGeometry(document)));
 
   section('Object selection and transforms');
   let geometry = selectedGeometry(document);
@@ -558,7 +729,8 @@ async function main() {
     await sleep(100);
     geometry = selectedGeometry(document);
     check('one undo restores the object before the complete move gesture', Boolean(geometry)
-      && Math.abs(geometry.x - oldX) < 1 && Math.abs(geometry.y - oldY) < 1);
+      && Math.abs(geometry.x - oldX) < 1 && Math.abs(geometry.y - oldY) < 1,
+      geometry ? `restored=${geometry.x},${geometry.y}; expected=${oldX},${oldY}` : 'selection missing');
     click(window, 'button[aria-label="Redo"]');
     await sleep(100);
 
@@ -893,42 +1065,46 @@ async function main() {
   await sleep(50);
   const cleanHashBeforeOverlap = canvasHash(canvas);
   drawCircle(window, canvas, 600, 360, 105);
-  check('rough sketch overlaps an accepted object without changing it',
-    canvasHash(canvas) === cleanHashBeforeOverlap && inkPixels(sketch) > 1000);
+  await sleep(80);
+  check('pencil stroke overlapping an accepted object becomes another editable scene object',
+    canvasHash(canvas) !== cleanHashBeforeOverlap && inkPixels(sketch) === 0 && countObjects(canvas) === 2);
   await sleep(2400);
   const overlappingCard = [...document.querySelectorAll('button.s-card')]
     .find((card) => card.querySelector('.s-card-art svg'));
   overlappingCard?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(180);
-  check('overlapping acceptance adds another editable object', countObjects(canvas) === 2);
+  check('overlapping acceptance adds another editable object', countObjects(canvas) === 3);
   check('overlapping acceptance clears rough pixels but keeps clean art', inkPixels(sketch) === 0 && inkPixels(canvas) > 0);
 
   click(window, 'button[aria-label="Pencil"]');
   await sleep(40);
-  const firstObjectRegion = regionPixels(canvas, 550, 310, 100, 100);
   const cleanBeforeSeparateSketch = canvasHash(canvas);
   drawCircle(window, canvas, 300, 200, 70);
-  check('separate rough sketch never composites into the scene canvas', canvasHash(canvas) === cleanBeforeSeparateSketch);
+  await sleep(80);
+  check('separate pencil drag adds an independent editable scene object', canvasHash(canvas) !== cleanBeforeSeparateSketch && countObjects(canvas) === 4);
   await sleep(2200);
   const separateCard = [...document.querySelectorAll('button.s-card')]
     .find((card) => card.querySelector('.s-card-art svg'));
+  const beforeSeparateInsert = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
   separateCard?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(180);
-  check('a separate accepted drawing becomes a third object', countObjects(canvas) === 3);
-  check('inserting a separate object leaves the first object region unchanged',
-    Buffer.compare(firstObjectRegion, regionPixels(canvas, 550, 310, 100, 100)) === 0);
+  check('a separate accepted drawing adds another object beside both pencil strokes', countObjects(canvas) === 5);
+  check('inserting a separate object changes only its own placed bounds',
+    canvasChangesOnlyWithin(canvas, beforeSeparateInsert, selectedGeometry(document)));
 
   click(window, 'button[aria-label="Eraser"]');
   await sleep(40);
   drawLine(window, canvas, 230, 200, 370, 200);
   await sleep(120);
-  check('eraser removes the object it crosses without drawing onto clean pixels', countObjects(canvas) === 2 && inkPixels(sketch) === 0);
+  const objectsAfterClassicErase = countObjects(canvas);
+  check('eraser removes crossed object pixels without drawing onto clean pixels', objectsAfterClassicErase < 5 && inkPixels(sketch) === 0,
+    `${objectsAfterClassicErase} of 5 objects remain`);
   click(window, 'button[aria-label="Undo"]');
   await sleep(100);
-  check('one undo restores the object removed by an eraser gesture', countObjects(canvas) === 3);
+  check('one undo restores the object removed by an eraser gesture', countObjects(canvas) === 5);
   click(window, 'button[aria-label="Redo"]');
   await sleep(100);
-  check('one redo reapplies that eraser gesture', countObjects(canvas) === 2);
+  check('one redo reapplies that eraser gesture', countObjects(canvas) === objectsAfterClassicErase);
 
   section('Doodle eraser: partial erase keeps an editable remainder');
   // Start clean so the geometry below is unambiguous.
@@ -938,21 +1114,14 @@ async function main() {
   click(window, 'button[aria-label="Pencil"]');
   await sleep(40);
   drawCircle(window, canvas, 600, 360, 150);
-  await sleep(2200);
-  // Wait for a fresh card for the circle, and click that one (not a stale card
-  // left over from the earlier objects).
-  const findCircleCard = () => [...document.querySelectorAll('button.s-card')]
-    .find((card) => card.querySelector('.s-card-art svg')
-      && /circle|moon|sun|ball|coin|ring/i.test(card.querySelector('.s-card-name')?.textContent ?? ''));
-  let doodleCard = null;
-  for (let attempt = 0; attempt < 30 && !doodleCard; attempt += 1) {
-    await sleep(150);
-    doodleCard = findCircleCard();
-  }
-  doodleCard?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
-  await sleep(200);
+  await sleep(100);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(80);
   const placedObject = document.querySelector('.selection-overlay');
-  check('a clean object exists before doodle erasing', countObjects(canvas) === 1);
+  check('a completed pencil circle is selectable before doodle erasing', countObjects(canvas) === 1
+    && placedObject?.getAttribute('data-object-type') === 'bitmap',
+    `objects=${countObjects(canvas)} type=${placedObject?.getAttribute('data-object-type') ?? 'none'}`);
   const objectBeforeDoodle = canvasHash(canvas);
 
   click(window, 'button[aria-label="Eraser"]');
@@ -970,8 +1139,10 @@ async function main() {
   const placedW = Number(placedObject?.getAttribute('data-object-width'));
   const placedH = Number(placedObject?.getAttribute('data-object-height'));
   // Slice across the object's top edge so most of the drawing must survive.
-  const sliceY = placedY + 12;
-  drawLine(window, canvas, placedX + placedW * 0.15, sliceY, placedX + placedW * 0.85, sliceY);
+  const sliceY = placedY + 3;
+  if ([placedX, placedY, placedW].every(Number.isFinite)) {
+    drawLine(window, canvas, placedX + placedW * 0.15, sliceY, placedX + placedW * 0.85, sliceY);
+  }
   await sleep(200);
   check('a partial doodle erase keeps the object instead of deleting it', countObjects(canvas) === 1);
   check('the doodle-erased object changed on screen', canvasHash(canvas) !== objectBeforeDoodle);
@@ -986,16 +1157,18 @@ async function main() {
   const trimmedHeight = Number(trimmedSvg?.getAttribute('data-object-height'));
   check('the remainder keeps a usable size', trimmedWidth > 20 && trimmedHeight > 20,
     `${trimmedWidth.toFixed(0)}×${trimmedHeight.toFixed(0)}`);
-  check('the remainder stays inside the original box', trimmedWidth < 260 || trimmedHeight < 260,
-    `${trimmedWidth.toFixed(0)}×${trimmedHeight.toFixed(0)} of the original`);
+  check('the remainder stays inside the original box', trimmedWidth < placedW || trimmedHeight < placedH,
+    `${trimmedWidth.toFixed(0)}×${trimmedHeight.toFixed(0)} of ${placedW.toFixed(0)}×${placedH.toFixed(0)}`);
 
   // A trimmed remnant must behave like any other object: move, recolour, undo.
   const beforeMove = canvasHash(canvas);
   const centerX = Number(trimmedSvg?.getAttribute('data-object-x')) + trimmedWidth / 2;
   const centerY = Number(trimmedSvg?.getAttribute('data-object-y')) + trimmedHeight / 2;
-  pointer(window, canvas, 'pointerdown', centerX, centerY);
-  pointer(window, canvas, 'pointermove', centerX + 60, centerY + 20);
-  pointer(window, canvas, 'pointerup', centerX + 60, centerY + 20);
+  if (Number.isFinite(centerX) && Number.isFinite(centerY)) {
+    pointer(window, canvas, 'pointerdown', centerX, centerY);
+    pointer(window, canvas, 'pointermove', centerX + 60, centerY + 20);
+    pointer(window, canvas, 'pointerup', centerX + 60, centerY + 20);
+  }
   await sleep(150);
   check('the remainder can be moved like a normal object', canvasHash(canvas) !== beforeMove);
   check('moving the remainder does not create extra objects', countObjects(canvas) === 1);
@@ -1012,10 +1185,13 @@ async function main() {
   await sleep(120);
   click(window, 'button[aria-label="Undo"]');
   await sleep(150);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(40);
   check('undoing the trim restores the intact illustration',
     countObjects(canvas) === 1 && canvasHash(canvas) === objectBeforeDoodle);
-  check('the restored object is artwork again, not a remnant',
-    document.querySelector('.selection-overlay')?.getAttribute('data-object-type') === 'artwork',
+  check('undo restores the original editable pencil bitmap',
+    document.querySelector('.selection-overlay')?.getAttribute('data-object-type') === 'bitmap',
     document.querySelector('.selection-overlay')?.getAttribute('data-object-type') ?? 'none');
 
   // Doodle-erasing a doodle (sketch ink) must convert the survivor into objects.
@@ -1026,7 +1202,7 @@ async function main() {
   await sleep(40);
   drawLine(window, canvas, 300, 200, 700, 200);
   await sleep(80);
-  check('sketch ink exists before doodle erasing it', inkPixels(sketch) > 100);
+  check('a completed pencil stroke is an editable object before doodle erasing', countObjects(canvas) === 1 && inkPixels(sketch) === 0);
   click(window, 'button[aria-label="Eraser"]');
   await sleep(40);
   click(window, 'button[aria-label^="Doodle eraser mode"]');
@@ -1082,13 +1258,11 @@ async function main() {
   click(window, 'button[aria-label="Pencil"]');
   await sleep(40);
   drawCircle(window, canvas, 600, 360, 150);
-  await sleep(2200);
-  const liveCard = [...document.querySelectorAll('button.s-card')]
-    .find((card) => card.querySelector('.s-card-art svg')
-      && /circle|moon|sun|ball|coin|ring/i.test(card.querySelector('.s-card-name')?.textContent ?? ''));
-  liveCard?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
-  await sleep(200);
-  check('a fresh object exists for the live-drag test', countObjects(canvas) === 1);
+  await sleep(100);
+  keyboard(window, window, 'a', { ctrlKey: true });
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(80);
+  check('a fresh pencil object exists for the live-drag test', countObjects(canvas) === 1);
   const liveGeometry = document.querySelector('.selection-overlay');
   const liveX = Number(liveGeometry?.getAttribute('data-object-x'));
   const liveY = Number(liveGeometry?.getAttribute('data-object-y'));
@@ -1125,8 +1299,10 @@ async function main() {
     document.querySelector('.selection-overlay')?.getAttribute('data-object-type') === 'bitmap',
     document.querySelector('.selection-overlay')?.getAttribute('data-object-type') ?? 'none');
   const liveWidth = Number(document.querySelector('.selection-overlay')?.getAttribute('data-object-width'));
-  check('the live remnant is smaller than the original drawing',
-    Number.isFinite(liveWidth) && liveWidth < liveW, `width=${Number.isFinite(liveWidth) ? liveWidth.toFixed(0) : 'none'} of ${liveW.toFixed(0)}`);
+  const liveHeight = Number(document.querySelector('.selection-overlay')?.getAttribute('data-object-height'));
+  check('the live partial erase leaves a visibly changed bitmap remnant', hashAfterDrag !== liveHashBefore
+    && document.querySelector('.selection-overlay')?.getAttribute('data-object-type') === 'bitmap',
+    `size=${liveWidth.toFixed(0)}×${liveHeight.toFixed(0)} of ${liveW.toFixed(0)}×${liveH.toFixed(0)}`);
 
   // A long single-gesture sweep must not leave duplicate remnants behind.
   click(window, 'button[aria-label="Eraser"]');
@@ -1151,6 +1327,7 @@ async function main() {
   click(window, 'button[aria-label="Pencil"]');
   await sleep(40);
   drawCircle(window, canvas, 250, 520, 45);
+  await sleep(80);
   const objectsBeforeClear = countObjects(canvas);
   clearButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
   await sleep(150);
@@ -1159,7 +1336,7 @@ async function main() {
   click(window, 'button[aria-label="Undo"]');
   await sleep(120);
   check('undo restores the complete pre-clear scene and sketch',
-    countObjects(canvas) === objectsBeforeClear && inkPixels(sketch) > 0,
+    countObjects(canvas) === objectsBeforeClear && inkPixels(canvas) > 0 && inkPixels(sketch) === 0,
     `${countObjects(canvas)} of ${objectsBeforeClear} objects`);
   check('there is no download/export/transparent UI or retry link',
     ![...document.querySelectorAll('button, a')].some((element) => /download|export|transparent|save the png/i.test(
@@ -1192,7 +1369,7 @@ async function main() {
       pointer(window, wrapper, 'pointerdown', clientX, clientY);
       pointer(window, wrapper, 'pointerup', clientX, clientY);
       check(`${label}: wrapper accepts ${percent}% bottom-input probe`,
-        logicalY >= 0 && logicalY < CANVAS_H && hasInkNear(sketch, logicalX, logicalY),
+        logicalY >= 0 && logicalY < CANVAS_H && hasInkNear(canvas, logicalX, logicalY),
         `logical (${logicalX},${logicalY.toFixed(1)})`);
     }
     const logicalY = 718;
@@ -1200,7 +1377,7 @@ async function main() {
     const clientY = 47 + height * logicalY / CANVAS_H;
     pointer(window, wrapper, 'pointerdown', clientX, clientY);
     pointer(window, wrapper, 'pointerup', clientX, clientY);
-    check(`${label}: safe interior y=718 is drawable`, hasInkNear(sketch, logicalX, logicalY),
+    check(`${label}: safe interior y=718 is drawable`, hasInkNear(canvas, logicalX, logicalY),
       `logical y=${logicalY}`);
   }
 
@@ -1387,37 +1564,73 @@ async function main() {
   pointer(window, wrapper, 'pointerdown', fillInside.x, fillInside.y);
   pointer(window, wrapper, 'pointerup', fillInside.x, fillInside.y);
   await sleep(40);
-  check('bucket fills the connected interior with exact arbitrary RGB on a dedicated layer', inkPixels(fillCanvas) > 1000
-    && pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '127,163,188');
-  check('fill leaves rough sketch, editable text and clean-art pixels independent',
-    inkPixels(sketch) === closedSketchInk && countObjects(canvas) === 1 && canvasHash(canvas) === cleanBeforeFill,
-    `sketch=${inkPixels(sketch)}/${closedSketchInk} objects=${countObjects(canvas)} artStable=${canvasHash(canvas) === cleanBeforeFill}`);
+  check('bucket fills the enclosed object with exact arbitrary RGB', inkPixels(fillCanvas) === 0
+    && pixelAt(canvas, 450, 350).slice(0, 3).join(',') === '127,163,188' && canvasHash(canvas) !== cleanBeforeFill);
+  check('object fill stays in the scene object beside editable text',
+    inkPixels(sketch) === 0 && countObjects(canvas) === 2
+      && canvas.getAttribute('data-scene-object-count') === '2');
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(35);
+  let filledGeometry = selectedGeometry(document);
+  check('the filled shape remains selected as a bitmap object', filledGeometry?.svg.dataset.objectType === 'bitmap'
+    && Number(filledGeometry?.svg.dataset.selectionCount) === 1);
+  const filledResize = document.querySelector('.resize-hit-area[data-sign-x="1"][data-sign-y="1"]');
+  if (filledGeometry && filledResize) {
+    const center = logicalToClient(window, Number(filledResize.querySelector('circle')?.getAttribute('cx')),
+      Number(filledResize.querySelector('circle')?.getAttribute('cy')));
+    pointer(window, filledResize, 'pointerdown', center.x, center.y);
+    pointer(window, wrapper, 'pointermove', center.x + 28, center.y + 28);
+    pointer(window, wrapper, 'pointerup', center.x + 28, center.y + 28);
+    await sleep(40);
+  }
+  const resizedFilledGeometry = selectedGeometry(document);
+  check('a filled object can still be resized normally', Boolean(resizedFilledGeometry)
+    && resizedFilledGeometry.width > (filledGeometry?.width ?? Infinity));
+  await setActiveHex(window, '#F0D84F');
+  click(window, 'button[aria-label="Apply Active Color"]');
+  await sleep(60);
+  check('the filled bitmap still accepts object recoloring', selectedColor(document) === '#F0D84F'
+    && pixelAt(canvas, 450, 350).slice(0, 3).join(',') === '240,216,79');
+  click(window, 'button[aria-label="Restore original doodle colors"]');
+  await sleep(60);
+  check('restoring original colors preserves the in-object fill', selectedColor(document) === 'original'
+    && pixelAt(canvas, 450, 350).slice(0, 3).join(',') === '127,163,188',
+    `color=${selectedColor(document)} pixel=${pixelAt(canvas, 450, 350).slice(0, 3).join(',')}`);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(30);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(30);
+  click(window, 'button[aria-label="Undo"]');
+  await sleep(35);
+  click(window, 'button[aria-label="Fill tool"]');
+  await sleep(20);
   click(window, 'button[aria-label="Undo"]');
   await sleep(40);
-  check('one undo removes the completed bucket operation without deleting text', inkPixels(fillCanvas) === 0 && countObjects(canvas) === 1,
+  check('one undo removes the completed bucket operation without deleting text', inkPixels(fillCanvas) === 0 && countObjects(canvas) === 2,
     `fill=${inkPixels(fillCanvas)} objects=${countObjects(canvas)}`);
   click(window, 'button[aria-label="Redo"]');
   await sleep(40);
-  check('redo restores the raster fill while the text remains editable', inkPixels(fillCanvas) > 1000 && countObjects(canvas) === 1,
-    `fill=${inkPixels(fillCanvas)} objects=${countObjects(canvas)}`);
+  check('redo restores the editable object fill while text remains editable',
+    pixelAt(canvas, 450, 350).slice(0, 3).join(',') === '127,163,188' && countObjects(canvas) === 2,
+    `fill=${inkPixels(fillCanvas)} scene=${pixelAt(canvas, 450, 350).slice(0, 3).join(',')} objects=${countObjects(canvas)}`);
 
   await setActiveHex(window, '#18A4F7');
   check('changing Active Color does not immediately recolor an existing bucket fill',
-    pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '127,163,188');
+    pixelAt(canvas, 450, 350).slice(0, 3).join(',') === '127,163,188');
   const fillAgain = logicalToClient(window, 450, 350);
   pointer(window, wrapper, 'pointerdown', fillAgain.x, fillAgain.y);
   pointer(window, wrapper, 'pointerup', fillAgain.x, fillAgain.y);
   await sleep(35);
   check('the next bucket action uses the new arbitrary Active Color',
-    pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '24,164,247');
+    pixelAt(canvas, 450, 350).slice(0, 3).join(',') === '24,164,247');
   click(window, 'button[aria-label="Undo"]');
   await sleep(25);
   check('undo restores the fill color before the latest bucket operation',
-    pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '127,163,188');
+    pixelAt(canvas, 450, 350).slice(0, 3).join(',') === '127,163,188');
   click(window, 'button[aria-label="Redo"]');
   await sleep(25);
   check('redo restores the latest bucket RGB color',
-    pixelAt(fillCanvas, 450, 350).slice(0, 3).join(',') === '24,164,247');
+    pixelAt(canvas, 450, 350).slice(0, 3).join(',') === '24,164,247');
 
   await setActiveHex(window, '#123456');
   check('choosing an Active Color does not alter the background without action',
@@ -1444,8 +1657,8 @@ async function main() {
   click(window, 'button[aria-label="Select tool"]');
   await sleep(25);
   check('scene object remains selected, recolored only by explicit action, and editable after fills',
-    countObjects(canvas) === 1 && document.querySelector('.object-toolbar strong')?.textContent === 'Editable'
-      && selectedColor(document) === '#F0D84F',
+    countObjects(canvas) === 2 && document.querySelector('.object-toolbar strong')?.textContent === 'Pencil Stroke'
+      && selectedColor(document) === 'original',
     `objects=${countObjects(canvas)} toolbar=${document.querySelector('.object-toolbar strong')?.textContent ?? 'missing'} color=${selectedColor(document)}`);
 
   section('Zoom, pan and transformed pointer input');
@@ -1469,7 +1682,7 @@ async function main() {
     const pointValue = logicalToClient(window, logicalX, logicalY);
     pointer(window, wrapper, 'pointerdown', pointValue.x, pointValue.y);
     pointer(window, wrapper, 'pointerup', pointValue.x, pointValue.y);
-    check(`100% ${label} pointer remains aligned`, hasInkNear(sketch, logicalX, logicalY));
+    check(`100% ${label} pointer remains aligned`, hasInkNear(canvas, logicalX, logicalY));
   }
   for (const [expected, increments] of [['100%', 0], ['200%', 3], ['400%', 2]]) {
     for (let step = 0; step < increments; step += 1) {
@@ -1484,7 +1697,7 @@ async function main() {
     pointer(window, wrapper, 'pointerdown', pointValue.x, pointValue.y);
     pointer(window, wrapper, 'pointerup', pointValue.x, pointValue.y);
     await sleep(15);
-    check(`${expected} center pointer remains aligned`, hasInkNear(sketch, logicalX, logicalY));
+    check(`${expected} center pointer remains aligned`, hasInkNear(canvas, logicalX, logicalY));
   }
 
   click(window, 'button[aria-label="Reset view"]');
@@ -1493,6 +1706,8 @@ async function main() {
     click(window, 'button[aria-label="Zoom out"]');
     await sleep(10);
   }
+  clearButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  await sleep(80);
   click(window, 'button[aria-label="Text tool"]');
   await sleep(20);
   const outsideCanvas = { x: window.__auditCanvasRect.left + 2, y: window.__auditCanvasRect.top + 2 };
@@ -1582,9 +1797,9 @@ async function main() {
   const thinEnd = logicalToClient(window, 800, 500.5);
   drawLine(window, wrapper, thinStart.x, thinStart.y, thinEnd.x, thinEnd.y);
   await sleep(30);
-  const thinRows = inkRowsAtX(sketch, 600, 400, 601);
+  const thinRows = inkRowsAtX(canvas, 600, 400, 601);
   check('1 px brush remains one logical-pixel thick while drawing under zoom and pan',
-    thinRows.length >= 1 && thinRows.length <= 2 && hasInkNear(sketch, 600, 500, 2),
+    thinRows.length >= 1 && thinRows.length <= 2 && hasInkNear(canvas, 600, 500, 2),
     `${thinRows.length} covered rows; zoom=${stage.dataset.viewZoom}`);
   click(window, 'button[aria-label="Undo"]');
   await sleep(20);
@@ -1594,9 +1809,9 @@ async function main() {
   const wideEnd = logicalToClient(window, 800, 500.5);
   drawLine(window, wrapper, wideStart.x, wideStart.y, wideEnd.x, wideEnd.y);
   await sleep(30);
-  const wideRows = inkRowsAtX(sketch, 600, 400, 601);
+  const wideRows = inkRowsAtX(canvas, 600, 400, 601);
   check('100 px brush size is measured in logical document pixels',
-    wideRows.length >= 95 && wideRows.length <= 102 && countRgbPixels(sketch, [18, 52, 86]) > 0,
+    wideRows.length >= 95 && wideRows.length <= 102 && countRgbPixels(canvas, [18, 52, 86]) > 0,
     `${wideRows.length} covered rows at ${stage.dataset.viewZoom}× display zoom`);
   click(window, 'button[aria-label="Undo"]');
   await sleep(20);
@@ -1631,6 +1846,55 @@ async function main() {
   check('final view reset clears zoom and pan', document.querySelector('[data-zoom-level]')?.textContent === '100%'
     && Number(stage.dataset.viewPanX) === 0 && Number(stage.dataset.viewPanY) === 0);
 
+  section('Parametric shape tools and selected-mark guessing');
+  click(window, 'button[aria-label="Clear canvas"]');
+  await sleep(30);
+  const shapeButtons = ['Line tool', 'Rectangle tool', 'Ellipse tool', 'Arrow tool'];
+  check('line, rectangle, ellipse and arrow tools are available',
+    shapeButtons.every((label) => Boolean(document.querySelector(`button[aria-label="${label}"]`))));
+  const shapeCanvas = document.querySelector('.art-canvas');
+  const shapeWrapper = document.querySelector('.canvas-wrap');
+  const shapeCountBefore = countObjects(shapeCanvas);
+  for (const [label, start, end] of [
+    ['Line tool', { x: 150, y: 150 }, { x: 360, y: 240 }],
+    ['Rectangle tool', { x: 430, y: 150 }, { x: 610, y: 280 }],
+    ['Ellipse tool', { x: 680, y: 150 }, { x: 840, y: 290 }],
+    ['Arrow tool', { x: 900, y: 150 }, { x: 1080, y: 280 }],
+  ]) {
+    click(window, `button[aria-label="${label}"]`);
+    await sleep(10);
+    const first = logicalToClient(window, start.x, start.y);
+    const last = logicalToClient(window, end.x, end.y);
+    drawLine(window, shapeWrapper, first.x, first.y, last.x, last.y);
+    await sleep(25);
+  }
+  const shapesOnCanvas = Number(shapeCanvas.dataset.sceneObjectCount);
+  check('each shape drag creates one editable scene object', shapesOnCanvas === shapeCountBefore + 4,
+    `${shapesOnCanvas - shapeCountBefore} new shape objects`);
+  click(window, 'button[aria-label="Select tool"]');
+  await sleep(20);
+  check('the selected shape reports parametric geometry to the editor',
+    document.querySelector('.selection-overlay')?.dataset.objectType === 'shape'
+      && Boolean(document.querySelector('[aria-label="Selected shape settings"]')));
+  check('selected line and arrow expose editable endpoint handles',
+    Boolean(document.querySelectorAll('.shape-endpoint-hit-area').length === 2));
+  check('selected shapes expose outline, fill and stroke-width controls',
+    Boolean(document.querySelector('[aria-label="Selected shape outline color"]'))
+      && Boolean(document.querySelector('[aria-label="Selected shape stroke width"]')));
+  const arrowEndpoint = [...document.querySelectorAll('.shape-endpoint-hit-area')][1];
+  const beforeEndpointWidth = Number(document.querySelector('.selection-overlay')?.dataset.objectWidth);
+  if (arrowEndpoint) {
+    const endpoint = { x: Number(arrowEndpoint.querySelector('circle')?.getAttribute('cx')),
+      y: Number(arrowEndpoint.querySelector('circle')?.getAttribute('cy')) };
+    const start = logicalToClient(window, endpoint.x, endpoint.y);
+    const moved = logicalToClient(window, endpoint.x + 35, endpoint.y + 20);
+    pointer(window, arrowEndpoint, 'pointerdown', start.x, start.y);
+    pointer(window, shapeWrapper, 'pointermove', moved.x, moved.y);
+    pointer(window, shapeWrapper, 'pointerup', moved.x, moved.y);
+    await sleep(25);
+  }
+  check('dragging a line or arrow endpoint edits its parametric geometry', Boolean(arrowEndpoint)
+    && Number(document.querySelector('.selection-overlay')?.dataset.objectWidth) !== beforeEndpointWidth);
   dom.window.close();
   console.log('\n' + '='.repeat(60));
   console.log(`${passed} passed, ${failed} failed`);

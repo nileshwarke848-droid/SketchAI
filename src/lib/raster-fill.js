@@ -79,6 +79,50 @@ export function floodFillMask(imageData, seedX, seedY, tolerance = DEFAULT_FILL_
   return { mask, count, target };
 }
 
+/**
+ * Fill one local object raster. Transparent seeds are accepted only when their
+ * connected region is enclosed inside the raster bounds; otherwise the caller
+ * can fall back to the document-level bucket. This lets a bucket fill become
+ * part of the same editable bitmap instead of a detached canvas overlay.
+ */
+export function fillRasterRegion({ canvas, seed, color, tolerance = DEFAULT_FILL_TOLERANCE }) {
+  if (!canvas || !seed) throw new TypeError('A raster canvas and local seed are required.');
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  const source = context.getImageData(0, 0, canvas.width, canvas.height);
+  const region = floodFillMask(source, seed.x, seed.y, tolerance);
+  if (!region.count || !region.target) return { ...region, changed: 0, open: false };
+  const seedAlpha = region.target[3];
+  const transparentSeed = seedAlpha <= 8;
+  if (transparentSeed) {
+    let touchesEdge = false;
+    for (let x = 0; x < canvas.width && !touchesEdge; x += 1) {
+      touchesEdge = region.mask[x] === 1 || region.mask[(canvas.height - 1) * canvas.width + x] === 1;
+    }
+    for (let y = 0; y < canvas.height && !touchesEdge; y += 1) {
+      touchesEdge = region.mask[y * canvas.width] === 1 || region.mask[y * canvas.width + canvas.width - 1] === 1;
+    }
+    if (touchesEdge) return { ...region, changed: 0, open: true };
+  }
+  const rgba = parseHexColor(color);
+  if (!rgba) throw new TypeError(`Unsupported fill color: ${color}`);
+  const { data, width } = source;
+  let changed = 0;
+  for (let index = 0; index < region.mask.length; index += 1) {
+    if (!region.mask[index]) continue;
+    const offset = index * 4;
+    const alpha = transparentSeed ? 255 : data[offset + 3];
+    if (data[offset] === rgba[0] && data[offset + 1] === rgba[1]
+      && data[offset + 2] === rgba[2] && data[offset + 3] === alpha) continue;
+    data[offset] = rgba[0];
+    data[offset + 1] = rgba[1];
+    data[offset + 2] = rgba[2];
+    data[offset + 3] = alpha;
+    changed += 1;
+  }
+  if (changed) context.putImageData(source, 0, 0);
+  return { ...region, changed, open: false };
+}
+
 /** Apply the computed region to a separate fill-layer ImageData buffer. */
 export function applyFillMask(imageData, mask, color) {
   const rgba = parseHexColor(color);

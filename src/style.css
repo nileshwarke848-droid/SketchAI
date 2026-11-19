@@ -194,3 +194,30 @@
 .search-content summary{color:#343a32;font-weight:700;cursor:pointer}
 .search-content details p{margin:9px 0 0}
 @media(max-width:700px){.search-content{padding:32px 20px}.search-content-inner{font-size:14px}.search-content h2{font-size:20px}}
+
+/* Samsung-style Select Doodle: blue dotted loop or brush stroke, no erasing. */
+.canvas-wrap.tool-selectDoodle{cursor:crosshair}
+.selection-doodle-path{fill:none;stroke-dasharray:.1 7;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 1px #fff)}
+.selection-doodle-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.selection-doodle-color{display:flex;align-items:center;gap:7px}
+.selection-doodle-color input{width:29px;height:27px;padding:2px;border:1px solid #e5e8e0;border-radius:6px;background:#fff;cursor:pointer}
+.selection-doodle-color output{font:700 9px ui-monospace,SFMono-Regular,Consolas,monospace;color:#697166}
+.selection-doodle-sample{width:36px;height:0;border-top:3px dotted var(--selection-doodle-color);border-radius:50%}
+@media(max-width:700px){.selection-doodle-controls{flex-basis:100%;padding-top:5px;border-top:1px solid #eeefe9}.selection-doodle-color{gap:5px}.selection-doodle-color .control-label{font-size:7px}}
+
+/* Persistent AI-guessing preference beside the canvas clear action. */
+.workspace.workspace-no-guessing{grid-template-columns:minmax(0,1fr)}
+.guessing-control{display:inline-flex;align-items:center;gap:8px;padding:4px 9px;border:1px solid #e7e9e2;border-radius:7px;background:#fff;color:#737a70;font-size:10px;white-space:nowrap}
+.guessing-control strong{min-width:20px;color:#586254;font-size:10px}
+.guessing-switch{width:35px;height:20px;padding:2px;border:0;border-radius:999px;background:#c6cbc2;display:inline-flex;align-items:center;cursor:pointer;transition:background .16s ease}
+.guessing-switch.enabled{background:#81a987}
+.guessing-switch:focus-visible{outline:2px solid #719779;outline-offset:2px}
+.guessing-switch-thumb{width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transform:translateX(0);transition:transform .16s ease}
+.guessing-switch.enabled .guessing-switch-thumb{transform:translateX(15px)}
+.model-status.off i{background:#b5b9b0}
+@media(max-width:700px){.workspace-actions{flex-wrap:wrap;justify-content:flex-end;gap:6px}.guessing-control{gap:5px;padding:4px 6px;font-size:9px}}
+
+/* Parametric shape tools and their editable control points. */
+.shape-preview-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;overflow:visible;stroke-linecap:round;stroke-linejoin:round}.shape-endpoint-hit-area{pointer-events:all;cursor:crosshair}.shape-endpoint-hit-area circle:first-child{fill:transparent;stroke:none;pointer-events:all}.shape-endpoint-handle{fill:#fff;stroke:#cf7659;stroke-width:2;pointer-events:none;vector-effect:non-scaling-stroke}.shape-endpoint-hit-area:hover .shape-endpoint-handle{fill:#f8e9e2}.shape-defaults{gap:7px;padding-left:14px;min-width:0}.shape-defaults input[type=color]{width:26px;height:26px;padding:2px;border:1px solid #e7e8e1;border-radius:5px;background:#fff}.shape-defaults input[type=range]{width:60px}.shape-defaults select{max-width:76px;border:1px solid #e7e8e1;border-radius:5px;padding:5px;background:#fff;color:#555;font-size:10px}.canvas-wrap[class*="tool-shape-"]{cursor:crosshair}
+
+.thickness-editor{display:flex;align-items:center;gap:8px;border-left:1px solid #e7e9e2;padding-left:10px}.thickness-slider{display:flex;align-items:center;gap:7px}.thickness-slider .control-label{white-space:nowrap;margin:0}.thickness-slider input{width:82px;accent-color:#d27b5e}.thickness-slider output{min-width:37px;color:#737a70;font-size:10px;font-variant-numeric:tabular-nums}.thickness-apply{padding:6px 9px}.thickness-note{color:#a1a69d;font-size:9px;white-space:nowrap}@media(max-width:700px){.thickness-editor{border-left:0;border-top:1px solid #e7e9e2;padding:7px 0 0;width:100%;flex-wrap:wrap}.thickness-note{white-space:normal}}

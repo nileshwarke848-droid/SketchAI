@@ -7,7 +7,8 @@ API key, or paid service is required. Your drawing stays in your browser.
 
 ## Features
 
-- Mouse, trackpad, stylus and touch input with select, pencil, text, fill, eraser and pan tools; fill, background and object colors include custom pickers.
+- Mouse, trackpad, stylus and touch input with select, Select Doodle, pencil, editable line, rectangle, ellipse/circle and arrow, text, fill, eraser and pan tools. Shape geometry stays parametric: line and arrow endpoints, arrowhead style, outline, fill and stroke width can be edited; Shift constrains shape proportions or line angles. Shapes use the shared move, resize, rotate, flip, recolor, layer and undo controls. The selection toolbar includes a signed thickness adjustment with an explicit Apply action; it affects hand-drawn marks, parametric shape strokes and genuine outlined suggestion artwork, but leaves solid filled artwork and text unchanged. Thickness is editable and undoable. Each finished pencil drag is its own editable object; Shift, marquee and Select Doodle can select multiple strokes. With Guessing enabled, selecting hand-drawn strokes/shapes refreshes recognition; selected hand-drawn marks are combined, while suggested artwork and text are excluded.
+- **Select Doodle** makes a closed freehand loop select enclosed or crossed objects, while an open doodle selects the objects it touches. It never erases; hold Shift to add to the current selection. Its dotted outline defaults to blue and has its own color picker.
 - Two eraser modes. **Classic** erases sketch ink and removes any object the
   stroke crosses. **Doodle** is a brush-like eraser that trims live while you
   drag: it shaves pixels off illustrations, text and doodle remnants, and keeps
@@ -17,9 +18,9 @@ API key, or paid service is required. Your drawing stays in your browser.
   objects too, so nothing you draw is ever trapped as flat pixels.
 - Text is a structured scene object: add it inline, edit by double-clicking, then move, resize, rotate, recolor, change its safe font family, size, weight and alignment, duplicate, reorder or delete it.
 - Zoom from 25% to 400% with pointer-anchored wheel zoom, step controls and reset. Pan with Space + drag or the Hand tool; view navigation never changes document coordinates.
-- Flood-fill enclosed regions on a dedicated raster layer beneath editable scene objects. Set the entire canvas background separately, with one-step undo/redo and Reset to White.
-- Local AI recognition after a 600 ms pause; the top 10 probabilities drive a
-  horizontally scrollable strip of up to 10 clean suggestion cards.
+- Bucket-fill enclosed regions directly into the object you click, so filled shapes remain selectable, resizable, recolorable and erasable as one scene object. Fills on empty canvas stay on a dedicated raster layer beneath editable objects. Set the entire canvas background separately, with one-step undo/redo and Reset to White.
+- Live AI recognition refreshes about every 220 ms while you draw, followed by a final check shortly after each stroke; the top 10 probabilities drive a horizontally scrollable strip of clean suggestion cards.
+- The **Guessing** switch beside Clear canvas turns AI suggestions on or off. No hides the suggestion and prediction panels and stops model loading/inference while leaving the drawing tools usable. The preference is remembered on that device; turning it back on reloads the model and checks the current sketch.
 - "AI thinks you might be drawing…" framing: the panel reports the model's
   uncertainty (for example `Cat 54% · Dog 31% · Tiger 8%`) instead of claiming a
   certain answer.
@@ -276,6 +277,8 @@ training/fetch_quickdraw_data.py       downloads the dataset mirror
 training/manual_test.py                sixteen hand-drawn doodles -> top 10
 scripts/install-model-345.mjs          validate + install a trained model
 scripts/audit-app.mjs                  end-to-end app checks (no browser needed)
+scripts/test-pencil-objects.mjs        editable pencil-stroke scene-object checks
+scripts/test-shapes.mjs                parametric shape geometry and rendering checks
 training/SketchAI_345_Training.ipynb   the same pipeline as a Colab notebook
 ```
 
@@ -331,8 +334,10 @@ illustrations never reach the model.
    “AI isn't completely sure. Maybe:”. WebGL is used when available and the CPU backend
    otherwise.
 
-Recognition is debounced: one prediction runs ~600 ms after drawing stops, and a
-new stroke cancels the pending timer, so the interface stays responsive.
+Recognition is throttled while drawing: at most one prediction runs every ~220 ms,
+never on every pointer sample. After a stroke ends, a final prediction runs after
+~260 ms so the suggestion strip settles on the completed sketch without stalling
+pointer input on every move.
 
 ![What the network receives for a flower sketch, before and after the preprocessing fix](docs/images/preprocessing-flower.png)
 

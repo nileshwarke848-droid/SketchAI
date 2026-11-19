@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, Bold, Check, CircleHelp, Copy, Eraser, FlipHorizontal2, Hand, Info, LockKeyhole, Maximize2, MousePointer2, PaintBucket, Pencil, RotateCcw, Sparkles, Trash2, Type, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Bold, Check, Circle, CircleHelp, Copy, Eraser, FlipHorizontal2, Hand, Info, Lasso, LockKeyhole, Maximize2, Minus, MousePointer2, PaintBucket, Pencil, RotateCcw, Sparkles, Square, Trash2, Type, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { loadModel, predict } from './ai/model';
 import { getSketchBounds } from './ai/preprocess';
 import SuggestionBar from './components/SuggestionBar';
@@ -18,11 +18,12 @@ import {
   zoomViewportAroundPoint,
   viewportTransformCss,
 } from './lib/canvas-coordinates';
-import { composeFillBoundary, fillCanvasRegion } from './lib/raster-fill';
+import { composeFillBoundary, fillCanvasRegion, fillRasterRegion } from './lib/raster-fill';
 import { drawCanvasStrokeSegment } from './lib/canvas-drawing';
 import { DEFAULT_ACTIVE_COLOR, DEFAULT_BACKGROUND_COLOR, normalizeHexColor } from './lib/color-utils';
 import { beginTextCreation, beginTextEditing, cancelTextDraft, confirmTextDraft, updateTextDraftValue } from './lib/text-editor';
 import { EditorHistory } from './lib/editor-history';
+import { isClosedSelectionDoodle, selectObjectsInDoodleLoop, selectObjectsTouchedByDoodle } from './lib/selection-doodle';
 import {
   addSceneObject,
   createArtworkImageCache,
@@ -31,6 +32,7 @@ import {
   createSceneImageCache,
   createSceneObject,
   createSceneObjectId,
+  createShapeSceneObject,
   createTextSceneObject,
   defaultSceneObjectColor,
   getEstimatedTextBounds,
@@ -43,7 +45,9 @@ import {
   flipSceneObjects,
   getGroupBounds,
   getSelectedSceneObjects,
+  isThicknessEditable,
   moveSceneObjects,
+  moveShapeEndpoint,
   recolorSceneObjects,
   reorderSceneObjects,
   resizeSceneObjectsGroup,
@@ -78,12 +82,40 @@ import {
 import DebugPanel from './dev/DebugPanel';
 
 const W = 1200, H = 720;
+const LIVE_PREDICTION_INTERVAL_MS = 220;
+const FINAL_PREDICTION_DELAY_MS = 260;
 const zoomSteps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
+
+function constrainShapeEnd(start, end, shapeKind, constrain) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  if (!constrain || Math.hypot(dx, dy) < 0.01) return end;
+  if (shapeKind === 'rectangle' || shapeKind === 'ellipse') {
+    const side = Math.max(Math.abs(dx), Math.abs(dy));
+    return { x: start.x + Math.sign(dx || 1) * side, y: start.y + Math.sign(dy || 1) * side };
+  }
+  const length = Math.hypot(dx, dy);
+  const angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 12)) * (Math.PI / 12);
+  return { x: start.x + Math.cos(angle) * length, y: start.y + Math.sin(angle) * length };
+}
+
+const clearPredictionTimer = (timerRef) => {
+  clearTimeout(timerRef.current);
+  timerRef.current = null;
+};
 
 // The preprocessing inspector is a development tool. It opens automatically in
 // dev builds and can be forced on a deployed build with ?debug=ai.
 const DEBUG_AI = import.meta.env.DEV || new URLSearchParams(window.location.search).get('debug') === 'ai';
 const IDLE = { status: 'idle', predictions: [] };
+const GUESSING_STORAGE_KEY = 'sketchai:guessing-enabled';
+function readGuessingPreference() {
+  try {
+    return window.localStorage.getItem(GUESSING_STORAGE_KEY) !== 'no';
+  } catch {
+    return true;
+  }
+}
 // A probability under half a percent is real but not meaningful to show as "0%".
 const formatScore = (score) => (score < 0.005 ? '<1%' : `${Math.round(score * 100)}%`);
 
@@ -91,6 +123,7 @@ function App() {
   const canvasRef = useRef(null);
   const fillRef = useRef(null);
   const sketchRef = useRef(null);
+  const recognitionCanvasRef = useRef(null);
   const canvasWrapRef = useRef(null);
   const referenceCanvasRef = useRef(null);
   const fillSnapshotRef = useRef(null);
@@ -100,6 +133,7 @@ function App() {
   const spacePressedRef = useRef(false);
   const modelRef = useRef(null);
   const timerRef = useRef(null);
+  const lastPredictionAtRef = useRef(0);
   const pointerRef = useRef(null);
   const historyRef = useRef(new EditorHistory(24));
   const sceneObjectsRef = useRef([]);
@@ -117,11 +151,19 @@ function App() {
   }
 
   const [tool, setTool] = useState('pencil');
+  const [guessingEnabled, setGuessingEnabled] = useState(readGuessingPreference);
+  const guessingEnabledRef = useRef(guessingEnabled);
+  guessingEnabledRef.current = guessingEnabled;
+  const [selectionDoodleColor, setSelectionDoodleColor] = useState('#4B8BF4');
+  const [selectionDoodlePath, setSelectionDoodlePath] = useState(null);
+  const [shapePreview, setShapePreview] = useState(null);
   const [activeColor, setActiveColor] = useState(DEFAULT_ACTIVE_COLOR);
   const [backgroundColor, setBackgroundColor] = useState(DEFAULT_BACKGROUND_COLOR);
   const [view, setView] = useState({ ...DEFAULT_VIEWPORT });
   const [textDraft, setTextDraft] = useState(null);
   const [size, setSize] = useState(7);
+  const [defaultShapeFill, setDefaultShapeFill] = useState('none');
+  const [thicknessDraft, setThicknessDraft] = useState(0);
   // Classic eraser (whole-object remove) vs doodle eraser (shave pixels, keep an editable remnant).
   const [eraserMode, setEraserMode] = useState('classic');
   const [sceneObjects, setSceneObjects] = useState([]);
@@ -141,6 +183,10 @@ function App() {
   const [modelTier, setModelTier] = useState('');
   const [fallbackReason, setFallbackReason] = useState(null);
 
+  useEffect(() => {
+    if (tool !== 'selectDoodle') setSelectionDoodlePath(null);
+  }, [tool]);
+
   const syncScene = (next) => {
     sceneObjectsRef.current = next;
     setSceneObjects(next);
@@ -155,8 +201,16 @@ function App() {
   const chooseObjects = (ids) => {
     const selected = new Set(ids ?? []);
     const ordered = sceneObjectsRef.current.filter((object) => selected.has(object.id)).map((object) => object.id);
+    const changed = ordered.length !== selectedObjectIdsRef.current.length
+      || ordered.some((id, index) => id !== selectedObjectIdsRef.current[index]);
     selectedObjectIdsRef.current = ordered;
     setSelectedObjectIds(ordered);
+    const thicknessValues = sceneObjectsRef.current
+      .filter((object) => selected.has(object.id) && isThicknessEditable(object))
+      .map((object) => object.thicknessDelta ?? 0);
+    setThicknessDraft(thicknessValues.length && thicknessValues.every((value) => value === thicknessValues[0])
+      ? thicknessValues[0] : 0);
+    if (changed) schedulePrediction();
   };
   const chooseObject = (id) => chooseObjects(id ? [id] : []);
   const updateHistoryButtons = () => {
@@ -188,46 +242,107 @@ function App() {
     }
   }, []);
 
-  const schedulePrediction = useCallback(() => {
-    clearTimeout(timerRef.current);
+  const composeRecognitionSketch = (userMarks = sceneObjectsRef.current.filter((object) => object.isSketchStroke), selectedOnly = false) => {
     const sketch = sketchRef.current;
-    if (!sketch) return;
-    // One inference after the user stops drawing, never on every pointer move.
-    timerRef.current = setTimeout(() => {
-      const loaded = modelRef.current;
-      if (!loaded) return;
-      try {
-        const result = predict(loaded.model, loaded.labels, sketch, { profile: loaded.profile });
-        if (result.status === 'error') throw result.error ?? new Error('Inference failed');
-        setHasInk(Boolean(result.debug?.bounds));
-        setRecognition(result);
-      } catch (error) {
-        console.error('Prediction failed:', error);
-        setRecognition({ status: 'error', predictions: [] });
-        setMessage('The AI could not read that sketch. Keep drawing and it will try again.');
-      }
-    }, 600);
+    if (!sketch) return null;
+    if (!recognitionCanvasRef.current) {
+      recognitionCanvasRef.current = document.createElement('canvas');
+      recognitionCanvasRef.current.width = W;
+      recognitionCanvasRef.current.height = H;
+    }
+    const surface = recognitionCanvasRef.current;
+    renderScene(userMarks, surface, sceneImageCacheRef.current);
+    if (!selectedOnly) surface.getContext('2d').drawImage(sketch, 0, 0);
+    return surface;
+  };
+
+  const runPrediction = useCallback(() => {
+    if (!guessingEnabledRef.current) return;
+    const loaded = modelRef.current;
+    const sketch = sketchRef.current;
+    if (!loaded || !sketch) return;
+    lastPredictionAtRef.current = performance.now();
+    try {
+      const selectedIds = new Set(selectedObjectIdsRef.current);
+      const allMarks = sceneObjectsRef.current.filter((object) => object.isSketchStroke);
+      const selectedMarks = allMarks.filter((object) => selectedIds.has(object.id));
+      const useSelectedMarks = selectedMarks.length > 0;
+      const recognitionSketch = composeRecognitionSketch(useSelectedMarks ? selectedMarks : allMarks, useSelectedMarks);
+      const result = predict(loaded.model, loaded.labels, recognitionSketch, { profile: loaded.profile });
+      if (result.status === 'error') throw result.error ?? new Error('Inference failed');
+      setHasInk(Boolean(result.debug?.bounds));
+      setRecognition(result);
+    } catch (error) {
+      console.error('Prediction failed:', error);
+      setRecognition({ status: 'error', predictions: [] });
+      setMessage('The AI could not read that sketch. Keep drawing and it will try again.');
+    }
   }, []);
+
+  const schedulePrediction = useCallback(() => {
+    clearPredictionTimer(timerRef);
+    if (!guessingEnabledRef.current) return;
+    // Refresh once shortly after a stroke ends so the final shape is always checked.
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      runPrediction();
+    }, FINAL_PREDICTION_DELAY_MS);
+  }, [runPrediction]);
+
+  const scheduleLivePrediction = useCallback(() => {
+    // Throttle live inference; never run a model pass on every pointer sample.
+    if (!guessingEnabledRef.current || !modelRef.current || timerRef.current !== null) return;
+    const elapsed = performance.now() - lastPredictionAtRef.current;
+    const delay = Math.max(0, LIVE_PREDICTION_INTERVAL_MS - elapsed);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      runPrediction();
+    }, delay);
+  }, [runPrediction]);
+
+  const toggleGuessing = () => {
+    const next = !guessingEnabledRef.current;
+    guessingEnabledRef.current = next;
+    setGuessingEnabled(next);
+    setRecognition(IDLE);
+    setMessage('');
+    setStatus(next ? 'loading' : 'idle');
+    try {
+      window.localStorage.setItem(GUESSING_STORAGE_KEY, next ? 'yes' : 'no');
+    } catch {
+      // The toggle still works for this tab if browser storage is unavailable.
+    }
+    if (!next) clearPredictionTimer(timerRef);
+  };
 
   useEffect(() => {
     const sketch = sketchRef.current;
-    if (sketch) {
-      sketch.getContext('2d').clearRect(0, 0, W, H);
-      sketchSnapshotRef.current = sketch.getContext('2d').getImageData(0, 0, W, H);
-      fillRef.current?.getContext('2d').clearRect(0, 0, W, H);
-      fillSnapshotRef.current = fillRef.current?.getContext('2d').getImageData(0, 0, W, H) ?? null;
-      pushHistory();
+    if (!sketch) return;
+    sketch.getContext('2d').clearRect(0, 0, W, H);
+    sketchSnapshotRef.current = sketch.getContext('2d').getImageData(0, 0, W, H);
+    fillRef.current?.getContext('2d').clearRect(0, 0, W, H);
+    fillSnapshotRef.current = fillRef.current?.getContext('2d').getImageData(0, 0, W, H) ?? null;
+    pushHistory();
+  }, [pushHistory]);
+
+  useEffect(() => {
+    if (!guessingEnabled) {
+      setStatus('idle');
+      return undefined;
     }
     let active = true;
+    setStatus('loading');
     loadModel({
-      onBackend: setBackend,
+      onBackend: (nextBackend) => { if (active) setBackend(nextBackend); },
       onProfile: (info) => {
+        if (!active) return;
         if (info.tier) setModelTier(info.tier);
         if (info.fallbackReason !== undefined) setFallbackReason(info.fallbackReason);
       },
     }).then((loaded) => {
       if (!active) { loaded.model.dispose(); return; }
       modelRef.current = loaded;
+      lastPredictionAtRef.current = 0;
       setClassCount(loaded.labels.length);
       setModelTier(loaded.tier);
       setFallbackReason(loaded.fallbackReason);
@@ -241,11 +356,15 @@ function App() {
     });
     return () => {
       active = false;
-      clearTimeout(timerRef.current);
-      modelRef.current?.model.dispose();
-      imageCacheRef.current?.clear();
+      clearPredictionTimer(timerRef);
+      if (modelRef.current) {
+        modelRef.current.model.dispose();
+        modelRef.current = null;
+      }
     };
-  }, [pushHistory, schedulePrediction]);
+  }, [guessingEnabled, schedulePrediction]);
+
+  useEffect(() => () => imageCacheRef.current?.clear(), []);
 
   /**
    * A bitmap remnant's PNG lives on the object (so undo stays serialisable),
@@ -272,14 +391,21 @@ function App() {
   }, [sceneObjects, ensureSceneBitmaps]);
 
   const restore = useCallback((direction) => {
-    clearTimeout(timerRef.current);
+    clearPredictionTimer(timerRef);
     pointerRef.current = null;
     setMarquee(null);
+    setSelectionDoodlePath(null);
     revisionRef.current += 1;
     const snapshot = direction < 0 ? historyRef.current.undo() : historyRef.current.redo();
     if (!snapshot) return;
+    const restoredIds = new Set(snapshot.objects.map((object) => object.id));
+    // Selection-only changes do not create history entries. Keep the current
+    // selection when it still exists in the restored scene; otherwise use the
+    // snapshot selection so undoing delete/clear can reselect recovered objects.
+    const currentSelection = selectedObjectIdsRef.current.filter((id) => restoredIds.has(id));
+    const snapshotSelection = snapshot.selectedObjectIds ?? (snapshot.selectedObjectId ? [snapshot.selectedObjectId] : []);
     syncScene(snapshot.objects);
-    chooseObjects(snapshot.selectedObjectIds ?? (snapshot.selectedObjectId ? [snapshot.selectedObjectId] : []));
+    chooseObjects(currentSelection.length ? currentSelection : snapshotSelection);
     if (snapshot.sketch && sketchRef.current) {
       sketchRef.current.getContext('2d').putImageData(snapshot.sketch, 0, 0);
       sketchSnapshotRef.current = snapshot.sketch;
@@ -299,7 +425,7 @@ function App() {
     setRecognition(IDLE);
     setMessage('');
     updateHistoryButtons();
-    if (sketchHasInk) schedulePrediction();
+    if (sketchHasInk || snapshot.objects?.some((object) => object.isSketchStroke)) schedulePrediction();
   }, [schedulePrediction]);
 
   const deleteSelected = useCallback(() => {
@@ -310,7 +436,8 @@ function App() {
     syncScene(next);
     chooseObjects([]);
     pushHistory();
-  }, [pushHistory]);
+    schedulePrediction();
+  }, [pushHistory, schedulePrediction]);
 
   useEffect(() => {
     const isTyping = (target) => target && (/INPUT|TEXTAREA|SELECT/.test(target.tagName) || target.isContentEditable);
@@ -320,9 +447,10 @@ function App() {
       if (event.key === 'Escape') {
         if (textDraft) setTextDraft(cancelTextDraft());
         else {
-          if (pointerRef.current?.kind === 'marquee') {
+          if (['marquee', 'selectDoodle'].includes(pointerRef.current?.kind)) {
             pointerRef.current = null;
             setMarquee(null);
+            setSelectionDoodlePath(null);
           }
           if (selectedObjectIdsRef.current.length) chooseObjects([]);
           else setShowHelp(false);
@@ -525,6 +653,7 @@ function App() {
         rotation: source.rotation,
         flipX: source.flipX,
         zIndex: source.zIndex,
+        isSketchStroke: Boolean(source.isSketchStroke),
         ...remnantPlacement({ object: source, localBounds: survivor.bounds }),
       });
       // Insert synchronously into the bitmap cache so the very first repaint can
@@ -607,6 +736,42 @@ function App() {
     return created.length;
   };
 
+  /** Turn one finished pencil drag into exactly one normal scene object. */
+  const commitPencilStroke = () => {
+    const sketch = sketchRef.current;
+    const bounds = getSketchBounds(sketch);
+    if (!bounds.width || !bounds.height) return false;
+    const crop = document.createElement('canvas');
+    crop.width = Math.max(1, Math.ceil(bounds.width));
+    crop.height = Math.max(1, Math.ceil(bounds.height));
+    crop.getContext('2d').drawImage(sketch, bounds.x, bounds.y, bounds.width, bounds.height,
+      0, 0, crop.width, crop.height);
+    const bitmapId = createSceneObjectId();
+    const dataUrl = canvasToPngDataUrl(crop);
+    bitmapCacheRef.current.put(bitmapId, crop);
+    const object = createBitmapSceneObject({
+      id: createSceneObjectId(),
+      bitmapId,
+      bitmap: dataUrl,
+      bounds: { width: crop.width, height: crop.height },
+      label: 'Pencil stroke',
+      color: 'original',
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      zIndex: sceneObjectsRef.current.length,
+      isSketchStroke: true,
+    });
+    const next = addSceneObject(sceneObjectsRef.current, object);
+    sketch.getContext('2d').clearRect(0, 0, W, H);
+    sketchSnapshotRef.current = sketch.getContext('2d').getImageData(0, 0, W, H);
+    setHasInk(false);
+    syncScene(next);
+    renderScene(next, canvasRef.current, sceneImageCacheRef.current);
+    return true;
+  };
+
   const setCanvasBackground = (nextColor) => {
     const normalizedColor = normalizeHexColor(nextColor);
     if (!normalizedColor || normalizedColor === backgroundColorRef.current) return;
@@ -628,6 +793,76 @@ function App() {
       sceneCanvas: canvasRef.current,
       sketchCanvas: sketchRef.current,
     });
+
+    // When the click is on an editable object, try to apply the region to that
+    // object's own raster. The object keeps its ID, placement and transforms,
+    // so its selection box and normal edit actions remain available afterward.
+    const ordinaryHit = hitTestScene(sceneObjectsRef.current, seed);
+    const shapeInterior = ordinaryHit ? null : [...sceneObjectsRef.current].reverse().find((object) => {
+      if (object.type !== 'shape' || !['rectangle', 'ellipse'].includes(object.shapeKind)) return false;
+      const local = worldToObjectLocal(object, seed);
+      const halfWidth = object.width / 2;
+      const halfHeight = object.height / 2;
+      if (object.shapeKind === 'rectangle') return Math.abs(local.x) <= halfWidth && Math.abs(local.y) <= halfHeight;
+      return (local.x / Math.max(0.5, halfWidth)) ** 2 + (local.y / Math.max(0.5, halfHeight)) ** 2 <= 1;
+    });
+    const hit = ordinaryHit ?? shapeInterior;
+    if (hit) {
+      if (hit.type === 'shape' && ['rectangle', 'ellipse'].includes(hit.shapeKind)) {
+        if (hit.fillColor === activeColor) return;
+        const next = updateSceneObject(sceneObjectsRef.current, hit.id, { fillColor: activeColor });
+        syncScene(next);
+        chooseObject(hit.id);
+        renderScene(next, canvasRef.current, sceneImageCacheRef.current);
+        pushHistory();
+        schedulePrediction();
+        setMessage(`Filled ${hit.label} — its editable shape geometry and outline are preserved.`);
+        return;
+      }
+      const image = hit.type === 'bitmap'
+        ? bitmapCacheRef.current.get(hit.bitmapId)
+        : hit.type === 'text' ? null : imageCacheRef.current.get(hit.artworkId, hit.color);
+      const raster = renderObjectRaster({ object: hit, image, pixelScale: 2 });
+      const local = worldToObjectLocal(hit, seed);
+      const filled = fillRasterRegion({
+        canvas: raster,
+        seed: { x: local.x * 2 + raster.width / 2, y: local.y * 2 + raster.height / 2 },
+        color: activeColor,
+      });
+      if (!filled.open && filled.count) {
+        if (!filled.changed) return;
+        const bitmapId = createSceneObjectId();
+        const dataUrl = canvasToPngDataUrl(raster);
+        bitmapCacheRef.current.put(bitmapId, raster);
+        const replacement = createBitmapSceneObject({
+          id: hit.id,
+          bitmapId,
+          bitmap: dataUrl,
+          bounds: { width: raster.width, height: raster.height },
+          label: hit.label,
+          x: hit.x,
+          y: hit.y,
+          width: hit.width,
+          height: hit.height,
+          rotation: hit.rotation,
+          color: 'original',
+          flipX: hit.flipX,
+          zIndex: hit.zIndex,
+          isSketchStroke: Boolean(hit.isSketchStroke),
+        });
+        const next = sceneObjectsRef.current.map((object) => object.id === hit.id ? replacement : object);
+        syncScene(next);
+        chooseObject(hit.id);
+        renderScene(next, canvasRef.current, sceneImageCacheRef.current);
+        if (hit.isSketchStroke) schedulePrediction();
+        pushHistory();
+        setMessage(`Filled ${filled.count.toLocaleString()} pixels in ${hit.label || 'the object'} — it remains editable.`);
+        return;
+      }
+    }
+
+    // Empty-canvas fills remain on the dedicated raster layer underneath scene
+    // objects, preserving the existing background-fill workflow.
     const result = fillCanvasRegion({
       referenceCanvas: referenceCanvasRef.current,
       fillCanvas: fillRef.current,
@@ -709,6 +944,45 @@ function App() {
     pushHistory();
   };
 
+  const applySelectedThickness = () => {
+    const selectedIds = new Set(selectedObjectIdsRef.current);
+    const amount = Math.max(-16, Math.min(16, Math.round(Number(thicknessDraft) || 0)));
+    let changed = false;
+    const next = sceneObjectsRef.current.map((object) => {
+      if (!selectedIds.has(object.id) || !isThicknessEditable(object)
+        || (object.thicknessDelta ?? 0) === amount) return object;
+      changed = true;
+      return { ...object, thicknessDelta: amount };
+    });
+    if (!changed) return;
+    syncScene(next);
+    renderScene(next, canvasRef.current, sceneImageCacheRef.current);
+    pushHistory();
+    if (next.some((object) => selectedIds.has(object.id) && object.isSketchStroke)) schedulePrediction();
+    setMessage(`Applied ${amount > 0 ? '+' : ''}${amount}px thickness to the editable outlines in the selection.`);
+  };
+
+  const changeSelectedShape = (patch) => {
+    if (selectedObjectIdsRef.current.length !== 1) return;
+    const id = selectedObjectIdsRef.current[0];
+    const object = sceneObjectsRef.current.find((candidate) => candidate.id === id && candidate.type === 'shape');
+    if (!object) return;
+    const safePatch = { ...patch };
+    if (Object.prototype.hasOwnProperty.call(safePatch, 'fillColor')
+      && safePatch.fillColor !== 'none') {
+      safePatch.fillColor = normalizeHexColor(safePatch.fillColor) ?? object.fillColor;
+    }
+    if (Number.isFinite(safePatch.strokeWidth)) {
+      safePatch.strokeWidth = Math.max(1, Math.min(100, safePatch.strokeWidth));
+      safePatch.thicknessDelta = 0;
+    }
+    const next = updateSceneObject(sceneObjectsRef.current, id, safePatch);
+    if (next === sceneObjectsRef.current) return;
+    syncScene(next);
+    pushHistory();
+    schedulePrediction();
+  };
+
   const beginTransform = (event, kind, handle = null) => {
     const objects = getSelectedSceneObjects(sceneObjectsRef.current, selectedObjectIdsRef.current);
     if (!objects.length) return;
@@ -754,7 +1028,7 @@ function App() {
       const kind = handleElement.dataset.transformHandle;
       const handle = kind === 'resize'
         ? { signX: Number(handleElement.dataset.signX), signY: Number(handleElement.dataset.signY) }
-        : null;
+        : kind === 'shapeEndpoint' ? { point: handleElement.dataset.point } : null;
       beginTransform(event, kind, handle);
       return;
     }
@@ -770,6 +1044,13 @@ function App() {
     }
     if (tool === 'fill') {
       performFill(p);
+      return;
+    }
+    if (tool.startsWith('shape-')) {
+      const shapeKind = tool.slice('shape-'.length);
+      const end = constrainShapeEnd(p, p, shapeKind, Boolean(event.shiftKey));
+      pointerRef.current = { id: pointerId, kind: 'shape', shapeKind, startPoint: p, changed: false };
+      setShapePreview({ shapeKind, start: p, end, constrain: Boolean(event.shiftKey) });
       return;
     }
     if (tool === 'select') {
@@ -818,26 +1099,39 @@ function App() {
           setMarquee({ x: p.x, y: p.y, width: 0, height: 0 });
         }
       }
+    } else if (tool === 'selectDoodle') {
+      setMessage('');
+      const points = [p];
+      pointerRef.current = {
+        id: pointerId,
+        kind: 'selectDoodle',
+        points,
+        additive: Boolean(event.shiftKey),
+      };
+      setSelectionDoodlePath(points);
     } else if (tool === 'eraser' && eraserMode === 'doodle') {
       revisionRef.current += 1;
-      clearTimeout(timerRef.current);
+      clearPredictionTimer(timerRef);
       pointerRef.current = { id: pointerId, kind: 'doodle', previousPoint: p, changed: false };
       beginDoodleStroke();
       doodleStrokeRef.current.points.push(p);
       eraseSketchAlong(p, p);
+      scheduleLivePrediction();
       pointerRef.current.changed = applyDoodleErase() || pointerRef.current.changed;
     } else if (tool === 'eraser') {
       revisionRef.current += 1;
-      clearTimeout(timerRef.current);
+      clearPredictionTimer(timerRef);
       pointerRef.current = { id: pointerId, kind: 'eraser', previousPoint: p, changed: false };
       drawSketchSegment(p, p, true);
       eraseObjectsAlong(p, p);
+      scheduleLivePrediction();
     } else {
-      clearTimeout(timerRef.current);
+      clearPredictionTimer(timerRef);
       revisionRef.current += 1;
       setMessage('');
       pointerRef.current = { id: pointerId, kind: 'sketch', previousPoint: p, changed: true };
       drawSketchSegment(p, p);
+      scheduleLivePrediction();
     }
     try { event.currentTarget?.setPointerCapture?.(pointerId); } catch { /* synthetic or unsupported pointer capture */ }
   };
@@ -865,17 +1159,26 @@ function App() {
         width: Math.abs(dx),
         height: Math.abs(dy),
       });
+    } else if (gesture.kind === 'selectDoodle') {
+      const last = gesture.points[gesture.points.length - 1];
+      if (!last || Math.hypot(p.x - last.x, p.y - last.y) >= 1.5) {
+        gesture.points.push(p);
+        setSelectionDoodlePath([...gesture.points]);
+      }
     } else if (gesture.kind === 'sketch') {
       drawSketchSegment(gesture.previousPoint, p);
       gesture.previousPoint = p;
       gesture.changed = true;
+      scheduleLivePrediction();
     } else if (gesture.kind === 'eraser') {
       drawSketchSegment(gesture.previousPoint, p, true);
       eraseObjectsAlong(gesture.previousPoint, p);
       gesture.previousPoint = p;
       gesture.changed = true;
+      scheduleLivePrediction();
     } else if (gesture.kind === 'doodle') {
       eraseSketchAlong(gesture.previousPoint, p);
+      scheduleLivePrediction();
       gesture.previousPoint = p;
       gesture.changed = true;
       const stroke = doodleStrokeRef.current;
@@ -892,6 +1195,19 @@ function App() {
         if (stroke.remnantIds.length === 1) chooseObject(stroke.remnantIds[0]);
         gesture.changed = true;
       }
+    } else if (gesture.kind === 'shape') {
+      gesture.changed = true;
+      setShapePreview({
+        shapeKind: gesture.shapeKind,
+        start: gesture.startPoint,
+        end: constrainShapeEnd(gesture.startPoint, p, gesture.shapeKind, Boolean(event.shiftKey)),
+        constrain: Boolean(event.shiftKey),
+      });
+    } else if (gesture.kind === 'shapeEndpoint') {
+      gesture.changed = true;
+      const next = updateSceneObject(sceneObjectsRef.current, gesture.startObject.id,
+        () => moveShapeEndpoint(gesture.startObject, gesture.handle.point, p));
+      syncScene(next);
     } else if (gesture.kind === 'move') {
       const dx = p.x - gesture.startPoint.x;
       const dy = p.y - gesture.startPoint.y;
@@ -938,6 +1254,26 @@ function App() {
         }));
       } else if (!gesture.additive) chooseObjects([]);
       setMarquee(null);
+    } else if (gesture.kind === 'selectDoodle') {
+      const finalPoint = point(event);
+      const last = gesture.points[gesture.points.length - 1];
+      if (!last || Math.hypot(finalPoint.x - last.x, finalPoint.y - last.y) >= 1.5) gesture.points.push(finalPoint);
+      const rect = canvasWrapRef.current?.getBoundingClientRect();
+      const displayScale = Math.max(0.01, (rect?.width ?? W) / W * viewRef.current.zoom);
+      const closes = isClosedSelectionDoodle(gesture.points, 16 / displayScale);
+      const outline = [...gesture.points];
+      const outlineEnd = outline[outline.length - 1];
+      if (closes && Math.hypot(outline[0].x - outlineEnd.x, outline[0].y - outlineEnd.y) > 0.5) {
+        outline.push(outline[0]);
+      }
+      const ids = closes
+        ? selectObjectsInDoodleLoop(sceneObjectsRef.current, outline, selectedObjectIdsRef.current, { additive: gesture.additive })
+        : selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, 10 / displayScale, selectedObjectIdsRef.current, { additive: gesture.additive });
+      chooseObjects(ids);
+      setSelectionDoodlePath(outline);
+      setMessage(ids.length
+        ? `${ids.length} object${ids.length === 1 ? '' : 's'} selected. Use Delete or Backspace to remove them.`
+        : 'No objects selected. Draw a loop around objects or scribble across them.');
     } else if (gesture.kind === 'doodle') {
       const stroke = doodleStrokeRef.current;
       if (stroke) {
@@ -949,6 +1285,7 @@ function App() {
       sketchSnapshotRef.current = sketchRef.current.getContext('2d').getImageData(0, 0, W, H);
       const bounds = getSketchBounds(sketchRef.current);
       setHasInk(Boolean(bounds.width));
+      clearPredictionTimer(timerRef);
       setRecognition(IDLE);
       // Selecting the survivor makes the promise visible: it is a normal object
       // now. Only do it for a single remnant so a wide drag never steals a
@@ -963,7 +1300,34 @@ function App() {
       if (bounds.width) convertRemainingSketchToObjects();
       doodleStrokeRef.current = null;
       pushHistory();
-    } else if (gesture.kind === 'sketch' || gesture.kind === 'eraser') {
+      schedulePrediction();
+    } else if (gesture.kind === 'shape') {
+      setShapePreview(null);
+      if (event.type !== 'pointercancel') {
+        const end = constrainShapeEnd(gesture.startPoint, point(event), gesture.shapeKind, Boolean(event.shiftKey));
+        const object = createShapeSceneObject({
+          shapeKind: gesture.shapeKind,
+          from: gesture.startPoint,
+          to: end,
+          color: activeColor,
+          strokeWidth: size,
+          fillColor: ['rectangle', 'ellipse'].includes(gesture.shapeKind) ? defaultShapeFill : 'none',
+          zIndex: sceneObjectsRef.current.length,
+        });
+        const next = addSceneObject(sceneObjectsRef.current, object);
+        syncScene(next);
+        chooseObject(object.id);
+        renderScene(next, canvasRef.current, sceneImageCacheRef.current);
+        pushHistory();
+        schedulePrediction();
+        setMessage(`${object.label} added as an editable shape. Select an arrow or line to drag its endpoints.`);
+      }
+    } else if (gesture.kind === 'sketch') {
+      commitPencilStroke();
+      setRecognition(IDLE);
+      pushHistory();
+      schedulePrediction();
+    } else if (gesture.kind === 'eraser') {
       sketchSnapshotRef.current = sketchRef.current.getContext('2d').getImageData(0, 0, W, H);
       const bounds = getSketchBounds(sketchRef.current);
       setHasInk(Boolean(bounds.width));
@@ -974,6 +1338,7 @@ function App() {
       chooseObjects([]);
     } else if (gesture.changed) {
       pushHistory();
+      schedulePrediction();
     }
   };
 
@@ -996,7 +1361,8 @@ function App() {
     revisionRef.current += 1;
     pointerRef.current = null;
     setMarquee(null);
-    clearTimeout(timerRef.current);
+    setSelectionDoodlePath(null);
+    clearPredictionTimer(timerRef);
     syncScene([]);
     chooseObject(null);
     sketchRef.current.getContext('2d').clearRect(0, 0, W, H);
@@ -1020,7 +1386,7 @@ function App() {
       setMessage('That guess has no illustration yet — try another suggestion.');
       return;
     }
-    const bounds = getSketchBounds(sketchRef.current);
+    const bounds = getSketchBounds(composeRecognitionSketch());
     if (!bounds.width) {
       setMessage('Draw a sketch first, then add an illustration.');
       return;
@@ -1043,13 +1409,14 @@ function App() {
       syncScene(addSceneObject(sceneObjectsRef.current, object));
       chooseObject(object.id);
       setTool('select');
-      clearTimeout(timerRef.current);
+      clearPredictionTimer(timerRef);
       sketchRef.current.getContext('2d').clearRect(0, 0, W, H);
       sketchSnapshotRef.current = sketchRef.current.getContext('2d').getImageData(0, 0, W, H);
       setRecognition(IDLE);
       setHasInk(false);
       setMessage(`Added a clean ${displayName(label)} object. Select it to move, resize, rotate or recolor it.`);
       pushHistory();
+      schedulePrediction();
     } catch (error) {
       console.error('Artwork insertion failed:', error);
       setMessage('Could not add that illustration. Please try again.');
@@ -1089,7 +1456,7 @@ function App() {
   };
 
   const recolorSelected = async (nextColor) => {
-    const normalizedColor = normalizeHexColor(nextColor);
+    const normalizedColor = nextColor === 'original' ? 'original' : normalizeHexColor(nextColor);
     const ids = [...selectedObjectIdsRef.current];
     const objects = getSelectedSceneObjects(sceneObjectsRef.current, ids);
     if (!objects.length || !normalizedColor || objects.every((object) => object.color === normalizedColor)) return;
@@ -1161,16 +1528,46 @@ function App() {
   const others = predictions.slice(1, 5);
   const lowConfidence = primary && primary.score < 0.45;
   const statusText = status === 'loading' ? 'Loading drawing AI…' : status === 'error' ? 'AI unavailable' : `AI ready — ${classCount} objects`;
+  const previewEnd = shapePreview
+    ? constrainShapeEnd(shapePreview.start, shapePreview.end, shapePreview.shapeKind, shapePreview.constrain)
+    : null;
+  const selectedShapeEndpoints = selectedObject?.type === 'shape'
+    && ['line', 'arrow'].includes(selectedObject.shapeKind)
+    ? [
+      { key: 'start', ...objectLocalToWorld(selectedObject, selectedObject.start) },
+      { key: 'end', ...objectLocalToWorld(selectedObject, selectedObject.end) },
+    ] : [];
+  const selectedRecognitionCount = selectedObjects.filter((object) => object.isSketchStroke).length;
+  const selectedThicknessObjects = selectedObjects.filter(isThicknessEditable);
+  const thicknessAlreadyApplied = selectedThicknessObjects.length > 0
+    && selectedThicknessObjects.every((object) => (object.thicknessDelta ?? 0) === thicknessDraft);
+  const thicknessToolbar = selectedThicknessObjects.length > 0 && <div className="thickness-editor" role="group" aria-label="Selected line thickness controls">
+    <label className="thickness-slider" htmlFor="selected-thickness-slider">
+      <span className="control-label">LINE THICKNESS</span>
+      <input id="selected-thickness-slider" type="range" min="-16" max="16" step="1" value={thicknessDraft}
+        onChange={(event) => setThicknessDraft(Number(event.target.value))}
+        aria-label="Thickness adjustment in pixels" aria-valuetext={`${thicknessDraft > 0 ? '+' : ''}${thicknessDraft} pixels`}/>
+      <output aria-label="Thickness adjustment value">{thicknessDraft > 0 ? '+' : ''}{thicknessDraft}px</output>
+    </label>
+    <button className="object-action thickness-apply" onClick={applySelectedThickness} disabled={thicknessAlreadyApplied}
+      aria-label="Apply thickness to selected objects" title="Apply this thickness adjustment to eligible outlines">
+      <Check size={14}/> Apply
+    </button>
+    <span className="thickness-note">Hand-drawn marks, shape strokes and outlined artwork only</span>
+  </div>;
 
   return <div className="app-shell">
     <header className="topbar">
       <a className="brand" href="#" aria-label="SketchAI home"><span className="brand-icon"><Sparkles size={18}/></span><span>Sketch<span className="brand-ai">AI</span><small>DRAWING STUDIO</small></span></a>
-      <div className="header-right"><span className={`model-status ${status}`}><i/> {statusText}</span><button className="help-link" onClick={() => setShowHelp(true)}><CircleHelp size={17}/> How it works</button></div>
+      <div className="header-right"><span className={`model-status ${guessingEnabled ? status : 'off'}`}><i/> {guessingEnabled ? statusText : 'AI guessing off'}</span><button className="help-link" onClick={() => setShowHelp(true)}><CircleHelp size={17}/> How it works</button></div>
     </header>
     <main>
       <section className="intro"><div><div className="eyebrow"><span className="eyebrow-dot"/> YOUR CREATIVE SPACE <span className="eyebrow-line"/></div><h1>Big ideas start <em>small.</em></h1><p>Draw something, and let a little AI magic bring it to life.</p></div><div className="intro-note"><Sparkles size={16}/><span>MADE FOR<br/><strong>CURIOUS MINDS</strong></span></div></section>
-      <div className="workspace-heading"><div><span className="section-number">01 /</span><h2>Your canvas</h2><span className="heading-sub">A space to make your mark.</span></div><div className="workspace-actions"><button className="text-button" onClick={clear}><Trash2 size={16}/> Clear canvas</button></div></div>
-      <div className="workspace">
+      <div className="workspace-heading"><div><span className="section-number">01 /</span><h2>Your canvas</h2><span className="heading-sub">A space to make your mark.</span></div><div className="workspace-actions">
+        <div className="guessing-control"><span>Guessing</span><button type="button" role="switch" className={`guessing-switch ${guessingEnabled ? 'enabled' : ''}`} aria-label="AI guessing" aria-checked={guessingEnabled} onClick={toggleGuessing}><span className="guessing-switch-thumb"/></button><strong aria-live="polite">{guessingEnabled ? 'Yes' : 'No'}</strong></div>
+        <button className="text-button" onClick={clear}><Trash2 size={16}/> Clear canvas</button>
+      </div></div>
+      <div className={`workspace ${guessingEnabled ? '' : 'workspace-no-guessing'}`}>
         <div className="editor">
           <div className="editor-top">
             <div className="file-name"><span className="file-dot"/> Untitled sketch <span className="file-label">/ EDITING</span></div>
@@ -1185,12 +1582,17 @@ function App() {
               </div>
             </div>
           </div>
-          <SuggestionBar cards={cards} onInsert={insert} title="Did you mean…" emptyCopy={barEmptyCopy} phase={status === 'loading' ? 'loading' : 'idle'}/>
+          {guessingEnabled && <SuggestionBar cards={cards} onInsert={insert} title={selectedRecognitionCount ? 'For your selected drawing…' : 'Did you mean…'} emptyCopy={barEmptyCopy} phase={status === 'loading' ? 'loading' : 'idle'}/>}
           <div className="drawing-area">
             <div className="tool-rail" aria-label="Drawing and object tools">
               <span className="rail-label">TOOLS</span>
               <button className={`rail-button ${tool === 'select' ? 'selected' : ''}`} onClick={() => setTool('select')} aria-pressed={tool === 'select'} aria-label="Select tool" title="Select and edit objects"><MousePointer2 size={19}/></button>
-              <button className={`rail-button ${tool === 'pencil' ? 'selected' : ''}`} onClick={() => setTool('pencil')} aria-pressed={tool === 'pencil'} aria-label="Pencil" title="Draw a rough sketch"><Pencil size={19}/></button>
+              <button className={`rail-button ${tool === 'selectDoodle' ? 'selected' : ''}`} onClick={() => setTool('selectDoodle')} aria-pressed={tool === 'selectDoodle'} aria-label="Select doodle mode" title="Draw a closed loop around objects or scribble across them to select without erasing" data-tool="select-doodle"><Lasso size={19}/></button>
+              <button className={`rail-button ${tool === 'pencil' ? 'selected' : ''}`}  onClick={() => setTool('pencil')} aria-pressed={tool === 'pencil'} aria-label="Pencil" title="Draw a rough sketch"><Pencil size={19}/></button>
+              <button className={`rail-button ${tool === 'shape-line' ? 'selected' : ''}`} onClick={() => setTool('shape-line')} aria-pressed={tool === 'shape-line'} aria-label="Line tool" title="Draw an editable line"><Minus size={19}/></button>
+              <button className={`rail-button ${tool === 'shape-rectangle' ? 'selected' : ''}`} onClick={() => setTool('shape-rectangle')} aria-pressed={tool === 'shape-rectangle'} aria-label="Rectangle tool" title="Draw an editable rectangle"><Square size={18}/></button>
+              <button className={`rail-button ${tool === 'shape-ellipse' ? 'selected' : ''}`} onClick={() => setTool('shape-ellipse')} aria-pressed={tool === 'shape-ellipse'} aria-label="Ellipse tool" title="Draw an editable circle or ellipse"><Circle size={18}/></button>
+              <button className={`rail-button ${tool === 'shape-arrow' ? 'selected' : ''}`} onClick={() => setTool('shape-arrow')} aria-pressed={tool === 'shape-arrow'} aria-label="Arrow tool" title="Draw an editable arrow"><ArrowUpRight size={18}/></button>
               <button className={`rail-button ${tool === 'text' ? 'selected' : ''}`} onClick={() => setTool('text')} aria-pressed={tool === 'text'} aria-label="Text tool" title="Add editable text"><Type size={19}/></button>
               <button className={`rail-button ${tool === 'fill' ? 'selected' : ''}`} onClick={() => setTool('fill')} aria-pressed={tool === 'fill'} aria-label="Fill tool" title="Fill a connected region"><PaintBucket size={19}/></button>
               <button className={`rail-button ${tool === 'eraser' ? 'selected' : ''}`} onClick={() => setTool('eraser')} aria-pressed={tool === 'eraser'} aria-label="Eraser" title="Eraser with Classic and Doodle modes"><Eraser size={19}/></button>
@@ -1203,10 +1605,19 @@ function App() {
             <div className={`canvas-wrap tool-${tool}${tool === 'eraser' ? ` eraser-${eraserMode}` : ''}`} data-eraser-mode={tool === 'eraser' ? eraserMode : undefined} ref={canvasWrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onDoubleClick={onCanvasDoubleClick}>
               <div className="canvas-stage" style={{ transform: viewportTransformCss(view), backgroundColor }} data-view-zoom={view.zoom} data-view-pan-x={view.panX} data-view-pan-y={view.panY} data-background-color={backgroundColor}>
                 <canvas ref={fillRef} className="fill-canvas" width={W} height={H} aria-hidden="true"/>
-                <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil, text, fill or eraser tools. The doodle eraser lets you erase part of a drawing and keep the rest editable." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''} data-selected-object-ids={selectedObjectIds.join(',')}/>
+                <canvas ref={canvasRef} className="art-canvas" width={W} height={H} aria-label="Drawing canvas. Select objects, or use the pencil, line, rectangle, ellipse, arrow, text, fill or eraser tools. Hold Shift while drawing a shape to constrain its proportions or angle. Select Doodle mode selects by loop or scribble without erasing; the doodle eraser can remove part of a drawing and keep the remainder editable." data-scene-object-count={sceneObjects.length} data-selected-object-id={selectedObjectId ?? ''} data-selected-object-ids={selectedObjectIds.join(',')}/>
                 <canvas ref={sketchRef} className="sketch-overlay" width={W} height={H} aria-hidden="true"/>
-                {tool === 'select' && (selectedObjects.length > 0 || marquee) && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-                  aria-label={selectedObjects.length > 1 ? `${selectedObjects.length} objects selected` : selectedObject ? `Selected ${selectedObjectLabel}` : 'Selection marquee'}
+                {shapePreview && previewEnd && <svg className="shape-preview-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label={`${shapePreview.shapeKind} preview`}>
+                  {shapePreview.shapeKind === 'rectangle'
+                    ? <rect x={Math.min(shapePreview.start.x, previewEnd.x)} y={Math.min(shapePreview.start.y, previewEnd.y)} width={Math.abs(previewEnd.x - shapePreview.start.x)} height={Math.abs(previewEnd.y - shapePreview.start.y)} fill={defaultShapeFill === 'none' ? 'none' : defaultShapeFill} stroke={activeColor} strokeWidth={size}/>
+                    : shapePreview.shapeKind === 'ellipse'
+                      ? <ellipse cx={(shapePreview.start.x + previewEnd.x) / 2} cy={(shapePreview.start.y + previewEnd.y) / 2} rx={Math.abs(previewEnd.x - shapePreview.start.x) / 2} ry={Math.abs(previewEnd.y - shapePreview.start.y) / 2} fill={defaultShapeFill === 'none' ? 'none' : defaultShapeFill} stroke={activeColor} strokeWidth={size}/>
+                      : <line x1={shapePreview.start.x} y1={shapePreview.start.y} x2={previewEnd.x} y2={previewEnd.y} stroke={activeColor} strokeWidth={size} markerEnd={shapePreview.shapeKind === 'arrow' ? 'url(#shape-arrowhead)' : undefined}/>}
+                  <defs><marker id="shape-arrowhead" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill={activeColor}/></marker></defs>
+                </svg>}
+                {(tool === 'select' || tool === 'selectDoodle') && (selectedObjects.length > 0 || (tool === 'select' && marquee) || (tool === 'selectDoodle' && selectionDoodlePath?.length > 1)) && <svg className="selection-overlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+                  aria-label={selectedObjects.length > 1 ? `${selectedObjects.length} objects selected` : selectedObject ? `Selected ${selectedObjectLabel}` : tool === 'selectDoodle' ? 'Dotted selection doodle' : 'Selection marquee'}
+                  data-selection-mode={tool === 'selectDoodle' ? 'doodle' : 'standard'}
                   data-selected-object-id={selectedObject?.id ?? ''} data-selected-object-ids={selectedObjectIds.join(',')} data-selection-count={selectedObjects.length}
                   data-object-type={selectedObject?.type ?? (selectedObjects.length > 1 ? 'group' : '')}
                   data-object-x={selectedObject?.x ?? groupBounds?.x ?? ''} data-object-y={selectedObject?.y ?? groupBounds?.y ?? ''}
@@ -1214,12 +1625,24 @@ function App() {
                   data-object-rotation={selectedObject?.rotation ?? ''} data-object-flip-x={selectedObject?.flipX ?? ''}
                   data-object-font-size={selectedObject?.fontSize ?? ''} data-object-font-family={selectedObject?.fontFamily ?? ''}
                   data-object-font-weight={selectedObject?.fontWeight ?? ''} data-object-text-align={selectedObject?.textAlign ?? ''}
-                  data-object-color={selectedObject?.color ?? ''}>
-                  {marquee && <rect className="marquee-selection" x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height}/>}
+                  data-object-color={selectedObject?.color ?? ''}
+                  data-object-thickness-delta={selectedObject?.thicknessDelta ?? ''}
+                  data-object-stroke-width={selectedObject?.type === 'shape' ? selectedObject.strokeWidth : ''}>
+                  {tool === 'selectDoodle' && selectionDoodlePath?.length > 1 && <polyline
+                    className="selection-doodle-path"
+                    points={selectionDoodlePath.map(({ x, y }) => `${x},${y}`).join(' ')}
+                    stroke={selectionDoodleColor}
+                    strokeWidth={2.5}
+                    aria-label="Selection doodle boundary"
+                  />}
+                  {tool === 'select' && marquee && <rect className="marquee-selection" x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height}/>}
                   {selectedObjects.length > 0 && <>
                     {groupBounds
                       ? <rect className="selection-box group-selection-box" strokeWidth={1.5 / displayScale} x={groupBounds.x} y={groupBounds.y} width={groupBounds.width} height={groupBounds.height}/>
                       : <polygon className="selection-box" strokeWidth={1.5 / displayScale} points={selectionCorners.map(({ x, y }) => `${x},${y}`).join(' ')}/>}
+                    {selectedShapeEndpoints.map((endpoint) => <g key={endpoint.key} className="shape-endpoint-hit-area" data-transform-handle="shapeEndpoint" data-point={endpoint.key} role="button" tabIndex="0" aria-label={`Move line ${endpoint.key} endpoint`}>
+                      <circle cx={endpoint.x} cy={endpoint.y} r={handleHitRadius}/><circle className="shape-endpoint-handle" cx={endpoint.x} cy={endpoint.y} r={handleRadius}/>
+                    </g>)}
                     <line className="rotation-stem" strokeWidth={1.25 / displayScale} x1={rotationStem.x} y1={rotationStem.y} x2={rotationHandle.x} y2={rotationHandle.y}/>
                     <circle className="rotation-hit-area" cx={rotationHandle.x} cy={rotationHandle.y} r={handleHitRadius} data-transform-handle="rotate" aria-label={groupBounds ? 'Rotate selected objects' : 'Rotate selected object'} role="button" tabIndex="0"/>
                     <circle className="rotation-handle" cx={rotationHandle.x} cy={rotationHandle.y} r={handleRadius} strokeWidth={1.5 / displayScale} aria-hidden="true"/>
@@ -1256,6 +1679,7 @@ function App() {
                 </button>
                 {selectedObject.type === 'bitmap' && selectedObject.color !== 'original' && <button className="object-action" onClick={() => recolorSelected('original')} aria-label="Restore original doodle colors" title="Restore original colors">Original</button>}
               </div>
+              {thicknessToolbar}
               {selectedObject.type === 'text' && <div className="text-object-controls" role="group" aria-label="Selected text controls">
                 <button className="object-action" onClick={() => editTextObject(selectedObject)} aria-label="Edit text content" title="Edit text"><Type size={14}/> Edit text</button>
                 <label className="text-setting"><span>SIZE</span><select aria-label="Text font size" value={Math.round(selectedObject.fontSize)} onChange={(event) => changeSelectedText({ fontSize: Number(event.target.value) })}>
@@ -1286,6 +1710,7 @@ function App() {
                 disabled={selectedObjects.every((object) => object.color === activeColor)} aria-label="Apply Active Color" title={`Apply ${activeColor} to selected objects`}>
                 <Check size={14}/> Apply Active Color
               </button>
+              {thicknessToolbar}
               <span className="object-toolbar-divider"/>
               <button className="object-action" onClick={duplicateSelected} aria-label="Duplicate selected objects" title="Duplicate selected objects"><Copy size={15}/> Duplicate</button>
               <button className="object-action" onClick={() => reorderSelected(1)} disabled={!canMoveSelectionForward} aria-label="Bring selected objects forward" title="Bring selected set forward one step"><ArrowUp size={15}/> Forward</button>
@@ -1315,6 +1740,28 @@ function App() {
           </div>}
           <div className="editor-bottom">
             <ColorControl value={activeColor} onChange={setActiveColor}/>
+            {tool === 'selectDoodle' && <div className="selection-doodle-controls" role="group" aria-label="Selection doodle outline settings">
+              <label className="selection-doodle-color" htmlFor="selection-doodle-color">
+                <span className="control-label">DOTTED LINE</span>
+                <input id="selection-doodle-color" type="color" value={selectionDoodleColor} onChange={(event) => setSelectionDoodleColor(normalizeHexColor(event.target.value) ?? '#4B8BF4')} aria-label="Selection doodle outline color" />
+                <output>{selectionDoodleColor}</output>
+                <span className="selection-doodle-sample" style={{ '--selection-doodle-color': selectionDoodleColor }} aria-hidden="true" />
+              </label>
+              <button className="object-action" onClick={() => setSelectionDoodlePath(null)} disabled={!selectionDoodlePath} aria-label="Clear selection doodle outline">Clear outline</button>
+            </div>}
+            {tool.startsWith('shape-') && <div className="brush-control shape-defaults" role="group" aria-label="New shape defaults">
+              <span className="control-label">OUTLINE</span><input type="color" aria-label="New shape outline color" value={activeColor} onChange={(event) => setActiveColor(event.target.value)}/>
+              <span className="control-label">FILL</span><button className={`mode-button ${defaultShapeFill === 'none' ? 'selected' : ''}`} onClick={() => setDefaultShapeFill('none')} aria-pressed={defaultShapeFill === 'none'}>None</button>
+              <input type="color" aria-label="New shape fill color" value={defaultShapeFill === 'none' ? activeColor : defaultShapeFill} onChange={(event) => setDefaultShapeFill(event.target.value)}/>
+              <input aria-label="New shape stroke width" type="range" min="1" max="30" value={size} onChange={(event) => setSize(Number(event.target.value))}/><output>{size}px</output>
+            </div>}
+            {selectedObject?.type === 'shape' && tool === 'select' && <div className="brush-control shape-defaults" role="group" aria-label="Selected shape settings">
+              <span className="control-label">OUTLINE</span><input type="color" aria-label="Selected shape outline color" value={selectedObject.color} onChange={(event) => changeSelectedShape({ color: event.target.value })}/>
+              <span className="control-label">FILL</span><button className={`mode-button ${selectedObject.fillColor === 'none' ? 'selected' : ''}`} onClick={() => changeSelectedShape({ fillColor: selectedObject.fillColor === 'none' ? activeColor : 'none' })} aria-pressed={selectedObject.fillColor !== 'none'}>Fill</button>
+              {selectedObject.fillColor !== 'none' && <input type="color" aria-label="Selected shape fill color" value={selectedObject.fillColor} onChange={(event) => changeSelectedShape({ fillColor: event.target.value })}/>}
+              {selectedObject.shapeKind === 'arrow' && <select aria-label="Arrowhead style" value={selectedObject.arrowHead} onChange={(event) => changeSelectedShape({ arrowHead: event.target.value })}><option value="none">No head</option><option value="start">Start</option><option value="end">End</option><option value="both">Both</option></select>}
+              <input aria-label="Selected shape stroke width" type="range" min="1" max="30" value={Math.max(1, Math.min(100, selectedObject.strokeWidth + (selectedObject.thicknessDelta ?? 0)))} onChange={(event) => changeSelectedShape({ strokeWidth: Number(event.target.value) })}/><output>{Math.max(1, Math.min(100, selectedObject.strokeWidth + (selectedObject.thicknessDelta ?? 0)))}px</output>
+            </div>}
             {tool === 'eraser' && <div className="brush-control eraser-mode" role="group" aria-label="Eraser mode">
               <span className="control-label">MODE</span>
               <button className={`mode-button ${eraserMode === 'classic' ? 'selected' : ''}`} onClick={() => setEraserMode('classic')} aria-pressed={eraserMode === 'classic'} aria-label="Classic eraser mode: remove whole objects" title="Classic — erases sketch ink and removes the whole object it crosses">Classic</button>
@@ -1325,10 +1772,10 @@ function App() {
               <input aria-label="Brush size" type="range" min="1" max="100" step="1" value={size} onChange={(event) => setSize(Number(event.target.value))}/>
               <output className="size-value">{size}px logical</output>
             </div>}
-            <div className="bottom-tip"><MousePointer2 size={14}/>{tool === 'select' ? 'Edit objects' : tool === 'eraser' ? (eraserMode === 'doodle' ? 'Brush-erase a part · the rest stays editable' : 'Erase sketch or whole object') : tool === 'text' ? 'Click to add editable text' : tool === 'fill' ? 'Click a connected region to fill' : tool === 'pan' ? 'Drag to pan · Space + drag also works' : 'Draw freely'}</div>
+            <div className="bottom-tip"><MousePointer2 size={14}/>{tool === 'select' ? 'Edit objects' : tool === 'selectDoodle' ? 'Draw a closed loop to lasso · scribble across objects to select · Shift adds' : tool === 'eraser' ? (eraserMode === 'doodle' ? 'Brush-erase a part · the rest stays editable' : 'Erase sketch or whole object') : tool === 'text' ? 'Click to add editable text' : tool === 'fill' ? 'Click a connected region to fill' : tool === 'pan' ? 'Drag to pan · Space + drag also works' : tool.startsWith('shape-') ? 'Drag to draw · Shift constrains the proportions or angle' : 'Draw freely'}</div>
           </div>
         </div>
-        <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">Choose a clean illustration from the strip above.</p>
+        {guessingEnabled && <aside className="insight-panel"><div className="panel-kicker"><span>YOUR CREATIVE COMPANION</span><Sparkles size={15}/></div><div className="panel-title-icon"><Sparkles size={19}/></div><h2>A little help<br/><em>from AI.</em></h2><p className="panel-intro">Every great drawing starts somewhere. Sketch an object and see what AI sees.</p><div className="panel-divider"/><div className="prediction-heading"><div><span className="section-number">02 /</span><h3>AI predictions</h3></div><span className="live-tag"><i/> LIVE</span></div><p className="prediction-caption">Guesses update while you draw. Choose a clean illustration from the strip above.</p>
           {status === 'ready' && fallbackReason && <p className="model-note" title={`Reason: ${fallbackReason}`}><Info size={12}/> Using fallback model — {classCount} objects</p>}
           {recognition.status === 'ok' ? <div aria-live="polite"><p className="prediction-verdict">{lowConfidence ? 'AI isn’t completely sure. Maybe:' : 'AI thinks you might be drawing…'}</p><div className="primary-guess"><span className="primary-name">{suggestions[0].name}</span><span className="primary-score">{Math.round(suggestions[0].score * 100)}%</span></div><div className="progress primary"><span style={{width:`${suggestions[0].score * 100}%`}}/></div>{others.length > 0 && <div className="other-guesses"><span className="other-label">Other guesses</span><div className="other-chips">{others.map((prediction) => <span key={prediction.label} className="other-chip" title={`${displayName(prediction.label)} · ${formatScore(prediction.score)}`}>{displayName(prediction.label)} <em>{formatScore(prediction.score)}</em></span>)}</div></div>}<p className="prediction-footnote">Top {shownClasses} guesses from the model. Confidence is an estimate, not a promise.</p></div> : <div className="empty-predictions" aria-live="polite"><div className="empty-sparkle"><Sparkles size={20}/></div><strong>{status === 'loading' ? 'Getting things ready' : status === 'error' ? 'AI is taking a break' : recognition.status === 'tiny' ? 'Keep going' : 'Waiting for your sketch'}</strong><span>{status === 'loading' ? 'Preparing the drawing categories…' : status === 'error' ? 'The model could not load. You can still draw and edit objects.' : recognition.status === 'tiny' ? 'The AI needs a little more drawing before it can guess.' : 'Start drawing to see AI predictions.'}</span></div>}
           <div className="source-roadmap artwork-refresh-state" aria-label="Next artwork sources">
@@ -1344,12 +1791,12 @@ function App() {
           </div>
           {DEBUG_AI && recognition.debug && <DebugPanel sketch={sketchRef.current} debug={recognition.debug} open={showDebug} onToggle={() => setShowDebug(!showDebug)} backend={backend} predictions={predictions} profile={modelRef.current?.profile}/>}
           <div className="panel-bottom"><Info size={15}/><span>Current suggestions use bundled artwork with documented licenses. New source files are added only after item-level reuse checks.</span></div>
-        </aside>
+        </aside>}
       </div>
       {message && <div className="notice" role="status">{message}</div>}
       <div className="page-bottom"><span><span className="tiny-star">✳</span> Made for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
-    {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>Sketch with the pencil, add editable text with the Text tool, or use Fill on a connected region. Sketch ink, fills and objects stay on separate layers.</li><li>SketchAI crops, centers and normalizes the sketch for the active model: 96 × 96 for the supplied 333-class model, or 28 × 28 for the retained fallback models.</li><li>A neural network looks for patterns in the pixels.</li><li>The active drawing classifier looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Choose an illustration to add an editable object. Select artwork or text to move, resize, rotate, recolor, duplicate, reorder or delete it. Text can be edited inline and artwork can be flipped. Zoom with the controls or wheel, and pan with Space + drag or the Hand tool; view changes never alter document coordinates.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your rough sketch stays separate from clean objects.</div><button className="primary-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
+    {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>Sketch with the pencil, add editable text with the Text tool, or use Fill on a connected region. Select Doodle draws a closed loop or an open stroke to select objects without erasing; hold Shift to add to a selection. Sketch ink, fills and objects stay on separate layers.</li><li>SketchAI crops, centers and normalizes the sketch for the active model: 96 × 96 for the supplied 333-class model, or 28 × 28 for the retained fallback models.</li><li>A neural network looks for patterns in the pixels.</li><li>The active drawing classifier looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Choose an illustration to add an editable object. Select artwork or text to move, resize, rotate, recolor, duplicate, reorder or delete it. Text can be edited inline and artwork can be flipped. Zoom with the controls or wheel, and pan with Space + drag or the Hand tool; view changes never alter document coordinates.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your rough sketch stays separate from clean objects.</div><button className="primary-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
   </div>;
 }
 

@@ -53,6 +53,40 @@ remains the default; the original 100-class model remains as fallback.
 
 ---
 
+## Why the current score is about 38% — and how to improve it
+
+The checked-in model's recorded held-out score is **37.71% top-1**, **58.12%
+top-3**, and **76.12% top-10** across 345 classes. It was trained from only
+**100 drawings per category** in the current npm mirror (80 training examples per
+class after the split). The `--samples-per-class 5000` setting cannot change that
+source limit; use a full Quick, Draw! source and matching rasterization loader
+before expecting a large data-driven gain.
+
+The training pipeline also previously passed `factor=0.05` directly to Keras
+`RandomRotation`. Keras interprets that as 5% of a full turn (up to 18°), not
+0.05 radians (about 2.9°). The current code converts radians correctly. Retrain
+to test whether the gentler, orientation-preserving augmentation improves the
+score; it does not change the already-exported model.
+
+To compare a friend's “60%” fairly, use the same 345 labels, same untouched
+held-out drawings, same preprocessing, and top-1 metric. A 60% score on fewer
+classes, a different split, training examples reused for testing, or top-k is not
+an apples-to-apples comparison. Keep a separate hand-drawn test set too: Quick,
+Draw! held-out performance does not perfectly predict how people use this app.
+
+Suggested order of work:
+
+1. Increase and diversify training examples with the full licensed dataset.
+2. Keep class-balanced, non-overlapping train/validation/test splits and track
+   per-class confusion, not just aggregate accuracy.
+3. Tune the CNN capacity, regularization and augmentation only against validation
+   data; compare the final candidate once on the frozen test set.
+4. Add opt-in, consented real-user doodles to a separate evaluation/training set.
+
+The app's suggestion bar uses top-10 candidates, so top-1 is not the whole user
+experience: the model's 76.12% top-10 score is also relevant, and should be
+measured on the same held-out data after every retrain.
+
 ## Requirements
 
 * **A free Google account** (for Google Colab and Google Drive).
@@ -79,8 +113,9 @@ and is cloned over plain HTTPS.
 5. Unzip it and run `node scripts/install-model-345.mjs ./model-345`.
 6. `npm run dev` — the header should say **AI ready — 345 objects**.
 
-Step 2 takes a few minutes and proves everything works. Step 3 is the real
-training run and takes hours.
+Step 2 takes a few minutes and proves everything works. Step 3 trains all 345
+classes, but the current redistribution has only 100 examples per class; it is
+not a full Quick, Draw! training run and will not reach the advertised 1.7M sample count.
 
 ---
 
@@ -97,9 +132,9 @@ training run and takes hours.
 
 **Runtime → Change runtime type → Hardware accelerator → GPU (T4)**, then Save.
 
-A GPU is not required — the notebook runs on CPU too — but a T4 turns a
-multi-day run into a few hours. If Colab tells you no GPUs are available, use
-**None** and reduce `SAMPLES_PER_CLASS` to 3000.
+A GPU is not required — the current mirror contains only 100 examples per class,
+so this dataset is small enough to run on CPU. A GPU is still convenient for
+experiments, but it does not increase the number of available examples.
 
 ### 3. Run the quick test first
 
@@ -109,15 +144,16 @@ In the configuration cell, make sure it says:
 QUICK_TEST = True      # first run
 ```
 
-Then **Runtime → Run all**. It trains 20 categories on 500 drawings each for
-10 epochs, using **real Google Quick, Draw! data**. Watch for:
+Then **Runtime → Run all**. It trains 20 categories on up to 100 drawings each
+(the limit in the current mirror) for 10 epochs, using real Google Quick, Draw!
+data. This is only an end-to-end smoke test. Watch for:
 
 * the environment block (Python / TensorFlow / Keras / TensorFlow.js / GPU / RAM),
 * `Repository already present` or a successful clone,
 * `Exporter smoke test: PASSED` — the converter works in your runtime,
-* `Quick Draw dataset reachable` — Google's bucket is reachable,
+* `Quick Draw dataset reachable` — the dataset mirror is reachable,
 * the download progress lines,
-* `train 8,000   validation 1,000   test 1,000`,
+* `train 1,600   validation 200   test 200` (if each selected category has 100 rows),
 * the model summary ending in a Dense layer with 20 outputs,
 * training accuracy climbing over ten epochs,
 * `TensorFlow.js load verified`,
@@ -135,8 +171,12 @@ QUICK_TEST = False     # second run: all 345 categories
 
 then **Runtime → Run all** again. Nothing else needs changing.
 
-* `SAMPLES_PER_CLASS = 5000` → 1,725,000 drawings (the safe default).
-* `SAMPLES_PER_CLASS = 10000` → 3,450,000 drawings, better model, longer run.
+The checked-in model was trained on 100 drawings per class (34,500 total,
+27,600 train). The current `quickdraw.js` redistribution contains only 100 per
+category. Raising `SAMPLES_PER_CLASS` to 5,000 or 10,000 does **not** fetch more
+examples; the loader reports the shortfall and uses what is available. To improve
+accuracy substantially, first supply a compatible full Quick, Draw! dataset and
+extend the loader to rasterize those vector drawings into the app's input format.
 
 **Optional but recommended:** set `USE_DRIVE = True` so checkpoints are also
 written to your Google Drive. If Colab disconnects overnight you can restart
@@ -147,12 +187,10 @@ from the saved checkpoint instead of losing the run.
 There is no honest way to give a precise number: it depends on which GPU Colab
 hands you, on how busy the machines are, and on `SAMPLES_PER_CLASS`.
 
-Roughly, for the full 345-class run:
-
-| Setup | Order of magnitude |
-| --- | --- |
-| Free T4 GPU, 5,000 per class | a few hours |
-| Free T4 GPU, 10,000 per class | most of a day |
+With the current 34,500-example mirror, runtime is much shorter than a full
+Quick, Draw! training job and depends on Colab startup, TensorFlow setup and the
+chosen runtime. Do not use the earlier 5,000/10,000-per-class estimates: this
+mirror does not contain that many drawings.
 | CPU runtime, 5,000 per class | days — not recommended |
 
 Colab free runtimes also disconnect after periods of inactivity and have daily
@@ -219,7 +257,7 @@ If you have a machine with Python 3.9+ and `tensorflowjs` installed:
 
 ```bash
 python training/train_345.py --quick-test                  # prove the pipeline
-python training/train_345.py --samples-per-class 5000      # the real run
+python training/train_345.py --samples-per-class 100       # current mirror ceiling
 python training/train_345.py --help
 ```
 
@@ -227,7 +265,7 @@ Useful flags:
 
 | Flag | Meaning |
 | --- | --- |
-| `--samples-per-class N` | drawings per category (default 5000) |
+| `--samples-per-class N` | maximum requested drawings per category (default 100; current mirror ceiling is 100) |
 | `--epochs N` | maximum epochs; early stopping usually ends sooner |
 | `--batch-size N` | lower it if you run out of memory |
 | `--no-augment` | disable the light shift/rotate augmentation |
@@ -341,10 +379,11 @@ comfortably under the 5 MB target. Training uses `SparseCategoricalCrossentropy`
 Adam (lr 1e-3), and tracks top-1, top-3 and top-10 accuracy, with
 `EarlyStopping` (patience 4) and `ReduceLROnPlateau`.
 
-> **A note on epochs.** A CNN needs optimiser *steps*, not just epochs. The full
-> run gets ~6,700 steps per epoch and converges comfortably. A tiny quick test
-> gets ~60, which is why quick tests run 10 epochs with a smaller batch: with
-> only 3 epochs a quick test looks broken when it is merely short.
+> **A note on epochs.** A CNN needs optimiser *steps*, not just epochs. With the
+> current 100-per-class mirror, the full 345-class training split has about 108
+> batches/steps per epoch at batch size 256. The 20-class quick test has only
+> about 13 steps per epoch at batch size 128, so it is a pipeline check, not an
+> accuracy benchmark.
 
 ### Output
 
@@ -410,7 +449,7 @@ test-split numbers from the notebook for accuracy claims.
 | `Could not get the SketchAI repository automatically` | The public clone failed. Download the ZIP from GitHub, upload it to the Files panel, `!unzip -q SketchAI*.zip -d /content/`, then re-run the cell. |
 | `No module named 'train_345'` | The clone is missing `training/`. Re-run the setup cell — it checks for that file and re-clones if needed. |
 | `Exporter smoke test: FAILED` | TensorFlow.js cannot convert in this runtime. Re-run the setup cell; if it still fails, **Runtime → Restart runtime** then Run all. |
-| `Quick Draw dataset could not be reached` | The runtime cannot reach Google Cloud Storage. Re-run the cell (transient), or check the runtime has internet access. |
+| `Quick Draw dataset could not be reached` | The notebook fetches the CC BY 4.0 npm mirror automatically. Retry once, or run `python training/fetch_quickdraw_data.py` and re-check the local files. |
 | `No GPU detected` | Fine but slow. Runtime → Change runtime type → T4 GPU, then Run all again. |
 | Runtime disconnects mid-run | Set `USE_DRIVE = True`, lower `SAMPLES_PER_CLASS`, re-run from section 3 (data is cached). |
 | Out of memory | Lower `BATCH_SIZE` to 128 or 64. |

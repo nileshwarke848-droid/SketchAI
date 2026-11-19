@@ -1,3 +1,5 @@
+import { drawShapeObject } from './scene.js';
+
 /**
  * Doodle eraser: a soft, brush-like eraser that removes pixels anywhere on the
  * document. Unlike the classic eraser — which deletes a whole scene object as
@@ -56,6 +58,16 @@ export function renderObjectRaster({ object, image, pixelScale = ERASE_PIXEL_SCA
   // exactly like artwork pixels. Layout mirrors renderScene, in local space.
   if (object.type === 'text') {
     renderTextGlyphs({ context, object, pixelScale });
+    return canvas;
+  }
+  if (object.type === 'shape') {
+    context.save();
+    // Keep this raster in unrotated object-local space. The surviving bitmap
+    // carries the original scene rotation/flip just like any other object.
+    context.translate(width / 2, height / 2);
+    context.scale(pixelScale, pixelScale);
+    drawShapeObject(context, object);
+    context.restore();
     return canvas;
   }
   if (image) {

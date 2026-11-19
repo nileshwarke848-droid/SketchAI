@@ -1,0 +1,8708 @@
+{
+  "title": "ModelX evaluation on frozen 400-drawing Quick, Draw! set",
+  "dataset_manifest": "training/evaluation-400-manifest.json",
+  "class_indices_file": "Google Drive class_indices (1).json",
+  "class_count": 333,
+  "model_input_shape": [
+    null,
+    96,
+    96,
+    3
+  ],
+  "model_output_shape": [
+    null,
+    333
+  ],
+  "preprocessing": {
+    "canvas": "Same generated canvas per test drawing used by the existing paired evaluation (1200x720, 28x28 bitmap alpha-rendered at 364px centered)",
+    "pipeline": "SketchAI preprocessFor333Model: bounding-box crop with padding 1.186, area-averaged to 96x96, contrast normalization target peak 1.0, min gamma 0.25",
+    "channel_adaptation": "Replicated resulting white-on-black grayscale channel identically to RGB to satisfy observed model input shape (96,96,3)",
+    "normalization_note": "Training input normalization and color preprocessing were not included with the model archive; this app-style preprocessing is provisional."
+  },
+  "limitations": [
+    "The supplied output class-index map has 333 unique contiguous indices and all 40 tested labels are present, but alignment with the model learned output neurons is not independently verified.",
+    "Model archive does not provide training-data provenance; overlap with the held-out evaluation drawings is unknown.",
+    "ModelX expects 96x96x3, whereas existing 333 profile in the app was designed around a 96x96x1 model. This evaluation adapted grayscale to RGB by channel replication; train-time color/channel semantics are undocumented.",
+    "Same 400 images and labels as existing model comparison, but model-specific input preprocessing differs and ModelX required a provisional channel adaptation."
+  ],
+  "summary": {
+    "rates": {
+      "1": {
+        "correct": 3,
+        "total": 400,
+        "accuracy": 0.0075,
+        "wilson95": [
+          0.0025538429629852373,
+          0.02181610802770022
+        ]
+      },
+      "3": {
+        "correct": 9,
+        "total": 400,
+        "accuracy": 0.0225,
+        "wilson95": [
+          0.011881448169963291,
+          0.04220312360273175
+        ]
+      },
+      "5": {
+        "correct": 10,
+        "total": 400,
+        "accuracy": 0.025,
+        "wilson95": [
+          0.013634943739762435,
+          0.045402064829934204
+        ]
+      },
+      "10": {
+        "correct": 10,
+        "total": 400,
+        "accuracy": 0.025,
+        "wilson95": [
+          0.013634943739762435,
+          0.045402064829934204
+        ]
+      }
+    },
+    "paired_class_cluster_bootstrap_delta_vs_345": {
+      "1": {
+        "modelx_minus_345_pp": -37.25,
+        "paired_class_cluster_bootstrap95_pp": [
+          -45.75,
+          -28.999999999999996
+        ]
+      },
+      "3": {
+        "modelx_minus_345_pp": -53.25,
+        "paired_class_cluster_bootstrap95_pp": [
+          -62.5,
+          -42.75
+        ]
+      },
+      "5": {
+        "modelx_minus_345_pp": -59.5,
+        "paired_class_cluster_bootstrap95_pp": [
+          -68.25,
+          -50.0
+        ]
+      },
+      "10": {
+        "modelx_minus_345_pp": -67.5,
+        "paired_class_cluster_bootstrap95_pp": [
+          -75.00625,
+          -59.0
+        ]
+      }
+    }
+  },
+  "per_class": {
+    "arm": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 2,
+        "3": 3,
+        "5": 5,
+        "10": 7
+      }
+    },
+    "bed": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 6,
+        "3": 6,
+        "5": 8,
+        "10": 8
+      }
+    },
+    "bird": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 0,
+        "3": 2,
+        "5": 3,
+        "10": 4
+      }
+    },
+    "brain": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 5,
+        "3": 6,
+        "5": 7,
+        "10": 8
+      }
+    },
+    "broccoli": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 4,
+        "3": 5,
+        "5": 7,
+        "10": 9
+      }
+    },
+    "bucket": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 6,
+        "3": 9,
+        "5": 9,
+        "10": 9
+      }
+    },
+    "candle": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 6,
+        "3": 8,
+        "5": 8,
+        "10": 9
+      }
+    },
+    "cat": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 5,
+        "3": 7,
+        "5": 7,
+        "10": 7
+      }
+    },
+    "chandelier": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 1,
+        "3": 3,
+        "5": 4,
+        "10": 4
+      }
+    },
+    "computer": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 3,
+        "3": 5,
+        "5": 7,
+        "10": 7
+      }
+    },
+    "crocodile": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 1,
+        "3": 6,
+        "5": 7,
+        "10": 7
+      }
+    },
+    "cup": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 0,
+        "3": 3,
+        "5": 7,
+        "10": 7
+      }
+    },
+    "dragon": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 0,
+        "3": 2,
+        "5": 2,
+        "10": 3
+      }
+    },
+    "dresser": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 4,
+        "3": 6,
+        "5": 6,
+        "10": 9
+      }
+    },
+    "drill": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 4,
+        "3": 7,
+        "5": 7,
+        "10": 7
+      }
+    },
+    "dumbbell": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 8,
+        "3": 8,
+        "5": 8,
+        "10": 8
+      }
+    },
+    "floor lamp": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 8,
+        "3": 9,
+        "5": 9,
+        "10": 9
+      }
+    },
+    "foot": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 1,
+        "3": 3,
+        "5": 3,
+        "10": 6
+      }
+    },
+    "frog": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 1
+      }
+    },
+    "hammer": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 8,
+        "3": 10,
+        "5": 10,
+        "10": 10
+      }
+    },
+    "headphones": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 9,
+        "3": 9,
+        "5": 10,
+        "10": 10
+      }
+    },
+    "helicopter": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 1,
+        "3": 1,
+        "5": 2,
+        "10": 4
+      }
+    },
+    "hockey puck": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 2,
+        "3": 3,
+        "5": 6,
+        "10": 6
+      }
+    },
+    "lightning": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 4,
+        "3": 6,
+        "5": 6,
+        "10": 8
+      }
+    },
+    "lobster": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      }
+    },
+    "mug": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 7,
+        "3": 9,
+        "5": 9,
+        "10": 9
+      }
+    },
+    "nail": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 6,
+        "3": 7,
+        "5": 7,
+        "10": 7
+      }
+    },
+    "pear": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 7,
+        "3": 8,
+        "5": 8,
+        "10": 8
+      }
+    },
+    "remote control": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 5,
+        "3": 7,
+        "5": 7,
+        "10": 9
+      }
+    },
+    "sandwich": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 2,
+        "3": 5,
+        "5": 6,
+        "10": 6
+      }
+    },
+    "saw": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 4,
+        "3": 6,
+        "5": 6,
+        "10": 8
+      }
+    },
+    "scissors": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 2,
+        "3": 4,
+        "5": 4,
+        "10": 6
+      }
+    },
+    "shovel": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 4,
+        "3": 6,
+        "5": 6,
+        "10": 6
+      }
+    },
+    "snorkel": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 3,
+        "3": 4,
+        "5": 4,
+        "10": 4
+      }
+    },
+    "stereo": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 4,
+        "3": 8,
+        "5": 8,
+        "10": 9
+      }
+    },
+    "t-shirt": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 7,
+        "3": 9,
+        "5": 10,
+        "10": 10
+      }
+    },
+    "tiger": {
+      "modelx": {
+        "1": 3,
+        "3": 9,
+        "5": 10,
+        "10": 10
+      },
+      "345": {
+        "1": 1,
+        "3": 2,
+        "5": 5,
+        "10": 8
+      }
+    },
+    "tooth": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 6,
+        "3": 7,
+        "5": 7,
+        "10": 7
+      }
+    },
+    "tractor": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 4,
+        "3": 6,
+        "5": 6,
+        "10": 8
+      }
+    },
+    "violin": {
+      "modelx": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "345": {
+        "1": 2,
+        "3": 6,
+        "5": 6,
+        "10": 7
+      }
+    }
+  },
+  "cases": [
+    {
+      "label": "arm",
+      "source_row": 26,
+      "rank": 245,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5926629304885864,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "bread",
+        "eraser"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "arm",
+      "source_row": 48,
+      "rank": 250,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6164284944534302,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "jail"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "arm",
+      "source_row": 27,
+      "rank": 244,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.41619357466697693,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "bread",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "arm",
+      "source_row": 74,
+      "rank": 233,
+      "top1": "blackberry",
+      "top1_confidence": 0.4892536401748657,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "harp",
+        "watermelon",
+        "calendar",
+        "jail"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "arm",
+      "source_row": 23,
+      "rank": 259,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.46146050095558167,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "arm",
+      "source_row": 64,
+      "rank": 245,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6551136374473572,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "jail",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "arm",
+      "source_row": 47,
+      "rank": 252,
+      "top1": "blackberry",
+      "top1_confidence": 0.43248236179351807,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "sleeping bag",
+        "calendar",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "arm",
+      "source_row": 96,
+      "rank": 244,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5795013904571533,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "harp",
+        "eraser"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "arm",
+      "source_row": 17,
+      "rank": 239,
+      "top1": "blackberry",
+      "top1_confidence": 0.3926437795162201,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "tornado",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "arm",
+      "source_row": 32,
+      "rank": 230,
+      "top1": "blackberry",
+      "top1_confidence": 0.4164090156555176,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "harp",
+        "calendar",
+        "eraser"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "bed",
+      "source_row": 69,
+      "rank": 67,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7399263381958008,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bed",
+      "source_row": 24,
+      "rank": 59,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6602510213851929,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "calendar",
+        "keyboard",
+        "harp",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bed",
+      "source_row": 38,
+      "rank": 58,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5949293375015259,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "keyboard",
+        "calendar",
+        "book",
+        "piano",
+        "bread"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bed",
+      "source_row": 93,
+      "rank": 71,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8951622247695923,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "camouflage",
+        "calendar",
+        "keyboard",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bed",
+      "source_row": 81,
+      "rank": 58,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8497856259346008,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "camouflage",
+        "keyboard",
+        "book",
+        "piano",
+        "jail"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "bed",
+      "source_row": 51,
+      "rank": 83,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3742861747741699,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "blackberry",
+        "keyboard",
+        "piano",
+        "tiger",
+        "paintbrush",
+        "spreadsheet",
+        "crayon"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "bed",
+      "source_row": 10,
+      "rank": 62,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6242453455924988,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "bread"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bed",
+      "source_row": 53,
+      "rank": 71,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6439629197120667,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bed",
+      "source_row": 43,
+      "rank": 71,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8513457775115967,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "camouflage",
+        "calendar",
+        "book",
+        "piano",
+        "bread"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bed",
+      "source_row": 1,
+      "rank": 87,
+      "top1": "camouflage",
+      "top1_confidence": 0.31777331233024597,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "beard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bird",
+      "source_row": 40,
+      "rank": 236,
+      "top1": "tiger",
+      "top1_confidence": 0.43866369128227234,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "blackberry",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bird",
+      "source_row": 1,
+      "rank": 235,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6632938981056213,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "piano",
+        "calendar",
+        "crayon"
+      ],
+      "345_rank": 9
+    },
+    {
+      "label": "bird",
+      "source_row": 3,
+      "rank": 240,
+      "top1": "camouflage",
+      "top1_confidence": 0.49425747990608215,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "paintbrush",
+        "calendar",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bird",
+      "source_row": 27,
+      "rank": 255,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.31538718938827515,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "paintbrush",
+        "tornado",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bird",
+      "source_row": 69,
+      "rank": 237,
+      "top1": "tiger",
+      "top1_confidence": 0.5041254758834839,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bird",
+      "source_row": 68,
+      "rank": 238,
+      "top1": "tiger",
+      "top1_confidence": 0.5678067207336426,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "paintbrush",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "bird",
+      "source_row": 70,
+      "rank": 230,
+      "top1": "tiger",
+      "top1_confidence": 0.4463816285133362,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "paintbrush",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "bird",
+      "source_row": 20,
+      "rank": 241,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5211557745933533,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "paintbrush",
+        "calendar",
+        "tornado"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bird",
+      "source_row": 41,
+      "rank": 229,
+      "top1": "camouflage",
+      "top1_confidence": 0.4112628400325775,
+      "top10": [
+        "camouflage",
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "soccer ball",
+        "eraser",
+        "tornado"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "bird",
+      "source_row": 72,
+      "rank": 255,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8026441931724548,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "book",
+        "calendar",
+        "keyboard",
+        "camouflage",
+        "piano",
+        "bread"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "brain",
+      "source_row": 86,
+      "rank": 65,
+      "top1": "tiger",
+      "top1_confidence": 0.5928089022636414,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "keyboard",
+        "paintbrush",
+        "blackberry",
+        "spreadsheet",
+        "piano",
+        "book",
+        "soccer ball"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "brain",
+      "source_row": 77,
+      "rank": 72,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6630180478096008,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "blackberry",
+        "camouflage",
+        "keyboard",
+        "book",
+        "calendar",
+        "paintbrush",
+        "basket"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "brain",
+      "source_row": 65,
+      "rank": 62,
+      "top1": "tiger",
+      "top1_confidence": 0.5662177205085754,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "spreadsheet",
+        "blackberry",
+        "keyboard",
+        "beard",
+        "book",
+        "tornado",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "brain",
+      "source_row": 37,
+      "rank": 34,
+      "top1": "tiger",
+      "top1_confidence": 0.6265910267829895,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "tornado",
+        "beard",
+        "keyboard",
+        "soccer ball"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "brain",
+      "source_row": 49,
+      "rank": 50,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.45476362109184265,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "tornado"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "brain",
+      "source_row": 52,
+      "rank": 52,
+      "top1": "tiger",
+      "top1_confidence": 0.6224346160888672,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "tornado",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "brain",
+      "source_row": 31,
+      "rank": 54,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.45368173718452454,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "brain",
+      "source_row": 27,
+      "rank": 47,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.43652161955833435,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "tornado",
+        "calendar",
+        "beard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "brain",
+      "source_row": 61,
+      "rank": 67,
+      "top1": "tiger",
+      "top1_confidence": 0.40345993638038635,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "keyboard",
+        "spreadsheet",
+        "camouflage",
+        "paintbrush",
+        "book",
+        "piano",
+        "calendar",
+        "blackberry"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "brain",
+      "source_row": 59,
+      "rank": 60,
+      "top1": "tiger",
+      "top1_confidence": 0.45442691445350647,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "soccer ball",
+        "keyboard",
+        "beard",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "broccoli",
+      "source_row": 90,
+      "rank": 41,
+      "top1": "tiger",
+      "top1_confidence": 0.5161314010620117,
+      "top10": [
+        "tiger",
+        "camouflage",
+        "soccer ball",
+        "keyboard",
+        "paintbrush",
+        "The Great Wall of China",
+        "blackberry",
+        "spreadsheet",
+        "beard",
+        "goatee"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "broccoli",
+      "source_row": 45,
+      "rank": 71,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6583330631256104,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "soccer ball",
+        "piano"
+      ],
+      "345_rank": 7
+    },
+    {
+      "label": "broccoli",
+      "source_row": 4,
+      "rank": 56,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5080918073654175,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "calendar",
+        "keyboard",
+        "tornado",
+        "soccer ball"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "broccoli",
+      "source_row": 24,
+      "rank": 51,
+      "top1": "tiger",
+      "top1_confidence": 0.5776750445365906,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "spreadsheet",
+        "keyboard",
+        "paintbrush",
+        "calendar",
+        "book",
+        "piano",
+        "blackberry",
+        "camouflage"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "broccoli",
+      "source_row": 67,
+      "rank": 56,
+      "top1": "blackberry",
+      "top1_confidence": 0.31991299986839294,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "sleeping bag",
+        "crayon"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "broccoli",
+      "source_row": 78,
+      "rank": 43,
+      "top1": "camouflage",
+      "top1_confidence": 0.24117648601531982,
+      "top10": [
+        "camouflage",
+        "tiger",
+        "keyboard",
+        "paintbrush",
+        "The Great Wall of China",
+        "spreadsheet",
+        "book",
+        "piano",
+        "calendar",
+        "crayon"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "broccoli",
+      "source_row": 30,
+      "rank": 52,
+      "top1": "camouflage",
+      "top1_confidence": 0.38428616523742676,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "crayon",
+        "keyboard",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "broccoli",
+      "source_row": 33,
+      "rank": 49,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.47958678007125854,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "broccoli",
+      "source_row": 23,
+      "rank": 57,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6976856589317322,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "tornado",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "broccoli",
+      "source_row": 94,
+      "rank": 48,
+      "top1": "tiger",
+      "top1_confidence": 0.43787458539009094,
+      "top10": [
+        "tiger",
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "keyboard",
+        "paintbrush",
+        "beard",
+        "piano",
+        "spreadsheet",
+        "blackberry"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bucket",
+      "source_row": 79,
+      "rank": 120,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5232204794883728,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bucket",
+      "source_row": 31,
+      "rank": 121,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.41738489270210266,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "crayon",
+        "calendar",
+        "sleeping bag"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "bucket",
+      "source_row": 62,
+      "rank": 109,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.37991467118263245,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "crayon",
+        "keyboard",
+        "calendar",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bucket",
+      "source_row": 7,
+      "rank": 128,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.39221951365470886,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "crayon",
+        "calendar",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bucket",
+      "source_row": 25,
+      "rank": 107,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.46037039160728455,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "calendar",
+        "spreadsheet",
+        "keyboard",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "bucket",
+      "source_row": 82,
+      "rank": 80,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8347423672676086,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "jail",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bucket",
+      "source_row": 81,
+      "rank": 142,
+      "top1": "blackberry",
+      "top1_confidence": 0.3583837151527405,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "crayon",
+        "calendar",
+        "sleeping bag",
+        "harp",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bucket",
+      "source_row": 56,
+      "rank": 75,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9318405985832214,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "spreadsheet",
+        "tiger",
+        "book",
+        "camouflage",
+        "calendar",
+        "keyboard",
+        "jail",
+        "bread"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "bucket",
+      "source_row": 23,
+      "rank": 89,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5833466053009033,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "tornado",
+        "calendar",
+        "bread"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "bucket",
+      "source_row": 71,
+      "rank": 104,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.49631136655807495,
+      "top10": [
+        "The Great Wall of China",
+        "book",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "jail"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "candle",
+      "source_row": 31,
+      "rank": 291,
+      "top1": "blackberry",
+      "top1_confidence": 0.41353386640548706,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "calendar",
+        "harp",
+        "keyboard",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "candle",
+      "source_row": 16,
+      "rank": 264,
+      "top1": "blackberry",
+      "top1_confidence": 0.5572223663330078,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "calendar",
+        "keyboard",
+        "piano",
+        "jail",
+        "harp",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "candle",
+      "source_row": 59,
+      "rank": 267,
+      "top1": "book",
+      "top1_confidence": 0.5268746018409729,
+      "top10": [
+        "book",
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "crayon",
+        "harp",
+        "jail",
+        "watermelon",
+        "sleeping bag",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "candle",
+      "source_row": 0,
+      "rank": 285,
+      "top1": "book",
+      "top1_confidence": 0.2713319957256317,
+      "top10": [
+        "book",
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "calendar",
+        "keyboard",
+        "piano",
+        "crayon",
+        "sleeping bag"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "candle",
+      "source_row": 66,
+      "rank": 264,
+      "top1": "blackberry",
+      "top1_confidence": 0.5596210956573486,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "calendar",
+        "harp",
+        "keyboard",
+        "sleeping bag",
+        "jail",
+        "spreadsheet"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "candle",
+      "source_row": 55,
+      "rank": 260,
+      "top1": "blackberry",
+      "top1_confidence": 0.447188138961792,
+      "top10": [
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "camouflage",
+        "harp",
+        "calendar",
+        "jail",
+        "sleeping bag",
+        "watermelon",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "candle",
+      "source_row": 14,
+      "rank": 271,
+      "top1": "blackberry",
+      "top1_confidence": 0.5320013165473938,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "harp",
+        "tiger",
+        "calendar",
+        "sleeping bag",
+        "keyboard",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "candle",
+      "source_row": 51,
+      "rank": 284,
+      "top1": "blackberry",
+      "top1_confidence": 0.3787422478199005,
+      "top10": [
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "calendar",
+        "harp",
+        "keyboard",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": 8
+    },
+    {
+      "label": "candle",
+      "source_row": 20,
+      "rank": 258,
+      "top1": "blackberry",
+      "top1_confidence": 0.34035465121269226,
+      "top10": [
+        "blackberry",
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "crayon",
+        "jail",
+        "calendar",
+        "keyboard",
+        "sleeping bag",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "candle",
+      "source_row": 9,
+      "rank": 266,
+      "top1": "blackberry",
+      "top1_confidence": 0.5372868776321411,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "harp",
+        "keyboard",
+        "sleeping bag",
+        "calendar",
+        "crayon",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "cat",
+      "source_row": 13,
+      "rank": 299,
+      "top1": "camouflage",
+      "top1_confidence": 0.6307647228240967,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "crayon",
+        "keyboard",
+        "jail",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "cat",
+      "source_row": 35,
+      "rank": 231,
+      "top1": "tiger",
+      "top1_confidence": 0.42010030150413513,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "paintbrush",
+        "keyboard",
+        "beard",
+        "calendar"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "cat",
+      "source_row": 79,
+      "rank": 265,
+      "top1": "camouflage",
+      "top1_confidence": 0.42588913440704346,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "blackberry",
+        "piano",
+        "spreadsheet",
+        "paintbrush",
+        "keyboard",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "cat",
+      "source_row": 70,
+      "rank": 272,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4234347343444824,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "crayon",
+        "keyboard",
+        "calendar",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "cat",
+      "source_row": 67,
+      "rank": 296,
+      "top1": "camouflage",
+      "top1_confidence": 0.3478055000305176,
+      "top10": [
+        "camouflage",
+        "book",
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "crayon",
+        "harp",
+        "watermelon",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "cat",
+      "source_row": 68,
+      "rank": 272,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3391493856906891,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "piano",
+        "paintbrush",
+        "keyboard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "cat",
+      "source_row": 5,
+      "rank": 270,
+      "top1": "tiger",
+      "top1_confidence": 0.5326458811759949,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "harp",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "cat",
+      "source_row": 73,
+      "rank": 272,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.30330291390419006,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "keyboard",
+        "paintbrush",
+        "spreadsheet",
+        "blackberry",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "cat",
+      "source_row": 10,
+      "rank": 255,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8859372735023499,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "cat",
+      "source_row": 82,
+      "rank": 202,
+      "top1": "tiger",
+      "top1_confidence": 0.6984199285507202,
+      "top10": [
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "beard",
+        "book",
+        "spreadsheet",
+        "soccer ball",
+        "paintbrush",
+        "goatee"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "chandelier",
+      "source_row": 82,
+      "rank": 59,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6166892647743225,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "tiger",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "chandelier",
+      "source_row": 93,
+      "rank": 71,
+      "top1": "camouflage",
+      "top1_confidence": 0.5103832483291626,
+      "top10": [
+        "camouflage",
+        "book",
+        "crayon",
+        "piano",
+        "keyboard",
+        "paintbrush",
+        "The Great Wall of China",
+        "jail",
+        "blackberry",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "chandelier",
+      "source_row": 40,
+      "rank": 80,
+      "top1": "camouflage",
+      "top1_confidence": 0.5334173440933228,
+      "top10": [
+        "camouflage",
+        "book",
+        "tiger",
+        "The Great Wall of China",
+        "paintbrush",
+        "keyboard",
+        "crayon",
+        "piano",
+        "blackberry",
+        "spreadsheet"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "chandelier",
+      "source_row": 88,
+      "rank": 73,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5862303376197815,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "paintbrush",
+        "keyboard",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "chandelier",
+      "source_row": 66,
+      "rank": 60,
+      "top1": "blackberry",
+      "top1_confidence": 0.41156044602394104,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "crayon",
+        "harp",
+        "keyboard",
+        "eraser",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "chandelier",
+      "source_row": 18,
+      "rank": 57,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6368280053138733,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "camouflage",
+        "keyboard",
+        "blackberry",
+        "spreadsheet",
+        "paintbrush",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "chandelier",
+      "source_row": 22,
+      "rank": 60,
+      "top1": "camouflage",
+      "top1_confidence": 0.5563529133796692,
+      "top10": [
+        "camouflage",
+        "book",
+        "blackberry",
+        "The Great Wall of China",
+        "keyboard",
+        "tiger",
+        "crayon",
+        "calendar",
+        "piano",
+        "jail"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "chandelier",
+      "source_row": 55,
+      "rank": 65,
+      "top1": "blackberry",
+      "top1_confidence": 0.5254670977592468,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "crayon",
+        "keyboard",
+        "watermelon",
+        "piano",
+        "sleeping bag"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "chandelier",
+      "source_row": 28,
+      "rank": 70,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5186497569084167,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "paintbrush",
+        "keyboard",
+        "piano",
+        "blackberry",
+        "spreadsheet",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "chandelier",
+      "source_row": 84,
+      "rank": 61,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7564932107925415,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "computer",
+      "source_row": 35,
+      "rank": 76,
+      "top1": "keyboard",
+      "top1_confidence": 0.43974748253822327,
+      "top10": [
+        "keyboard",
+        "book",
+        "camouflage",
+        "spreadsheet",
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "paintbrush",
+        "watermelon",
+        "sleeping bag"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "computer",
+      "source_row": 89,
+      "rank": 90,
+      "top1": "tiger",
+      "top1_confidence": 0.5384284257888794,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "blackberry",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "computer",
+      "source_row": 33,
+      "rank": 105,
+      "top1": "tiger",
+      "top1_confidence": 0.5166947841644287,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "spreadsheet",
+        "blackberry",
+        "camouflage",
+        "calendar",
+        "book",
+        "piano",
+        "keyboard",
+        "paintbrush"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "computer",
+      "source_row": 73,
+      "rank": 76,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5771194100379944,
+      "top10": [
+        "The Great Wall of China",
+        "spreadsheet",
+        "book",
+        "camouflage",
+        "tiger",
+        "blackberry",
+        "calendar",
+        "keyboard",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "computer",
+      "source_row": 10,
+      "rank": 110,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7760822772979736,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "camouflage",
+        "calendar",
+        "piano",
+        "book",
+        "paintbrush"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "computer",
+      "source_row": 67,
+      "rank": 122,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7369848489761353,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "computer",
+      "source_row": 61,
+      "rank": 114,
+      "top1": "tiger",
+      "top1_confidence": 0.5602866411209106,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "paintbrush",
+        "spreadsheet",
+        "keyboard",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "computer",
+      "source_row": 68,
+      "rank": 77,
+      "top1": "tiger",
+      "top1_confidence": 0.5354019403457642,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "spreadsheet",
+        "camouflage",
+        "blackberry",
+        "book",
+        "beard",
+        "paintbrush",
+        "soccer ball",
+        "keyboard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "computer",
+      "source_row": 78,
+      "rank": 130,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6819519996643066,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "tornado",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "computer",
+      "source_row": 24,
+      "rank": 102,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6917898058891296,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "blackberry",
+        "calendar",
+        "book",
+        "camouflage",
+        "keyboard",
+        "piano",
+        "jail"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "crocodile",
+      "source_row": 0,
+      "rank": 263,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.808948814868927,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "crocodile",
+      "source_row": 25,
+      "rank": 262,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7831738591194153,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "camouflage",
+        "book",
+        "bread",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "crocodile",
+      "source_row": 61,
+      "rank": 254,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8785997629165649,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "camouflage",
+        "book",
+        "bread",
+        "piano"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "crocodile",
+      "source_row": 72,
+      "rank": 260,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7354198694229126,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "bread"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "crocodile",
+      "source_row": 92,
+      "rank": 254,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9466583728790283,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "camouflage",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "crocodile",
+      "source_row": 50,
+      "rank": 306,
+      "top1": "camouflage",
+      "top1_confidence": 0.5410711765289307,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "jail",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "crocodile",
+      "source_row": 64,
+      "rank": 248,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.965302050113678,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "camouflage",
+        "book",
+        "bread"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "crocodile",
+      "source_row": 62,
+      "rank": 267,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9534748792648315,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "camouflage",
+        "calendar",
+        "book",
+        "piano",
+        "basket"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "crocodile",
+      "source_row": 52,
+      "rank": 261,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8508612513542175,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "calendar",
+        "camouflage",
+        "book",
+        "piano",
+        "paintbrush",
+        "keyboard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "crocodile",
+      "source_row": 88,
+      "rank": 273,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8159633278846741,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "camouflage",
+        "piano",
+        "calendar",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "cup",
+      "source_row": 22,
+      "rank": 104,
+      "top1": "book",
+      "top1_confidence": 0.4254842698574066,
+      "top10": [
+        "book",
+        "crayon",
+        "blackberry",
+        "camouflage",
+        "jail",
+        "The Great Wall of China",
+        "piano",
+        "paintbrush",
+        "harp",
+        "sleeping bag"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "cup",
+      "source_row": 74,
+      "rank": 60,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.43488356471061707,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "cup",
+      "source_row": 15,
+      "rank": 57,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.37878724932670593,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "tornado",
+        "piano"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "cup",
+      "source_row": 78,
+      "rank": 69,
+      "top1": "blackberry",
+      "top1_confidence": 0.3388291299343109,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "crayon",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "sleeping bag"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "cup",
+      "source_row": 85,
+      "rank": 68,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4708518087863922,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "tornado"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "cup",
+      "source_row": 33,
+      "rank": 69,
+      "top1": "tiger",
+      "top1_confidence": 0.4003009796142578,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "keyboard",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "cup",
+      "source_row": 91,
+      "rank": 59,
+      "top1": "blackberry",
+      "top1_confidence": 0.37965521216392517,
+      "top10": [
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "eraser",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "cup",
+      "source_row": 30,
+      "rank": 78,
+      "top1": "camouflage",
+      "top1_confidence": 0.31352314352989197,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "crayon",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "jail"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "cup",
+      "source_row": 95,
+      "rank": 69,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4934242367744446,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "cup",
+      "source_row": 68,
+      "rank": 71,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.46256932616233826,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "book",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "dragon",
+      "source_row": 32,
+      "rank": 95,
+      "top1": "camouflage",
+      "top1_confidence": 0.6483649015426636,
+      "top10": [
+        "camouflage",
+        "tiger",
+        "The Great Wall of China",
+        "paintbrush",
+        "keyboard",
+        "book",
+        "spreadsheet",
+        "blackberry",
+        "piano",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dragon",
+      "source_row": 67,
+      "rank": 184,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5833482146263123,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dragon",
+      "source_row": 15,
+      "rank": 142,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5839013457298279,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "paintbrush",
+        "keyboard",
+        "soccer ball",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dragon",
+      "source_row": 84,
+      "rank": 144,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5378122925758362,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "paintbrush",
+        "calendar",
+        "piano"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "dragon",
+      "source_row": 66,
+      "rank": 170,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9343271851539612,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "piano",
+        "calendar",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dragon",
+      "source_row": 42,
+      "rank": 186,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7616823315620422,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "dragon",
+      "source_row": 10,
+      "rank": 158,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6526056528091431,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 7
+    },
+    {
+      "label": "dragon",
+      "source_row": 65,
+      "rank": 108,
+      "top1": "camouflage",
+      "top1_confidence": 0.5754983425140381,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "blackberry",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dragon",
+      "source_row": 46,
+      "rank": 141,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5295752882957458,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "paintbrush",
+        "piano",
+        "keyboard",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dragon",
+      "source_row": 96,
+      "rank": 206,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.38796448707580566,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "eraser",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dresser",
+      "source_row": 60,
+      "rank": 81,
+      "top1": "spreadsheet",
+      "top1_confidence": 0.4286132752895355,
+      "top10": [
+        "spreadsheet",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "tornado",
+        "keyboard",
+        "calendar",
+        "cooler"
+      ],
+      "345_rank": 7
+    },
+    {
+      "label": "dresser",
+      "source_row": 11,
+      "rank": 79,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9097309112548828,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "spreadsheet",
+        "tiger",
+        "book",
+        "camouflage",
+        "calendar",
+        "keyboard",
+        "jail",
+        "bread"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dresser",
+      "source_row": 93,
+      "rank": 68,
+      "top1": "tiger",
+      "top1_confidence": 0.7622016668319702,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "spreadsheet",
+        "camouflage",
+        "blackberry",
+        "keyboard",
+        "paintbrush",
+        "calendar",
+        "piano",
+        "book"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "dresser",
+      "source_row": 0,
+      "rank": 67,
+      "top1": "camouflage",
+      "top1_confidence": 0.3665245473384857,
+      "top10": [
+        "camouflage",
+        "tiger",
+        "spreadsheet",
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "keyboard",
+        "paintbrush",
+        "cooler",
+        "calendar"
+      ],
+      "345_rank": 10
+    },
+    {
+      "label": "dresser",
+      "source_row": 76,
+      "rank": 63,
+      "top1": "tiger",
+      "top1_confidence": 0.49195632338523865,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "spreadsheet",
+        "blackberry",
+        "calendar",
+        "camouflage",
+        "book",
+        "keyboard",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dresser",
+      "source_row": 9,
+      "rank": 71,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7202298641204834,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "blackberry",
+        "calendar",
+        "piano",
+        "keyboard",
+        "camouflage",
+        "raccoon",
+        "book"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dresser",
+      "source_row": 74,
+      "rank": 65,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.432547003030777,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "paintbrush",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "dresser",
+      "source_row": 72,
+      "rank": 54,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5184296369552612,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "book",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dresser",
+      "source_row": 28,
+      "rank": 77,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7260029315948486,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "calendar",
+        "keyboard",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "dresser",
+      "source_row": 33,
+      "rank": 43,
+      "top1": "book",
+      "top1_confidence": 0.46340349316596985,
+      "top10": [
+        "book",
+        "camouflage",
+        "blackberry",
+        "crayon",
+        "The Great Wall of China",
+        "jail",
+        "watermelon",
+        "piano",
+        "paintbrush",
+        "harp"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "drill",
+      "source_row": 64,
+      "rank": 230,
+      "top1": "camouflage",
+      "top1_confidence": 0.31956613063812256,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "eraser",
+        "soccer ball"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "drill",
+      "source_row": 79,
+      "rank": 231,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.39970359206199646,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "calendar",
+        "keyboard",
+        "spreadsheet",
+        "piano",
+        "sleeping bag"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "drill",
+      "source_row": 69,
+      "rank": 281,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.563217282295227,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "bread",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "drill",
+      "source_row": 43,
+      "rank": 250,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6281023025512695,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "sleeping bag",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "drill",
+      "source_row": 29,
+      "rank": 239,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.435301810503006,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "calendar",
+        "keyboard",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "drill",
+      "source_row": 45,
+      "rank": 240,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7392869591712952,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "book",
+        "camouflage",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "piano",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "drill",
+      "source_row": 0,
+      "rank": 247,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.650666356086731,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "harp",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "drill",
+      "source_row": 14,
+      "rank": 254,
+      "top1": "blackberry",
+      "top1_confidence": 0.3827213644981384,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "harp",
+        "sleeping bag"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "drill",
+      "source_row": 90,
+      "rank": 235,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5810554623603821,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "drill",
+      "source_row": 32,
+      "rank": 260,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6476208567619324,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 42,
+      "rank": 87,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3780200481414795,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "crayon",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 17,
+      "rank": 95,
+      "top1": "book",
+      "top1_confidence": 0.5214884281158447,
+      "top10": [
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "crayon",
+        "tiger",
+        "spreadsheet",
+        "watermelon",
+        "calendar",
+        "keyboard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 18,
+      "rank": 95,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7531039714813232,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "keyboard",
+        "camouflage",
+        "spreadsheet",
+        "calendar",
+        "book",
+        "piano",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 65,
+      "rank": 87,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6885291337966919,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "piano",
+        "calendar",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 68,
+      "rank": 81,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9172850847244263,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "calendar",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "piano",
+        "keyboard",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 6,
+      "rank": 61,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6452736854553223,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "piano",
+        "calendar",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 84,
+      "rank": 76,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.40963244438171387,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "eraser",
+        "harp",
+        "spreadsheet",
+        "calendar",
+        "keyboard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 70,
+      "rank": 92,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6492464542388916,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "keyboard",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "eraser",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 37,
+      "rank": 75,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5936751365661621,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "dumbbell",
+      "source_row": 19,
+      "rank": 89,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5798969864845276,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "eraser",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 79,
+      "rank": 267,
+      "top1": "camouflage",
+      "top1_confidence": 0.35286852717399597,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "crayon",
+        "paintbrush",
+        "keyboard",
+        "piano",
+        "watermelon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 12,
+      "rank": 239,
+      "top1": "blackberry",
+      "top1_confidence": 0.575838029384613,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "calendar",
+        "keyboard",
+        "tiger",
+        "spreadsheet",
+        "harp",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 68,
+      "rank": 261,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7357719540596008,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 44,
+      "rank": 264,
+      "top1": "blackberry",
+      "top1_confidence": 0.5544531345367432,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "calendar",
+        "sleeping bag",
+        "spreadsheet",
+        "keyboard",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 62,
+      "rank": 244,
+      "top1": "blackberry",
+      "top1_confidence": 0.44057971239089966,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "keyboard",
+        "tiger",
+        "calendar",
+        "piano",
+        "paintbrush",
+        "spreadsheet"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 36,
+      "rank": 263,
+      "top1": "blackberry",
+      "top1_confidence": 0.48654884099960327,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "keyboard",
+        "calendar",
+        "spreadsheet",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 47,
+      "rank": 231,
+      "top1": "blackberry",
+      "top1_confidence": 0.5151268839836121,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "jail",
+        "tiger",
+        "spreadsheet"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 32,
+      "rank": 252,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9408314824104309,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "bread"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 45,
+      "rank": 234,
+      "top1": "blackberry",
+      "top1_confidence": 0.7213540077209473,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "harp",
+        "tiger",
+        "jail",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "floor lamp",
+      "source_row": 30,
+      "rank": 250,
+      "top1": "blackberry",
+      "top1_confidence": 0.5830289721488953,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "spreadsheet",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "foot",
+      "source_row": 2,
+      "rank": 233,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7705722451210022,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "basket",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "foot",
+      "source_row": 26,
+      "rank": 226,
+      "top1": "camouflage",
+      "top1_confidence": 0.4051916003227234,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "eraser",
+        "crayon",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "foot",
+      "source_row": 91,
+      "rank": 182,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4284800589084625,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "camouflage",
+        "calendar",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "foot",
+      "source_row": 85,
+      "rank": 182,
+      "top1": "blackberry",
+      "top1_confidence": 0.6744368076324463,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "keyboard",
+        "tiger",
+        "harp",
+        "spreadsheet",
+        "calendar",
+        "watermelon"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "foot",
+      "source_row": 95,
+      "rank": 201,
+      "top1": "blackberry",
+      "top1_confidence": 0.42280200123786926,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "crayon",
+        "soccer ball",
+        "calendar"
+      ],
+      "345_rank": 10
+    },
+    {
+      "label": "foot",
+      "source_row": 97,
+      "rank": 199,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6910915374755859,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "spreadsheet",
+        "tiger",
+        "book",
+        "blackberry",
+        "keyboard",
+        "piano",
+        "calendar",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "foot",
+      "source_row": 40,
+      "rank": 198,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7794445753097534,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "camouflage",
+        "tiger",
+        "calendar",
+        "spreadsheet",
+        "piano",
+        "keyboard",
+        "eraser"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "foot",
+      "source_row": 67,
+      "rank": 208,
+      "top1": "blackberry",
+      "top1_confidence": 0.5284103751182556,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "tiger",
+        "spreadsheet",
+        "eraser",
+        "keyboard",
+        "harp",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "foot",
+      "source_row": 51,
+      "rank": 200,
+      "top1": "blackberry",
+      "top1_confidence": 0.7065020799636841,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "keyboard",
+        "tiger",
+        "harp",
+        "crayon",
+        "spreadsheet",
+        "eraser"
+      ],
+      "345_rank": 8
+    },
+    {
+      "label": "foot",
+      "source_row": 56,
+      "rank": 183,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8350502848625183,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "camouflage",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "jail",
+        "piano"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "frog",
+      "source_row": 17,
+      "rank": 93,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.817962646484375,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "camouflage",
+        "blackberry",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "frog",
+      "source_row": 94,
+      "rank": 82,
+      "top1": "camouflage",
+      "top1_confidence": 0.3970167338848114,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "crayon",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "frog",
+      "source_row": 76,
+      "rank": 71,
+      "top1": "tiger",
+      "top1_confidence": 0.45012515783309937,
+      "top10": [
+        "tiger",
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "piano",
+        "paintbrush",
+        "soccer ball",
+        "keyboard",
+        "spreadsheet"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "frog",
+      "source_row": 58,
+      "rank": 64,
+      "top1": "camouflage",
+      "top1_confidence": 0.7521190643310547,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "beard",
+        "keyboard",
+        "soccer ball",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "frog",
+      "source_row": 10,
+      "rank": 112,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5210678577423096,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "tornado"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "frog",
+      "source_row": 18,
+      "rank": 100,
+      "top1": "blackberry",
+      "top1_confidence": 0.37273865938186646,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "keyboard",
+        "spreadsheet",
+        "crayon",
+        "eraser",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "frog",
+      "source_row": 55,
+      "rank": 95,
+      "top1": "camouflage",
+      "top1_confidence": 0.27039340138435364,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "crayon",
+        "soccer ball",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "frog",
+      "source_row": 50,
+      "rank": 85,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.35688385367393494,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "tornado",
+        "beard",
+        "eraser"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "frog",
+      "source_row": 26,
+      "rank": 82,
+      "top1": "tiger",
+      "top1_confidence": 0.47836971282958984,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "spreadsheet",
+        "blackberry",
+        "book",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": 7
+    },
+    {
+      "label": "frog",
+      "source_row": 86,
+      "rank": 121,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5307863354682922,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "tiger",
+        "book",
+        "keyboard",
+        "calendar",
+        "harp",
+        "eraser"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "hammer",
+      "source_row": 0,
+      "rank": 138,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7548577785491943,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "book",
+        "camouflage",
+        "spreadsheet",
+        "calendar",
+        "piano",
+        "keyboard",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hammer",
+      "source_row": 17,
+      "rank": 94,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6860492825508118,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "calendar",
+        "spreadsheet",
+        "keyboard",
+        "jail",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hammer",
+      "source_row": 33,
+      "rank": 98,
+      "top1": "camouflage",
+      "top1_confidence": 0.40766894817352295,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "calendar",
+        "keyboard",
+        "spreadsheet",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "hammer",
+      "source_row": 75,
+      "rank": 98,
+      "top1": "blackberry",
+      "top1_confidence": 0.37058502435684204,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "crayon",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hammer",
+      "source_row": 95,
+      "rank": 110,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4015836715698242,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "tiger",
+        "calendar",
+        "keyboard",
+        "jail",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hammer",
+      "source_row": 99,
+      "rank": 93,
+      "top1": "blackberry",
+      "top1_confidence": 0.3693024516105652,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "keyboard",
+        "calendar",
+        "spreadsheet",
+        "crayon",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hammer",
+      "source_row": 91,
+      "rank": 181,
+      "top1": "blackberry",
+      "top1_confidence": 0.5927813649177551,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "tornado",
+        "bread",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hammer",
+      "source_row": 69,
+      "rank": 123,
+      "top1": "book",
+      "top1_confidence": 0.3523596525192261,
+      "top10": [
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "hammer",
+      "source_row": 43,
+      "rank": 125,
+      "top1": "book",
+      "top1_confidence": 0.26093342900276184,
+      "top10": [
+        "book",
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "crayon",
+        "calendar",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hammer",
+      "source_row": 67,
+      "rank": 146,
+      "top1": "blackberry",
+      "top1_confidence": 0.48010995984077454,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "soccer ball",
+        "keyboard",
+        "sleeping bag",
+        "beard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 24,
+      "rank": 164,
+      "top1": "blackberry",
+      "top1_confidence": 0.7537095546722412,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "crayon",
+        "spreadsheet",
+        "eraser",
+        "piano",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 51,
+      "rank": 190,
+      "top1": "blackberry",
+      "top1_confidence": 0.44281959533691406,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "crayon",
+        "spreadsheet",
+        "eraser",
+        "harp",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 35,
+      "rank": 221,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.46200111508369446,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "piano",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 88,
+      "rank": 201,
+      "top1": "blackberry",
+      "top1_confidence": 0.6345426440238953,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 7,
+      "rank": 223,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3127811551094055,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "tornado",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 73,
+      "rank": 212,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5023450255393982,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "piano",
+        "basket"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 44,
+      "rank": 207,
+      "top1": "blackberry",
+      "top1_confidence": 0.5551387071609497,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "harp",
+        "spreadsheet",
+        "eraser",
+        "crayon",
+        "watermelon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 31,
+      "rank": 219,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4278194308280945,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "eraser",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 63,
+      "rank": 211,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7492979764938354,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "camouflage",
+        "calendar",
+        "keyboard",
+        "harp",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "headphones",
+      "source_row": 62,
+      "rank": 214,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3130508065223694,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "helicopter",
+      "source_row": 90,
+      "rank": 285,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8242637515068054,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "piano",
+        "calendar",
+        "paintbrush"
+      ],
+      "345_rank": 7
+    },
+    {
+      "label": "helicopter",
+      "source_row": 55,
+      "rank": 290,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5630635619163513,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "paintbrush",
+        "book",
+        "blackberry",
+        "piano",
+        "keyboard",
+        "calendar"
+      ],
+      "345_rank": 10
+    },
+    {
+      "label": "helicopter",
+      "source_row": 10,
+      "rank": 268,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.89239901304245,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "helicopter",
+      "source_row": 99,
+      "rank": 272,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6062320470809937,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "beard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "helicopter",
+      "source_row": 2,
+      "rank": 298,
+      "top1": "tiger",
+      "top1_confidence": 0.8684288859367371,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "spreadsheet",
+        "blackberry",
+        "paintbrush",
+        "book",
+        "keyboard",
+        "soccer ball",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "helicopter",
+      "source_row": 65,
+      "rank": 283,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7372967600822449,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "calendar",
+        "keyboard",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "helicopter",
+      "source_row": 89,
+      "rank": 280,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4860217571258545,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "bread",
+        "harp"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "helicopter",
+      "source_row": 98,
+      "rank": 300,
+      "top1": "camouflage",
+      "top1_confidence": 0.3755268454551697,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "book",
+        "paintbrush",
+        "piano",
+        "spreadsheet",
+        "keyboard",
+        "beard"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "helicopter",
+      "source_row": 44,
+      "rank": 297,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.39845186471939087,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "paintbrush",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "helicopter",
+      "source_row": 52,
+      "rank": 298,
+      "top1": "tiger",
+      "top1_confidence": 0.636658787727356,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "paintbrush",
+        "keyboard",
+        "calendar",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 11,
+      "rank": 37,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6595062613487244,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "bread"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 75,
+      "rank": 21,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7541681528091431,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "eraser",
+        "camouflage",
+        "keyboard",
+        "spreadsheet",
+        "tiger",
+        "calendar",
+        "harp"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 96,
+      "rank": 26,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.607174277305603,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "jail",
+        "eraser"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 29,
+      "rank": 45,
+      "top1": "paintbrush",
+      "top1_confidence": 0.6462737321853638,
+      "top10": [
+        "paintbrush",
+        "The Great Wall of China",
+        "piano",
+        "tiger",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "blackberry",
+        "beard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 98,
+      "rank": 30,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7175370454788208,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "blackberry",
+        "camouflage",
+        "book",
+        "calendar",
+        "keyboard",
+        "tornado",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 31,
+      "rank": 16,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.46558877825737,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "crayon",
+        "tornado",
+        "harp",
+        "eraser"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 83,
+      "rank": 40,
+      "top1": "tiger",
+      "top1_confidence": 0.5959838628768921,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "calendar",
+        "keyboard",
+        "piano",
+        "book",
+        "bread"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 53,
+      "rank": 42,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7825887799263,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "piano",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "blackberry",
+        "paintbrush",
+        "camouflage",
+        "beard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 8,
+      "rank": 42,
+      "top1": "tiger",
+      "top1_confidence": 0.4879341125488281,
+      "top10": [
+        "tiger",
+        "keyboard",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "The Great Wall of China",
+        "blackberry",
+        "beard",
+        "soccer ball",
+        "basket"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "hockey puck",
+      "source_row": 94,
+      "rank": 31,
+      "top1": "tiger",
+      "top1_confidence": 0.596764326095581,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "tornado",
+        "piano"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "lightning",
+      "source_row": 82,
+      "rank": 279,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3794952630996704,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "tornado",
+        "piano"
+      ],
+      "345_rank": 8
+    },
+    {
+      "label": "lightning",
+      "source_row": 21,
+      "rank": 286,
+      "top1": "camouflage",
+      "top1_confidence": 0.45991456508636475,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "soccer ball",
+        "calendar",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "lightning",
+      "source_row": 97,
+      "rank": 273,
+      "top1": "blackberry",
+      "top1_confidence": 0.4058668315410614,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "sleeping bag",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "lightning",
+      "source_row": 17,
+      "rank": 278,
+      "top1": "blackberry",
+      "top1_confidence": 0.2882312536239624,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "tornado",
+        "soccer ball",
+        "calendar"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "lightning",
+      "source_row": 79,
+      "rank": 264,
+      "top1": "tiger",
+      "top1_confidence": 0.9761685729026794,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "paintbrush",
+        "raccoon",
+        "beard",
+        "spreadsheet",
+        "blackberry",
+        "camouflage",
+        "goatee",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lightning",
+      "source_row": 46,
+      "rank": 275,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6759839653968811,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "soccer ball",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "lightning",
+      "source_row": 89,
+      "rank": 268,
+      "top1": "blackberry",
+      "top1_confidence": 0.3473809063434601,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "keyboard",
+        "calendar",
+        "spreadsheet",
+        "sleeping bag",
+        "watermelon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "lightning",
+      "source_row": 25,
+      "rank": 247,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9676541090011597,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "calendar",
+        "keyboard",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lightning",
+      "source_row": 18,
+      "rank": 277,
+      "top1": "camouflage",
+      "top1_confidence": 0.5261404514312744,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "piano",
+        "spreadsheet"
+      ],
+      "345_rank": 8
+    },
+    {
+      "label": "lightning",
+      "source_row": 44,
+      "rank": 284,
+      "top1": "blackberry",
+      "top1_confidence": 0.30151084065437317,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "The Great Wall of China",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "sleeping bag",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "lobster",
+      "source_row": 49,
+      "rank": 261,
+      "top1": "tiger",
+      "top1_confidence": 0.9070442318916321,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "paintbrush",
+        "book",
+        "spreadsheet",
+        "piano",
+        "blackberry",
+        "calendar",
+        "keyboard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lobster",
+      "source_row": 4,
+      "rank": 268,
+      "top1": "tiger",
+      "top1_confidence": 0.4874752163887024,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "soccer ball",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lobster",
+      "source_row": 86,
+      "rank": 261,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4317460060119629,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lobster",
+      "source_row": 52,
+      "rank": 265,
+      "top1": "camouflage",
+      "top1_confidence": 0.2603743374347687,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "keyboard",
+        "tiger",
+        "spreadsheet",
+        "crayon",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lobster",
+      "source_row": 32,
+      "rank": 282,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.35859790444374084,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "tiger",
+        "calendar",
+        "spreadsheet",
+        "harp",
+        "keyboard",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lobster",
+      "source_row": 61,
+      "rank": 279,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.29905369877815247,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "tiger",
+        "crayon",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lobster",
+      "source_row": 72,
+      "rank": 267,
+      "top1": "tiger",
+      "top1_confidence": 0.6746556162834167,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "spreadsheet",
+        "keyboard",
+        "camouflage",
+        "paintbrush",
+        "book",
+        "blackberry",
+        "basket",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lobster",
+      "source_row": 23,
+      "rank": 253,
+      "top1": "camouflage",
+      "top1_confidence": 0.46751099824905396,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "watermelon",
+        "spreadsheet",
+        "sleeping bag",
+        "calendar",
+        "crayon"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "lobster",
+      "source_row": 21,
+      "rank": 280,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6289363503456116,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "book",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "lobster",
+      "source_row": 10,
+      "rank": 281,
+      "top1": "camouflage",
+      "top1_confidence": 0.7495566606521606,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "crayon",
+        "piano",
+        "spreadsheet",
+        "keyboard",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "mug",
+      "source_row": 86,
+      "rank": 192,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.48140713572502136,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "tornado",
+        "bread"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "mug",
+      "source_row": 71,
+      "rank": 215,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5815480351448059,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "keyboard",
+        "eraser",
+        "spreadsheet",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "mug",
+      "source_row": 0,
+      "rank": 189,
+      "top1": "blackberry",
+      "top1_confidence": 0.4147326350212097,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "crayon",
+        "keyboard",
+        "calendar",
+        "watermelon"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "mug",
+      "source_row": 76,
+      "rank": 207,
+      "top1": "blackberry",
+      "top1_confidence": 0.3722289502620697,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "crayon",
+        "eraser",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "mug",
+      "source_row": 93,
+      "rank": 203,
+      "top1": "tiger",
+      "top1_confidence": 0.4179828464984894,
+      "top10": [
+        "tiger",
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "mug",
+      "source_row": 9,
+      "rank": 200,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.48178502917289734,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "mug",
+      "source_row": 23,
+      "rank": 225,
+      "top1": "tiger",
+      "top1_confidence": 0.4551546573638916,
+      "top10": [
+        "tiger",
+        "camouflage",
+        "keyboard",
+        "The Great Wall of China",
+        "book",
+        "spreadsheet",
+        "blackberry",
+        "paintbrush",
+        "soccer ball",
+        "sleeping bag"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "mug",
+      "source_row": 62,
+      "rank": 210,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.618122398853302,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "camouflage",
+        "spreadsheet",
+        "tiger",
+        "crayon",
+        "keyboard",
+        "eraser",
+        "watermelon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "mug",
+      "source_row": 47,
+      "rank": 219,
+      "top1": "blackberry",
+      "top1_confidence": 0.6206097602844238,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "crayon",
+        "calendar",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "mug",
+      "source_row": 26,
+      "rank": 216,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5173142552375793,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "eraser",
+        "keyboard",
+        "calendar",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "nail",
+      "source_row": 80,
+      "rank": 99,
+      "top1": "blackberry",
+      "top1_confidence": 0.4738411605358124,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "calendar",
+        "keyboard",
+        "spreadsheet",
+        "jail",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "nail",
+      "source_row": 97,
+      "rank": 74,
+      "top1": "book",
+      "top1_confidence": 0.4602203667163849,
+      "top10": [
+        "book",
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "crayon",
+        "jail",
+        "sleeping bag",
+        "harp",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "nail",
+      "source_row": 45,
+      "rank": 106,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3429284691810608,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "camouflage",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "sleeping bag",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "nail",
+      "source_row": 82,
+      "rank": 129,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7088642716407776,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "jail"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "nail",
+      "source_row": 0,
+      "rank": 142,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8311090469360352,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "keyboard",
+        "calendar",
+        "book",
+        "piano",
+        "bread"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "nail",
+      "source_row": 54,
+      "rank": 86,
+      "top1": "blackberry",
+      "top1_confidence": 0.394809752702713,
+      "top10": [
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "camouflage",
+        "calendar",
+        "spreadsheet",
+        "harp",
+        "jail",
+        "keyboard",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "nail",
+      "source_row": 96,
+      "rank": 109,
+      "top1": "blackberry",
+      "top1_confidence": 0.4932061433792114,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "calendar",
+        "jail",
+        "spreadsheet",
+        "tiger",
+        "harp",
+        "keyboard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "nail",
+      "source_row": 22,
+      "rank": 102,
+      "top1": "blackberry",
+      "top1_confidence": 0.6486329436302185,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "calendar",
+        "tiger",
+        "keyboard",
+        "harp",
+        "spreadsheet",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "nail",
+      "source_row": 16,
+      "rank": 107,
+      "top1": "blackberry",
+      "top1_confidence": 0.662309467792511,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "harp",
+        "calendar",
+        "keyboard",
+        "spreadsheet",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "nail",
+      "source_row": 91,
+      "rank": 105,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6601139307022095,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "blackberry",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "pear",
+      "source_row": 88,
+      "rank": 258,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4288907051086426,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "crayon",
+        "calendar",
+        "eraser"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "pear",
+      "source_row": 9,
+      "rank": 264,
+      "top1": "blackberry",
+      "top1_confidence": 0.43084901571273804,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "keyboard",
+        "calendar",
+        "harp",
+        "sleeping bag",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "pear",
+      "source_row": 0,
+      "rank": 265,
+      "top1": "camouflage",
+      "top1_confidence": 0.3167324662208557,
+      "top10": [
+        "camouflage",
+        "book",
+        "blackberry",
+        "The Great Wall of China",
+        "crayon",
+        "piano",
+        "keyboard",
+        "jail",
+        "harp",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "pear",
+      "source_row": 8,
+      "rank": 254,
+      "top1": "blackberry",
+      "top1_confidence": 0.5083921551704407,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "harp",
+        "crayon",
+        "keyboard",
+        "watermelon",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "pear",
+      "source_row": 21,
+      "rank": 268,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.49264219403266907,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "sleeping bag"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "pear",
+      "source_row": 82,
+      "rank": 255,
+      "top1": "book",
+      "top1_confidence": 0.3609103262424469,
+      "top10": [
+        "book",
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "crayon",
+        "jail",
+        "keyboard",
+        "piano",
+        "harp",
+        "tiger"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "pear",
+      "source_row": 72,
+      "rank": 267,
+      "top1": "camouflage",
+      "top1_confidence": 0.37961095571517944,
+      "top10": [
+        "camouflage",
+        "book",
+        "blackberry",
+        "The Great Wall of China",
+        "crayon",
+        "tiger",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "pear",
+      "source_row": 19,
+      "rank": 272,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3718392848968506,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "keyboard",
+        "spreadsheet",
+        "jail",
+        "crayon",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "pear",
+      "source_row": 18,
+      "rank": 257,
+      "top1": "camouflage",
+      "top1_confidence": 0.3590279519557953,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "crayon",
+        "tiger",
+        "paintbrush",
+        "piano",
+        "watermelon",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "pear",
+      "source_row": 20,
+      "rank": 271,
+      "top1": "camouflage",
+      "top1_confidence": 0.36414653062820435,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "crayon",
+        "keyboard",
+        "piano",
+        "paintbrush",
+        "calendar",
+        "tiger"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "remote control",
+      "source_row": 55,
+      "rank": 105,
+      "top1": "book",
+      "top1_confidence": 0.3208177983760834,
+      "top10": [
+        "book",
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "harp",
+        "crayon",
+        "calendar",
+        "tiger",
+        "jail",
+        "keyboard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "remote control",
+      "source_row": 30,
+      "rank": 95,
+      "top1": "blackberry",
+      "top1_confidence": 0.30931487679481506,
+      "top10": [
+        "blackberry",
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "calendar",
+        "harp",
+        "jail",
+        "crayon",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "remote control",
+      "source_row": 3,
+      "rank": 109,
+      "top1": "blackberry",
+      "top1_confidence": 0.3720434606075287,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "crayon",
+        "tiger",
+        "harp",
+        "keyboard",
+        "jail",
+        "watermelon"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "remote control",
+      "source_row": 0,
+      "rank": 91,
+      "top1": "book",
+      "top1_confidence": 0.37533220648765564,
+      "top10": [
+        "book",
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "crayon",
+        "harp",
+        "jail",
+        "sleeping bag",
+        "watermelon",
+        "keyboard"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "remote control",
+      "source_row": 41,
+      "rank": 110,
+      "top1": "book",
+      "top1_confidence": 0.3430898189544678,
+      "top10": [
+        "book",
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "crayon",
+        "harp",
+        "jail",
+        "calendar",
+        "tiger",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "remote control",
+      "source_row": 88,
+      "rank": 93,
+      "top1": "blackberry",
+      "top1_confidence": 0.34778791666030884,
+      "top10": [
+        "blackberry",
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "calendar",
+        "harp",
+        "crayon",
+        "jail",
+        "keyboard"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "remote control",
+      "source_row": 40,
+      "rank": 94,
+      "top1": "book",
+      "top1_confidence": 0.5024719834327698,
+      "top10": [
+        "book",
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "crayon",
+        "jail",
+        "piano",
+        "calendar",
+        "harp",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "remote control",
+      "source_row": 75,
+      "rank": 107,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6792762279510498,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "keyboard",
+        "calendar",
+        "book",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "remote control",
+      "source_row": 18,
+      "rank": 104,
+      "top1": "book",
+      "top1_confidence": 0.3441457748413086,
+      "top10": [
+        "book",
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "crayon",
+        "harp",
+        "tiger",
+        "watermelon",
+        "jail",
+        "sleeping bag"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "remote control",
+      "source_row": 19,
+      "rank": 88,
+      "top1": "book",
+      "top1_confidence": 0.45194557309150696,
+      "top10": [
+        "book",
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "crayon",
+        "jail",
+        "calendar",
+        "harp",
+        "spreadsheet",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "sandwich",
+      "source_row": 22,
+      "rank": 60,
+      "top1": "book",
+      "top1_confidence": 0.32494547963142395,
+      "top10": [
+        "book",
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "crayon",
+        "watermelon",
+        "harp",
+        "tiger",
+        "jail",
+        "spreadsheet"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "sandwich",
+      "source_row": 74,
+      "rank": 97,
+      "top1": "tiger",
+      "top1_confidence": 0.6977588534355164,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "spreadsheet",
+        "paintbrush",
+        "blackberry",
+        "keyboard",
+        "camouflage",
+        "calendar",
+        "piano",
+        "book"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "sandwich",
+      "source_row": 64,
+      "rank": 77,
+      "top1": "tiger",
+      "top1_confidence": 0.5048748850822449,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "blackberry",
+        "keyboard",
+        "tornado",
+        "basket",
+        "beard"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "sandwich",
+      "source_row": 94,
+      "rank": 74,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.45665937662124634,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "blackberry",
+        "book",
+        "keyboard",
+        "calendar",
+        "soccer ball",
+        "basket"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "sandwich",
+      "source_row": 43,
+      "rank": 71,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9684791564941406,
+      "top10": [
+        "The Great Wall of China",
+        "spreadsheet",
+        "tiger",
+        "blackberry",
+        "calendar",
+        "keyboard",
+        "piano",
+        "book",
+        "camouflage",
+        "raccoon"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "sandwich",
+      "source_row": 93,
+      "rank": 72,
+      "top1": "tiger",
+      "top1_confidence": 0.5642967820167542,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "tornado",
+        "beard",
+        "basket",
+        "keyboard"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "sandwich",
+      "source_row": 69,
+      "rank": 65,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8283369541168213,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "sandwich",
+      "source_row": 60,
+      "rank": 63,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5340893268585205,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "basket",
+        "tornado"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "sandwich",
+      "source_row": 73,
+      "rank": 66,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9484620094299316,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "camouflage",
+        "book",
+        "piano",
+        "raccoon"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "sandwich",
+      "source_row": 29,
+      "rank": 62,
+      "top1": "camouflage",
+      "top1_confidence": 0.3997623324394226,
+      "top10": [
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "crayon",
+        "jail",
+        "keyboard",
+        "harp"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "saw",
+      "source_row": 46,
+      "rank": 151,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.861331045627594,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "saw",
+      "source_row": 92,
+      "rank": 145,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8896501064300537,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "camouflage",
+        "calendar",
+        "book",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "saw",
+      "source_row": 10,
+      "rank": 128,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8422039151191711,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "camouflage",
+        "keyboard",
+        "calendar",
+        "book",
+        "piano",
+        "bread"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "saw",
+      "source_row": 53,
+      "rank": 116,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.652235746383667,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "piano",
+        "book",
+        "calendar",
+        "keyboard",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "saw",
+      "source_row": 5,
+      "rank": 173,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7560420036315918,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "harp",
+        "jail"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "saw",
+      "source_row": 45,
+      "rank": 149,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.49664053320884705,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "soccer ball",
+        "tornado",
+        "eraser"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "saw",
+      "source_row": 52,
+      "rank": 183,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3978743553161621,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "keyboard",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "jail",
+        "crayon"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "saw",
+      "source_row": 63,
+      "rank": 101,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8134517669677734,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "calendar",
+        "piano",
+        "keyboard",
+        "paintbrush"
+      ],
+      "345_rank": 8
+    },
+    {
+      "label": "saw",
+      "source_row": 29,
+      "rank": 169,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7905286550521851,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "camouflage",
+        "calendar",
+        "book",
+        "piano",
+        "basket"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "saw",
+      "source_row": 47,
+      "rank": 155,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9341596364974976,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "camouflage",
+        "book",
+        "piano",
+        "bread"
+      ],
+      "345_rank": 9
+    },
+    {
+      "label": "scissors",
+      "source_row": 71,
+      "rank": 329,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.574325442314148,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "book",
+        "blackberry",
+        "camouflage",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "basket"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "scissors",
+      "source_row": 11,
+      "rank": 323,
+      "top1": "blackberry",
+      "top1_confidence": 0.33267274498939514,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "harp",
+        "keyboard",
+        "spreadsheet",
+        "crayon",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "scissors",
+      "source_row": 21,
+      "rank": 330,
+      "top1": "blackberry",
+      "top1_confidence": 0.6788681149482727,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "eraser",
+        "sleeping bag",
+        "keyboard",
+        "bread"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "scissors",
+      "source_row": 4,
+      "rank": 322,
+      "top1": "tiger",
+      "top1_confidence": 0.42266181111335754,
+      "top10": [
+        "tiger",
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "tornado",
+        "soccer ball",
+        "beard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "scissors",
+      "source_row": 27,
+      "rank": 327,
+      "top1": "blackberry",
+      "top1_confidence": 0.4798778295516968,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "harp",
+        "calendar",
+        "eraser"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "scissors",
+      "source_row": 50,
+      "rank": 323,
+      "top1": "blackberry",
+      "top1_confidence": 0.5780510306358337,
+      "top10": [
+        "blackberry",
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "harp",
+        "watermelon",
+        "sleeping bag",
+        "crayon",
+        "tiger",
+        "jail"
+      ],
+      "345_rank": 10
+    },
+    {
+      "label": "scissors",
+      "source_row": 79,
+      "rank": 329,
+      "top1": "camouflage",
+      "top1_confidence": 0.29381340742111206,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "watermelon",
+        "crayon",
+        "calendar"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "scissors",
+      "source_row": 74,
+      "rank": 327,
+      "top1": "camouflage",
+      "top1_confidence": 0.6387260556221008,
+      "top10": [
+        "camouflage",
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "soccer ball",
+        "beard",
+        "tornado",
+        "crayon",
+        "paintbrush"
+      ],
+      "345_rank": 7
+    },
+    {
+      "label": "scissors",
+      "source_row": 55,
+      "rank": 329,
+      "top1": "blackberry",
+      "top1_confidence": 0.4870072305202484,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "tornado",
+        "watermelon",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "scissors",
+      "source_row": 28,
+      "rank": 331,
+      "top1": "tiger",
+      "top1_confidence": 0.5582950711250305,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "paintbrush",
+        "keyboard",
+        "blackberry",
+        "calendar",
+        "soccer ball"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "shovel",
+      "source_row": 23,
+      "rank": 91,
+      "top1": "blackberry",
+      "top1_confidence": 0.6204501390457153,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "tiger",
+        "keyboard",
+        "calendar",
+        "spreadsheet",
+        "piano",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "shovel",
+      "source_row": 4,
+      "rank": 103,
+      "top1": "camouflage",
+      "top1_confidence": 0.49819427728652954,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "tiger",
+        "The Great Wall of China",
+        "book",
+        "keyboard",
+        "crayon",
+        "calendar",
+        "sleeping bag",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "shovel",
+      "source_row": 68,
+      "rank": 95,
+      "top1": "blackberry",
+      "top1_confidence": 0.48156479001045227,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "keyboard",
+        "tiger",
+        "spreadsheet",
+        "crayon",
+        "sleeping bag",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "shovel",
+      "source_row": 37,
+      "rank": 80,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8090864419937134,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "shovel",
+      "source_row": 59,
+      "rank": 69,
+      "top1": "blackberry",
+      "top1_confidence": 0.5275375843048096,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "calendar",
+        "harp",
+        "keyboard",
+        "sleeping bag",
+        "watermelon"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "shovel",
+      "source_row": 24,
+      "rank": 82,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4880102872848511,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "camouflage",
+        "calendar",
+        "keyboard",
+        "spreadsheet",
+        "piano",
+        "tiger",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "shovel",
+      "source_row": 15,
+      "rank": 89,
+      "top1": "blackberry",
+      "top1_confidence": 0.47433334589004517,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "harp"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "shovel",
+      "source_row": 32,
+      "rank": 98,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.29392167925834656,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "shovel",
+      "source_row": 76,
+      "rank": 74,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6741821765899658,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "bread",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "shovel",
+      "source_row": 85,
+      "rank": 79,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6990401744842529,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "snorkel",
+      "source_row": 9,
+      "rank": 239,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5498266220092773,
+      "top10": [
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "jail",
+        "watermelon"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "snorkel",
+      "source_row": 49,
+      "rank": 243,
+      "top1": "blackberry",
+      "top1_confidence": 0.3510723412036896,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "tiger",
+        "eraser",
+        "keyboard",
+        "harp",
+        "watermelon",
+        "spreadsheet"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "snorkel",
+      "source_row": 13,
+      "rank": 252,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6215291023254395,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "snorkel",
+      "source_row": 66,
+      "rank": 228,
+      "top1": "blackberry",
+      "top1_confidence": 0.5543504953384399,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "crayon",
+        "spreadsheet",
+        "paintbrush",
+        "eraser",
+        "tornado"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "snorkel",
+      "source_row": 20,
+      "rank": 271,
+      "top1": "camouflage",
+      "top1_confidence": 0.3508308231830597,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "eraser",
+        "sleeping bag"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "snorkel",
+      "source_row": 84,
+      "rank": 236,
+      "top1": "blackberry",
+      "top1_confidence": 0.55906081199646,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "crayon",
+        "harp",
+        "eraser",
+        "watermelon",
+        "jail"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "snorkel",
+      "source_row": 12,
+      "rank": 240,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.42919835448265076,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "tiger",
+        "piano",
+        "keyboard",
+        "paintbrush",
+        "crayon",
+        "spreadsheet"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "snorkel",
+      "source_row": 11,
+      "rank": 244,
+      "top1": "camouflage",
+      "top1_confidence": 0.313376247882843,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "tiger",
+        "keyboard",
+        "paintbrush",
+        "crayon",
+        "spreadsheet",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "snorkel",
+      "source_row": 83,
+      "rank": 233,
+      "top1": "blackberry",
+      "top1_confidence": 0.30967408418655396,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "beard",
+        "calendar",
+        "keyboard",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "snorkel",
+      "source_row": 24,
+      "rank": 178,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.8971495032310486,
+      "top10": [
+        "The Great Wall of China",
+        "book",
+        "piano",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "camouflage",
+        "calendar",
+        "paintbrush",
+        "keyboard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "stereo",
+      "source_row": 7,
+      "rank": 41,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4157896339893341,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "stereo",
+      "source_row": 72,
+      "rank": 32,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.49325647950172424,
+      "top10": [
+        "The Great Wall of China",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "tiger",
+        "blackberry",
+        "calendar",
+        "camouflage",
+        "jail",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "stereo",
+      "source_row": 31,
+      "rank": 47,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.42380982637405396,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "blackberry",
+        "tiger",
+        "spreadsheet",
+        "paintbrush",
+        "keyboard",
+        "piano",
+        "beard"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "stereo",
+      "source_row": 5,
+      "rank": 42,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5915716886520386,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "stereo",
+      "source_row": 83,
+      "rank": 46,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.48353472352027893,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "book",
+        "beard",
+        "spreadsheet",
+        "tiger",
+        "keyboard",
+        "dishwasher",
+        "moustache",
+        "calendar"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "stereo",
+      "source_row": 50,
+      "rank": 51,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.41467973589897156,
+      "top10": [
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "paintbrush",
+        "piano"
+      ],
+      "345_rank": 9
+    },
+    {
+      "label": "stereo",
+      "source_row": 44,
+      "rank": 42,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.23612040281295776,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "paintbrush",
+        "piano",
+        "book",
+        "blackberry",
+        "calendar",
+        "keyboard",
+        "crayon"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "stereo",
+      "source_row": 63,
+      "rank": 41,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6342194676399231,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "stereo",
+      "source_row": 59,
+      "rank": 58,
+      "top1": "tiger",
+      "top1_confidence": 0.6666091084480286,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "paintbrush",
+        "spreadsheet",
+        "piano",
+        "book",
+        "calendar",
+        "keyboard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "stereo",
+      "source_row": 99,
+      "rank": 46,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6776502728462219,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "calendar",
+        "book",
+        "piano",
+        "keyboard",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tiger",
+      "source_row": 99,
+      "rank": 1,
+      "top1": "tiger",
+      "top1_confidence": 0.7374411225318909,
+      "top10": [
+        "tiger",
+        "keyboard",
+        "paintbrush",
+        "The Great Wall of China",
+        "camouflage",
+        "spreadsheet",
+        "piano",
+        "blackberry",
+        "calendar",
+        "book"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "tiger",
+      "source_row": 10,
+      "rank": 1,
+      "top1": "tiger",
+      "top1_confidence": 0.8265981078147888,
+      "top10": [
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "soccer ball",
+        "keyboard",
+        "beard",
+        "paintbrush",
+        "spreadsheet",
+        "book"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "tiger",
+      "source_row": 92,
+      "rank": 2,
+      "top1": "camouflage",
+      "top1_confidence": 0.5090349912643433,
+      "top10": [
+        "camouflage",
+        "tiger",
+        "The Great Wall of China",
+        "book",
+        "blackberry",
+        "spreadsheet",
+        "basket",
+        "beard",
+        "keyboard",
+        "soccer ball"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "tiger",
+      "source_row": 60,
+      "rank": 4,
+      "top1": "camouflage",
+      "top1_confidence": 0.5320408940315247,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "book",
+        "paintbrush",
+        "piano",
+        "keyboard",
+        "crayon",
+        "spreadsheet"
+      ],
+      "345_rank": 6
+    },
+    {
+      "label": "tiger",
+      "source_row": 35,
+      "rank": 2,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4913204610347748,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "spreadsheet",
+        "camouflage",
+        "paintbrush",
+        "blackberry",
+        "keyboard",
+        "book",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "tiger",
+      "source_row": 43,
+      "rank": 3,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.6485668420791626,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "piano",
+        "jail",
+        "keyboard"
+      ],
+      "345_rank": 5
+    },
+    {
+      "label": "tiger",
+      "source_row": 70,
+      "rank": 3,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5586951375007629,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "bread",
+        "piano"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tiger",
+      "source_row": 82,
+      "rank": 3,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.39847105741500854,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "blackberry",
+        "keyboard",
+        "spreadsheet",
+        "paintbrush",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "tiger",
+      "source_row": 29,
+      "rank": 2,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.9365985989570618,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "camouflage",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 9
+    },
+    {
+      "label": "tiger",
+      "source_row": 40,
+      "rank": 1,
+      "top1": "tiger",
+      "top1_confidence": 0.46810007095336914,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "blackberry",
+        "keyboard",
+        "soccer ball",
+        "calendar",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "tooth",
+      "source_row": 17,
+      "rank": 36,
+      "top1": "camouflage",
+      "top1_confidence": 0.30718860030174255,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "crayon",
+        "harp",
+        "calendar",
+        "jail",
+        "spreadsheet"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tooth",
+      "source_row": 18,
+      "rank": 64,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7702033519744873,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "bread",
+        "eraser",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "tooth",
+      "source_row": 2,
+      "rank": 33,
+      "top1": "camouflage",
+      "top1_confidence": 0.4937366247177124,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "book",
+        "blackberry",
+        "tiger",
+        "calendar",
+        "piano",
+        "keyboard",
+        "spreadsheet",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "tooth",
+      "source_row": 15,
+      "rank": 36,
+      "top1": "camouflage",
+      "top1_confidence": 0.42502647638320923,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "piano",
+        "crayon",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "tooth",
+      "source_row": 73,
+      "rank": 24,
+      "top1": "book",
+      "top1_confidence": 0.4959099292755127,
+      "top10": [
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "piano",
+        "crayon",
+        "blackberry",
+        "jail",
+        "calendar",
+        "paintbrush",
+        "spreadsheet"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tooth",
+      "source_row": 84,
+      "rank": 40,
+      "top1": "camouflage",
+      "top1_confidence": 0.4622369706630707,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "crayon",
+        "tiger",
+        "jail",
+        "eraser",
+        "calendar",
+        "harp"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tooth",
+      "source_row": 16,
+      "rank": 42,
+      "top1": "camouflage",
+      "top1_confidence": 0.4938594698905945,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "crayon",
+        "eraser"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "tooth",
+      "source_row": 77,
+      "rank": 57,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5804492831230164,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "harp",
+        "keyboard",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tooth",
+      "source_row": 36,
+      "rank": 32,
+      "top1": "book",
+      "top1_confidence": 0.4065215587615967,
+      "top10": [
+        "book",
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "harp",
+        "tiger",
+        "crayon",
+        "watermelon",
+        "calendar",
+        "spreadsheet"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tooth",
+      "source_row": 9,
+      "rank": 43,
+      "top1": "camouflage",
+      "top1_confidence": 0.41485795378685,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "tiger",
+        "crayon",
+        "spreadsheet",
+        "eraser",
+        "calendar",
+        "keyboard"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tractor",
+      "source_row": 50,
+      "rank": 200,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5039861798286438,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "piano",
+        "keyboard",
+        "paintbrush"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tractor",
+      "source_row": 65,
+      "rank": 224,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4323996305465698,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "tractor",
+      "source_row": 86,
+      "rank": 197,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7044177651405334,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "camouflage",
+        "blackberry",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "tractor",
+      "source_row": 46,
+      "rank": 150,
+      "top1": "spreadsheet",
+      "top1_confidence": 0.3124507665634155,
+      "top10": [
+        "spreadsheet",
+        "The Great Wall of China",
+        "tiger",
+        "keyboard",
+        "book",
+        "blackberry",
+        "camouflage",
+        "paintbrush",
+        "basket",
+        "piano"
+      ],
+      "345_rank": 8
+    },
+    {
+      "label": "tractor",
+      "source_row": 55,
+      "rank": 204,
+      "top1": "tiger",
+      "top1_confidence": 0.45513105392456055,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "calendar",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "tractor",
+      "source_row": 32,
+      "rank": 199,
+      "top1": "tiger",
+      "top1_confidence": 0.5305718183517456,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "paintbrush",
+        "keyboard",
+        "piano",
+        "spreadsheet",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tractor",
+      "source_row": 82,
+      "rank": 121,
+      "top1": "tiger",
+      "top1_confidence": 0.45747673511505127,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "beard",
+        "book",
+        "paintbrush",
+        "spreadsheet",
+        "piano",
+        "goatee"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "tractor",
+      "source_row": 4,
+      "rank": 146,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.3518609404563904,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "book",
+        "blackberry",
+        "spreadsheet",
+        "keyboard",
+        "paintbrush",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tractor",
+      "source_row": 75,
+      "rank": 191,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.40546712279319763,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "piano",
+        "paintbrush",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "tractor",
+      "source_row": 73,
+      "rank": 218,
+      "top1": "tiger",
+      "top1_confidence": 0.3481379449367523,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "crayon",
+        "piano",
+        "calendar",
+        "keyboard"
+      ],
+      "345_rank": 7
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 54,
+      "rank": 150,
+      "top1": "blackberry",
+      "top1_confidence": 0.2760887145996094,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "spreadsheet",
+        "harp",
+        "keyboard",
+        "calendar",
+        "tornado"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 10,
+      "rank": 172,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.4968928098678589,
+      "top10": [
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "blackberry",
+        "keyboard",
+        "tiger",
+        "calendar",
+        "piano",
+        "spreadsheet",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 32,
+      "rank": 171,
+      "top1": "blackberry",
+      "top1_confidence": 0.5103585124015808,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "spreadsheet",
+        "tiger",
+        "keyboard",
+        "crayon",
+        "eraser",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 88,
+      "rank": 150,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.37536367774009705,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "watermelon",
+        "piano"
+      ],
+      "345_rank": 4
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 18,
+      "rank": 150,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.38455015420913696,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 65,
+      "rank": 157,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.655491054058075,
+      "top10": [
+        "The Great Wall of China",
+        "camouflage",
+        "tiger",
+        "book",
+        "blackberry",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "piano",
+        "paintbrush"
+      ],
+      "345_rank": 3
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 21,
+      "rank": 162,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5645365715026855,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "calendar",
+        "keyboard",
+        "bread",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 92,
+      "rank": 157,
+      "top1": "blackberry",
+      "top1_confidence": 0.4745892584323883,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "book",
+        "camouflage",
+        "spreadsheet",
+        "tiger",
+        "keyboard",
+        "calendar",
+        "harp",
+        "eraser"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 20,
+      "rank": 140,
+      "top1": "tiger",
+      "top1_confidence": 0.4361209571361542,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "camouflage",
+        "blackberry",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "piano",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "t-shirt",
+      "source_row": 4,
+      "rank": 158,
+      "top1": "tiger",
+      "top1_confidence": 0.33496591448783875,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "keyboard",
+        "calendar",
+        "crayon",
+        "sleeping bag"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "violin",
+      "source_row": 62,
+      "rank": 144,
+      "top1": "camouflage",
+      "top1_confidence": 0.3600519299507141,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "crayon",
+        "keyboard",
+        "sleeping bag",
+        "harp",
+        "calendar"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "violin",
+      "source_row": 8,
+      "rank": 147,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.43185949325561523,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "tiger",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "soccer ball",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "violin",
+      "source_row": 33,
+      "rank": 121,
+      "top1": "camouflage",
+      "top1_confidence": 0.3438246548175812,
+      "top10": [
+        "camouflage",
+        "blackberry",
+        "The Great Wall of China",
+        "tiger",
+        "book",
+        "crayon",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "watermelon"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "violin",
+      "source_row": 61,
+      "rank": 135,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.5750840902328491,
+      "top10": [
+        "The Great Wall of China",
+        "tiger",
+        "camouflage",
+        "book",
+        "spreadsheet",
+        "blackberry",
+        "keyboard",
+        "paintbrush",
+        "piano",
+        "tornado"
+      ],
+      "345_rank": 9
+    },
+    {
+      "label": "violin",
+      "source_row": 27,
+      "rank": 161,
+      "top1": "camouflage",
+      "top1_confidence": 0.5196408033370972,
+      "top10": [
+        "camouflage",
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "book",
+        "keyboard",
+        "spreadsheet",
+        "calendar",
+        "sleeping bag",
+        "crayon"
+      ],
+      "345_rank": 1
+    },
+    {
+      "label": "violin",
+      "source_row": 12,
+      "rank": 136,
+      "top1": "tiger",
+      "top1_confidence": 0.5244402885437012,
+      "top10": [
+        "tiger",
+        "The Great Wall of China",
+        "blackberry",
+        "camouflage",
+        "spreadsheet",
+        "book",
+        "keyboard",
+        "paintbrush",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "violin",
+      "source_row": 44,
+      "rank": 127,
+      "top1": "The Great Wall of China",
+      "top1_confidence": 0.7329742908477783,
+      "top10": [
+        "The Great Wall of China",
+        "blackberry",
+        "tiger",
+        "camouflage",
+        "spreadsheet",
+        "keyboard",
+        "book",
+        "calendar",
+        "piano",
+        "bread"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "violin",
+      "source_row": 14,
+      "rank": 149,
+      "top1": "blackberry",
+      "top1_confidence": 0.40838807821273804,
+      "top10": [
+        "blackberry",
+        "book",
+        "camouflage",
+        "The Great Wall of China",
+        "calendar",
+        "keyboard",
+        "jail",
+        "harp",
+        "crayon",
+        "piano"
+      ],
+      "345_rank": null
+    },
+    {
+      "label": "violin",
+      "source_row": 98,
+      "rank": 139,
+      "top1": "blackberry",
+      "top1_confidence": 0.35773763060569763,
+      "top10": [
+        "blackberry",
+        "camouflage",
+        "book",
+        "The Great Wall of China",
+        "tiger",
+        "crayon",
+        "watermelon",
+        "sleeping bag",
+        "harp",
+        "keyboard"
+      ],
+      "345_rank": 2
+    },
+    {
+      "label": "violin",
+      "source_row": 96,
+      "rank": 161,
+      "top1": "blackberry",
+      "top1_confidence": 0.35439202189445496,
+      "top10": [
+        "blackberry",
+        "The Great Wall of China",
+        "camouflage",
+        "book",
+        "tiger",
+        "keyboard",
+        "spreadsheet",
+        "crayon",
+        "piano",
+        "calendar"
+      ],
+      "345_rank": 3
+    }
+  ],
+  "preprocessing_sensitivity": {
+    "diagnostic_not_primary": {
+      "input": "black ink on white; inverted app-style grayscale values replicated across RGB channels; float 0..1",
+      "top_k_correct": {
+        "1": 12,
+        "3": 31,
+        "5": 44,
+        "10": 74
+      },
+      "total": 400
+    },
+    "interpretation": "Color polarity is undocumented and materially changes predictions. The primary metric remains the stated white-ink-on-black app-style pipeline; neither convention is authenticated as training-time preprocessing."
+  },
+  "direct_96x96_resize_experiment": {
+    "status": "exploratory only; same 400 manifest records; not part of primary app-style result",
+    "source_pixels": "original Quick, Draw! 28x28 bitmap values scaled directly to 96x96; source contains no additional resolution detail",
+    "channels": "grayscale replicated to RGB to match ModelX input signature",
+    "normalization": "float 0..1",
+    "results_black_ink_on_white": {
+      "area": {
+        "1": 15,
+        "3": 43,
+        "5": 61,
+        "10": 88
+      },
+      "nearest": {
+        "1": 12,
+        "3": 38,
+        "5": 56,
+        "10": 90
+      },
+      "bicubic": {
+        "1": 8,
+        "3": 20,
+        "5": 35,
+        "10": 67
+      },
+      "bilinear": {
+        "1": 3,
+        "3": 14,
+        "5": 30,
+        "10": 57
+      }
+    },
+    "interpretation": "Observed accuracy changes materially with polarity and resize filter. Since variants were compared on this fixed test set and training preprocessing is unknown, do not select the production pipeline from the best observed variant."
+  }
+}

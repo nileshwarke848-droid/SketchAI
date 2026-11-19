@@ -43,7 +43,7 @@ PIPELINE_FILE = ("training", "train_345.py")
 
 # Tried in order; the first ref that actually contains the pipeline wins. `main`
 # is first so that the notebook keeps working unchanged once the work is merged.
-CANDIDATE_REFS = ("main", "arena/40ecfce2-sketchai")
+CANDIDATE_REFS = ("arena/0028d0fe-sketchai", "main", "arena/40ecfce2-sketchai")
 
 # The drawings are read from the local Quick, Draw! NDJSON mirror described in
 # `quickdraw_ndjson.py` and downloaded by `fetch_quickdraw_data.py`. Google's own

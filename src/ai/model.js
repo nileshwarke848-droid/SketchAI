@@ -94,10 +94,18 @@ async function readLabels(path, base) {
  */
 export async function loadProfile(profile, { base = '' } = {}) {
   const modelLoader = profile.modelType === 'graph' ? tf.loadGraphModel : tf.loadLayersModel;
-  const [model, labels] = await Promise.all([
-    modelLoader(`${base}${profile.modelPath}`),
-    readLabels(profile.labelsPath, base),
-  ]);
+  const modelPromise = modelLoader(`${base}${profile.modelPath}`);
+  const labelsPromise = readLabels(profile.labelsPath, base);
+  let model;
+  let labels;
+  try {
+    [model, labels] = await Promise.all([modelPromise, labelsPromise]);
+  } catch (error) {
+    // Promise.all rejects immediately. If labels fail after the weights start
+    // loading, dispose the eventual model instead of leaking its WebGL tensors.
+    modelPromise.then((loadedModel) => loadedModel?.dispose?.()).catch(() => {});
+    throw error;
+  }
 
   const reject = (message) => {
     model.dispose();
@@ -235,6 +243,14 @@ export function predict(model, labels, sketch, { topK = MAX_PREDICTIONS, profile
     });
   } catch (error) {
     return { status: 'error', predictions: [], debug: pre, error };
+  }
+  if (!scores.length || scores.some((score) => !Number.isFinite(score))) {
+    return {
+      status: 'error',
+      predictions: [],
+      debug: pre,
+      error: new Error('The model returned empty or non-finite scores.'),
+    };
   }
   const probabilities = toProbabilities(scores);
   const predictions = probabilities
