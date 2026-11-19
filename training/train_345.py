@@ -24,7 +24,7 @@ Design notes for students
 Usage
 -----
     python train_345.py --quick-test                 # ~minutes, verifies everything
-    python train_345.py --samples-per-class 5000     # full 345-class run
+    python train_345.py --samples-per-class 100      # current mirror has 100/class
     python train_345.py --help
 
 The notebook training/SketchAI_345_Training.ipynb calls the same functions.
@@ -65,6 +65,7 @@ import numpy as np  # noqa: E402  (after the env vars above)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import quickdraw_ndjson  # noqa: E402  (local real Quick, Draw! NDJSON source)
+from augmentation import rotation_factor_from_radians  # noqa: E402
 
 
 HERE = Path(__file__).resolve().parent
@@ -90,11 +91,11 @@ PIXELS_PER_IMAGE = IMAGE_SIZE * IMAGE_SIZE
 class Config:
     """Every knob that matters, in one place.
 
-    Defaults are sized for a free Colab CPU/GPU runtime. Raise
-    SAMPLES_PER_CLASS to 10000 once you have seen a full run finish.
+    Defaults match the current quickdraw.js mirror, which contains only 100
+    drawings per category. More samples require a full-dataset source loader.
     """
 
-    samples_per_class: int = 5000
+    samples_per_class: int = 100
     batch_size: int = 256
     epochs: int = 20
     seed: int = 42
@@ -103,27 +104,22 @@ class Config:
     train_fraction: float = 0.8
     val_fraction: float = 0.1
 
-    # QUICK_TEST: 20 categories, 500 samples each, 10 epochs. Proves the pipeline.
-    #
-    # The epoch count is deliberately generous. A quick test trains on only ~8000
-    # examples, which at batch size 256 is ~32 optimiser steps per epoch -- three
-    # epochs (96 steps) is nowhere near enough for a CNN to learn anything, so the
-    # run looks broken when it is merely short. Capping the batch size and giving
-    # it ten epochs turns that into ~630 steps, enough to watch validation accuracy
-    # actually climb. The full run gets ~6700 steps per epoch and does not care.
+    # QUICK_TEST: 20 categories, up to 100 samples each from this mirror, 10 epochs.
+    # At 80 training samples/category and batch size 128, that is about 13 steps
+    # per epoch; it checks the end-to-end plumbing, not classifier quality.
     quick_test: bool = False
     category_limit: int = 0  # 0 = all categories; >0 only trims for debugging
     quick_test_categories: int = 20
-    quick_test_samples: int = 500
+    quick_test_samples: int = 100
     quick_test_epochs: int = 10
     quick_test_batch_size: int = 128
 
     # Light augmentation only. Doodles are defined by their shape, so we nudge
     # position and rotation a little and nothing else (no flips: a flipped
-    # umbrella or fork is a different drawing).
+    # umbrella or fork is a different drawing). Rotation is a maximum in radians.
     augment: bool = True
     augment_translation: float = 0.05   # +/-5% of the image = +/-1.4 px
-    augment_rotation: float = 0.05      # +/- ~2.9 degrees
+    augment_rotation: float = 0.05      # +/-0.05 radians = +/-2.9 degrees
 
     # Pen-width invariance. Quick, Draw! strokes are ~1.5 px wide on the 28x28
     # grid; a browser pen ends up at ~0.3-0.6 px. Without this the model is right
@@ -149,7 +145,14 @@ class Config:
     drive_checkpoint_dir: Path | None = None
 
     def resolve(self) -> "Config":
-        """Apply QUICK_TEST settings."""
+        """Validate configuration and apply QUICK_TEST settings."""
+        if self.dataset not in {"quickdraw-js", "synthetic"}:
+            raise ValueError("dataset must be 'quickdraw-js' or 'synthetic'")
+        if self.samples_per_class < 1 or self.batch_size < 1 or self.epochs < 1:
+            raise ValueError("samples_per_class, batch_size and epochs must be positive")
+        if not 0 < self.train_fraction < 1 or not 0 <= self.val_fraction < 1 \
+                or self.train_fraction + self.val_fraction >= 1:
+            raise ValueError("train_fraction and val_fraction must leave a non-empty test split")
         if self.quick_test:
             self.samples_per_class = min(self.samples_per_class, self.quick_test_samples)
             self.epochs = min(self.epochs, self.quick_test_epochs)
@@ -438,7 +441,7 @@ def make_dataset(bundle: DatasetBundle, split: str, training: bool):
 
     if training:
         if cfg.augment:
-            augmenter = _make_augmenter(tf)
+            augmenter = _make_augmenter(tf, cfg.augment_translation, cfg.augment_rotation)
             if augmenter is not None:
                 dataset = dataset.map(
                     lambda x, y: (augmenter(x, training=True), y),
@@ -456,15 +459,16 @@ def make_dataset(bundle: DatasetBundle, split: str, training: bool):
     return dataset, math.ceil(len(source) / cfg.batch_size)
 
 
-def _make_augmenter(tf):
-    """Light translation + rotation, applied only while training."""
+def _make_augmenter(tf, translation: float = 0.05, rotation_radians: float = 0.05):
+    """Light translation + rotation; the rotation config is expressed in radians."""
     try:
         return tf.keras.Sequential([
             tf.keras.layers.RandomTranslation(
-                height_factor=0.05, width_factor=0.05, fill_mode="constant", fill_value=0.0
+                height_factor=translation, width_factor=translation, fill_mode="constant", fill_value=0.0
             ),
             tf.keras.layers.RandomRotation(
-                factor=0.05, fill_mode="constant", fill_value=0.0
+                factor=rotation_factor_from_radians(rotation_radians),
+                fill_mode="constant", fill_value=0.0
             ),
         ])
     except AttributeError:  # very old TensorFlow
@@ -808,7 +812,8 @@ def save_and_export(model, bundle: DatasetBundle, metrics: dict, cfg: Config, hi
         "dataset_access_path": "npm:quickdraw.js@1.0.6 (CC BY 4.0, data by Google, Inc.)",
         "is_self_test_only": cfg.dataset != "quickdraw-js",
         "categories": len(bundle.categories),
-        "samples_per_class": cfg.samples_per_class,
+        "samples_per_class": min(int(cache.shape[0]) for cache in bundle.cache),
+        "samples_per_class_requested": cfg.samples_per_class,
         "train_samples": len(bundle.train),
         "validation_samples": len(bundle.val),
         "test_samples": len(bundle.test),
@@ -827,8 +832,9 @@ def save_and_export(model, bundle: DatasetBundle, metrics: dict, cfg: Config, hi
         },
         "augmentation": {
             "enabled": cfg.augment,
-            "translation": cfg.augment_translation,
-            "rotation": cfg.augment_rotation,
+            "translation_fraction": cfg.augment_translation,
+            "rotation_radians": cfg.augment_rotation,
+            "rotation_factor_turns": rotation_factor_from_radians(cfg.augment_rotation),
         },
         "architecture": _topology_layers(json.loads((cfg.export_dir / "model.json").read_text())),
         "parameters": metrics.get("parameters"),
@@ -939,7 +945,7 @@ def run_pipeline(cfg: Config, logger=print, categories: Sequence[str] | None = N
 
 def parse_args(argv: Sequence[str] | None = None) -> Config:
     parser = argparse.ArgumentParser(description="Train SketchAI's 345-class Quick, Draw! classifier.")
-    parser.add_argument("--quick-test", action="store_true", help="tiny end-to-end run (20 classes, 500 samples, 3 epochs)")
+    parser.add_argument("--quick-test", action="store_true", help="tiny end-to-end run (20 classes, up to 100 samples/class, 10 epochs)")
     parser.add_argument("--samples-per-class", type=int, default=Config.samples_per_class)
     parser.add_argument("--epochs", type=int, default=Config.epochs)
     parser.add_argument("--batch-size", type=int, default=Config.batch_size)

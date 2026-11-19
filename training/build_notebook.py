@@ -118,7 +118,7 @@ RAW_URL     = ('https://raw.githubusercontent.com/nileshwarke848-droid/SketchAI/
 # -- 1. fetch the environment helper (a public file; nothing to log in to) -------
 os.makedirs(BOOTSTRAP, exist_ok=True)
 fetched = False
-for ref in ('main', 'arena/40ecfce2-sketchai'):
+for ref in ('arena/0028d0fe-sketchai', 'main', 'arena/40ecfce2-sketchai'):
     try:
         urllib.request.urlretrieve(RAW_URL.format(ref=ref), os.path.join(BOOTSTRAP, 'colab_setup.py'))
         fetched = True
@@ -172,8 +172,8 @@ The worst possible failure is training for hours and discovering at the very end
 that the model cannot be exported. So: convert a throwaway five-class network to
 TensorFlow.js right now. It takes seconds.
 
-This cell also checks that Google's dataset bucket is reachable, for the same
-reason — better to know now than after a long download.
+This cell fetches the Quick, Draw! npm mirror if it is not already present, then
+checks the local data before training starts.
 
 If either check fails, **stop and fix it** (the cell tells you how). Do not
 continue into training.
@@ -184,18 +184,18 @@ assert smoke['ok'], 'Fix the TensorFlow.js exporter before training (see the mes
 """),
     code("""
 dataset_check = colab_setup.check_dataset(train_345.QUICKDRAW_SOURCE_DIR)
-if dataset_check['ok']:
-    print(f"Quick Draw dataset reachable: {dataset_check['rows']} sample rows read")
-    print(f"  {dataset_check['url']}")
-else:
+if not dataset_check['ok']:
+    import subprocess
+    print('Fetching the CC BY 4.0 quickdraw.js mirror (about 13.7 MB) …')
+    subprocess.run([sys.executable, 'training/fetch_quickdraw_data.py'], check=True)
+    dataset_check = colab_setup.check_dataset(train_345.QUICKDRAW_SOURCE_DIR)
+if not dataset_check['ok']:
     raise SystemExit(
-        '\\nQuick Draw dataset could not be reached.\\n'
-        f"  url   : {dataset_check['url']}\\n"
-        f"  reason: {dataset_check['error']}\\n\\n"
-        'This notebook needs to download drawings from Google Cloud Storage.\\n'
-        'Check that this runtime has internet access (Colab normally does), then\\n'
-        'run this cell again. Training cannot continue without the dataset.'
+        '\\nQuick Draw mirror check failed after download.\\n'
+        f"  reason: {dataset_check['error']}\\n"
+        'Training cannot continue until all 345 local category files are available.'
     )
+print(f"Quick Draw mirror ready: {dataset_check['categories']} categories; {dataset_check['rows']} sample rows checked")
 """),
     md("""
 ## 3. Configuration
@@ -208,20 +208,20 @@ QUICK_TEST = False    # SECOND RUN — after the first run finished successfully
 ```
 
 Everything else has a sensible default. `SAMPLES_PER_CLASS` is ignored while
-`QUICK_TEST` is `True` (it is capped at 500).
+`QUICK_TEST` is `True` (it is capped at 100, the current mirror limit).
 """),
     code("""
 # ---------------------------------------------------------------------------
-#  FIRST RUN:  QUICK_TEST = True    -> 20 categories, ~500 drawings each,
+#  FIRST RUN:  QUICK_TEST = True    -> 20 categories, up to 100 drawings each,
 #                                      10 epochs, finishes in minutes.
 #  THEN:       QUICK_TEST = False   -> all 345 categories, the real model.
 # ---------------------------------------------------------------------------
 QUICK_TEST       = True
 
-# How many drawings to fetch per category for the FULL run. Google hosts
-# 120k-300k per category; 5000 is comfortable on a free runtime, 10000 is better
-# if your runtime lasts. Capped at 500 while QUICK_TEST is True.
-SAMPLES_PER_CLASS = 5000
+# The current npm mirror has 100 drawings per class. A larger setting does not
+# create or download more samples; a full-dataset source loader is needed first.
+# QUICK_TEST is capped at 100 samples per class.
+SAMPLES_PER_CLASS = 100
 
 BATCH_SIZE  = 256     # lower to 128 or 64 if the runtime runs out of memory
 EPOCHS      = 20      # early stopping usually finishes earlier
@@ -240,10 +240,9 @@ DRIVE_DIR   = '/content/drive/MyDrive/SketchAI-training'
 TRAIN_FRACTION = 0.8
 VAL_FRACTION   = 0.1   # the remaining 0.1 is the held-out test set
 
-# The dataset. 'quickdraw' is the real Google dataset and is what you want.
-# 'synthetic' draws procedural shapes offline and exists only for developing this
-# pipeline where the bucket is unreachable -- it can never produce a real model.
-DATASET = 'quickdraw'
+# The real Quick, Draw! data from the 100-drawing-per-class npm mirror.
+# 'synthetic' is an offline plumbing test and cannot produce an installable model.
+DATASET = 'quickdraw-js'
 
 print(f"QUICK_TEST = {QUICK_TEST}   <-- change this one line for the full run")
 print(f"SAMPLES_PER_CLASS = {SAMPLES_PER_CLASS}   EPOCHS = {EPOCHS}   SEED = {SEED}")
@@ -254,10 +253,10 @@ print(f"SAMPLES_PER_CLASS = {SAMPLES_PER_CLASS}   EPOCHS = {EPOCHS}   SEED = {SE
 `run_pipeline()` does everything: download, split, train, evaluate, export. These
 lines translate the settings above into its config object.
 
-`QUICK_TEST` is applied by `resolve()`: it caps the sample count, raises the epoch
-count and lowers the batch size. That last part matters — a quick test is tiny, so
-at batch size 256 it would only get about 32 optimiser steps per epoch, which is
-far too few for a CNN to learn anything. Ten smaller batches give it roughly 630
+`QUICK_TEST` is applied by `resolve()`: it caps the sample count at 100, raises the
+epoch count and lowers the batch size. With only 20 classes and up to 80 train
+examples per class, it gets about 13 optimiser steps per epoch. It checks that the
+pipeline works; it is not an accuracy benchmark. Ten epochs give it roughly 130
 steps, enough to actually watch the accuracy climb.
 """),
     code("""
@@ -299,23 +298,21 @@ else:
 
 total = len(selected) * cfg.samples_per_class
 print(f'{len(selected)} categories x {cfg.samples_per_class:,} drawings = {total:,} examples')
-print(f'estimated download: {total * 784 / 1e9:.2f} GB of pixel data (fetched once, then cached)')
+print('available source: up to 100 real drawings per class in the current mirror')
 print(f'batch size {cfg.batch_size}, up to {cfg.epochs} epochs')
 """),
     md("""
 ## 5. Download the dataset
 
-These are real Google Quick, Draw! drawings — people's actual sketches of cats,
-buses and giraffes, collected by the Quick, Draw! game.
+These are real Google Quick, Draw! drawings redistributed under CC BY 4.0 by
+`quickdraw.js`. The current npm package contains 100 pre-rasterized drawings per
+category (34,500 total), not the complete 50-million-drawing collection. The
+fetch script stores 345 compressed NDJSON files locally; training caches their
+28×28 images so a restarted run does not need to parse them again.
 
-Google publishes one `.npy` file per category, 30–100 MB each, holding *every*
-drawing ever collected. At 345 categories that is tens of gigabytes, far more than
-a free runtime holds. So whole files are never downloaded: the loader reads the
-small header of each `.npy`, works out where the pixel data starts, and asks the
-server for **only the first N rows**.
-
-Each slice is cached to disk, so re-running the notebook after a disconnect does
-not re-download it.
+Increasing `SAMPLES_PER_CLASS` cannot exceed the source's 100/class limit. A future
+accuracy-focused run should use a documented full-data source and rasterize its
+vector strokes with the same preprocessing used by the app.
 """),
     code("""
 %%time
@@ -409,8 +406,8 @@ The HDF5 copy is the one used for export, because the converter rejects some
 newer `.keras` files.
 
 **How long?** `QUICK_TEST = True` takes a couple of minutes. The full run depends
-on which GPU Colab gives you and on `SAMPLES_PER_CLASS` — expect hours, not
-minutes. There is no honest way to promise a number in advance. If the runtime
+on which GPU Colab gives you and on `SAMPLES_PER_CLASS` — the current 34,500-example mirror is much smaller than a full dataset run. There
+is no honest way to promise a number in advance. If the runtime
 disconnects, re-run from section 3: the dataset is cached, and with
 `USE_DRIVE = True` so is your best checkpoint.
 """),

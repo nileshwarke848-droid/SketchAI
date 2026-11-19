@@ -5,7 +5,7 @@ import { createCanvas } from '@napi-rs/canvas';
 import { EditorHistory } from '../src/lib/editor-history.js';
 import { createSceneObject, artworkImageKey, hitTestScene, renderScene } from '../src/lib/scene.js';
 import { canvasToClientPoint, clientToCanvasPoint } from '../src/lib/canvas-coordinates.js';
-import { composeFillBoundary, fillCanvasRegion, floodFillMask } from '../src/lib/raster-fill.js';
+import { composeFillBoundary, fillCanvasRegion, fillRasterRegion, floodFillMask } from '../src/lib/raster-fill.js';
 
 const WIDTH = 1200;
 const HEIGHT = 720;
@@ -55,6 +55,36 @@ function check(name, fn) {
 
 console.log('Paint bucket and canvas-background tests');
 console.log('=========================================');
+
+const localObject = createCanvas(240, 180);
+{
+  const context = localObject.getContext('2d');
+  context.strokeStyle = '#242422';
+  context.lineWidth = 12;
+  context.lineJoin = 'round';
+  context.strokeRect(24, 24, 192, 132);
+}
+const localFill = fillRasterRegion({ canvas: localObject, seed: { x: 120, y: 90 }, color: RED });
+check('filling inside a closed object writes color into its own raster', () => {
+  assert.ok(localFill.changed > 1000);
+  assert.equal(localFill.open, false);
+  assert.deepEqual(colorAt(localObject, 120, 90), [226, 103, 85, 255]);
+  assert.notDeepEqual(colorAt(localObject, 5, 5), [226, 103, 85, 255]);
+});
+
+const openObject = createCanvas(120, 90);
+{
+  const context = openObject.getContext('2d');
+  context.strokeStyle = '#242422';
+  context.lineWidth = 8;
+  context.beginPath(); context.moveTo(20, 20); context.lineTo(100, 20); context.lineTo(100, 70); context.stroke();
+}
+const openFill = fillRasterRegion({ canvas: openObject, seed: { x: 35, y: 45 }, color: BLUE });
+check('an open transparent area is not accidentally converted into a solid object fill', () => {
+  assert.equal(openFill.changed, 0);
+  assert.equal(openFill.open, true);
+  assert.deepEqual(colorAt(openObject, 35, 45), [0, 0, 0, 0]);
+});
 
 const closed = layers();
 drawClosedRect(closed.sketch);

@@ -13,6 +13,130 @@ export const SAFE_TEXT_FAMILIES = Object.freeze([
 ]);
 
 let sceneIdCounter = 0;
+const tintedBitmaps = new WeakMap();
+const thicknessBitmaps = new WeakMap();
+
+function bitmapForRender(image, color) {
+  if (!image || !color || color === 'original' || typeof document === 'undefined') return image;
+  let colors = tintedBitmaps.get(image);
+  if (!colors) {
+    colors = new Map();
+    tintedBitmaps.set(image, colors);
+  }
+  if (colors.has(color)) return colors.get(color);
+  const width = image.naturalWidth || image.videoWidth || image.width;
+  const height = image.naturalHeight || image.videoHeight || image.height;
+  if (!(width > 0) || !(height > 0)) return image;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return image;
+  context.drawImage(image, 0, 0, width, height);
+  context.globalCompositeOperation = 'source-in';
+  context.fillStyle = color;
+  context.fillRect(0, 0, width, height);
+  colors.set(color, canvas);
+  return canvas;
+}
+
+function artworkUsesOutline(object) {
+  if (object?.type !== 'artwork') return false;
+  const artwork = object.artwork;
+  if (artwork?.mode === 'outline' || artwork?.mode === 'stroke') return true;
+  const body = String(artwork?.b ?? '');
+  return /\bfill\s*=\s*["']none["']/i.test(body)
+    && /\bstroke\s*=\s*["'](?!none["'])[^"']+/i.test(body);
+}
+
+/** Return whether a selection can meaningfully change visible line thickness. */
+export function isThicknessEditable(object) {
+  if (object?.type === 'shape') return true;
+  if (object?.type === 'bitmap') return Boolean(object.isSketchStroke);
+  return artworkUsesOutline(object);
+}
+
+function morphPixels(source, width, height, radius, operation) {
+  const horizontal = new Uint8ClampedArray(source.length);
+  const output = new Uint8ClampedArray(source.length);
+  const runPass = (input, target, horizontalPass) => {
+    const lineCount = horizontalPass ? height : width;
+    const lineLength = horizontalPass ? width : height;
+    for (let line = 0; line < lineCount; line += 1) {
+      const queue = new Int32Array(lineLength);
+      let head = 0;
+      let tail = 0;
+      let right = -1;
+      for (let position = 0; position < lineLength; position += 1) {
+        const end = Math.min(lineLength - 1, position + radius);
+        while (right < end) {
+          const added = ++right;
+          const x = horizontalPass ? added : line;
+          const y = horizontalPass ? line : added;
+          const alpha = input[(y * width + x) * 4 + 3];
+          while (tail > head) {
+            const previous = queue[tail - 1];
+            const previousX = horizontalPass ? previous : line;
+            const previousY = horizontalPass ? line : previous;
+            const previousAlpha = input[(previousY * width + previousX) * 4 + 3];
+            if (operation === 'dilate' ? previousAlpha > alpha : previousAlpha < alpha) break;
+            tail -= 1;
+          }
+          queue[tail++] = added;
+        }
+        const start = Math.max(0, position - radius);
+        while (tail > head && queue[head] < start) head += 1;
+        const winner = queue[head];
+        const sourceX = horizontalPass ? winner : line;
+        const sourceY = horizontalPass ? line : winner;
+        const targetX = horizontalPass ? position : line;
+        const targetY = horizontalPass ? line : position;
+        const sourceOffset = (sourceY * width + sourceX) * 4;
+        const targetOffset = (targetY * width + targetX) * 4;
+        const outsideForErosion = operation === 'erode'
+          && (position - radius < 0 || position + radius >= lineLength);
+        target[targetOffset] = input[sourceOffset];
+        target[targetOffset + 1] = input[sourceOffset + 1];
+        target[targetOffset + 2] = input[sourceOffset + 2];
+        target[targetOffset + 3] = outsideForErosion ? 0 : input[sourceOffset + 3];
+      }
+    }
+  };
+  runPass(source, horizontal, true);
+  runPass(horizontal, output, false);
+  return output;
+}
+
+export function adjustRasterThickness(image, width, height, delta, canvasFactory = null) {
+  if (!image || !delta || (!canvasFactory && typeof document === 'undefined')) return image;
+  const pixelWidth = Math.max(1, Math.ceil(width));
+  const pixelHeight = Math.max(1, Math.ceil(height));
+  const thickness = Math.max(-16, Math.min(16, Math.round(delta)));
+  if (!thickness) return image;
+  let entries = thicknessBitmaps.get(image);
+  if (!entries) {
+    entries = new Map();
+    thicknessBitmaps.set(image, entries);
+  }
+  const key = `${pixelWidth}x${pixelHeight}:${thickness}`;
+  if (entries.has(key)) return entries.get(key);
+  const canvas = canvasFactory
+    ? canvasFactory(pixelWidth, pixelHeight)
+    : document.createElement('canvas');
+  canvas.width = pixelWidth;
+  canvas.height = pixelHeight;
+  const context = canvas.getContext('2d');
+  if (!context) return image;
+  context.drawImage(image, 0, 0, pixelWidth, pixelHeight);
+  const source = context.getImageData(0, 0, pixelWidth, pixelHeight);
+  const radius = Math.max(1, Math.ceil(Math.abs(thickness) / 2));
+  const result = context.createImageData(pixelWidth, pixelHeight);
+  result.data.set(morphPixels(source.data, pixelWidth, pixelHeight, radius, thickness > 0 ? 'dilate' : 'erode'));
+  context.putImageData(result, 0, 0);
+  entries.set(key, canvas);
+  while (entries.size > 8) entries.delete(entries.keys().next().value);
+  return canvas;
+}
 
 /** Preserve the established full-color rendering for non-MDI bundled icons. */
 export function defaultSceneObjectColor(artwork, brushColor) {
@@ -73,6 +197,131 @@ export function createSceneObject({
     color: normalizedColor,
     flipX: Boolean(flipX),
     zIndex,
+  };
+}
+
+/** Create a parametric line, rectangle, ellipse or arrow scene object. */
+export function createShapeSceneObject({
+  id = createSceneObjectId(),
+  shapeKind,
+  from,
+  to,
+  color = DEFAULT_SCENE_COLOR,
+  strokeWidth = 4,
+  fillColor = 'none',
+  arrowHead = 'end',
+  zIndex = 0,
+}) {
+  if (!['line', 'rectangle', 'ellipse', 'arrow'].includes(shapeKind)) {
+    throw new TypeError(`Unsupported shape kind: ${shapeKind}`);
+  }
+  if (![from?.x, from?.y, to?.x, to?.y, strokeWidth].every(Number.isFinite) || strokeWidth <= 0) {
+    throw new TypeError('Shape endpoints and stroke width must be finite and positive.');
+  }
+  const width = Math.max(1, Math.abs(to.x - from.x));
+  const height = Math.max(1, Math.abs(to.y - from.y));
+  const x = Math.min(from.x, to.x);
+  const y = Math.min(from.y, to.y);
+  const center = { x: x + width / 2, y: y + height / 2 };
+  const normalizedColor = normalizeHexColor(color);
+  const normalizedFill = fillColor === 'none' || fillColor == null ? 'none' : normalizeHexColor(fillColor);
+  if (!normalizedColor) throw new TypeError(`Shape outline must be a valid RGB hex value: ${color}`);
+  if (!normalizedFill) throw new TypeError(`Shape fill must be none or a valid RGB hex value: ${fillColor}`);
+  return {
+    id,
+    type: 'shape',
+    shapeKind,
+    label: shapeKind === 'ellipse' ? 'Ellipse' : `${shapeKind[0].toUpperCase()}${shapeKind.slice(1)}`,
+    x,
+    y,
+    width,
+    height,
+    rotation: 0,
+    color: normalizedColor,
+    fillColor: normalizedFill,
+    strokeWidth: Math.max(1, Math.min(100, strokeWidth)),
+    arrowHead: ['none', 'start', 'end', 'both'].includes(arrowHead) ? arrowHead : 'end',
+    start: { x: from.x - center.x, y: from.y - center.y },
+    end: { x: to.x - center.x, y: to.y - center.y },
+    flipX: false,
+    zIndex,
+    isSketchStroke: true,
+  };
+}
+
+/** Render shape geometry in an object-local context translated to its center. */
+export function drawShapeObject(context, object) {
+  if (!context || object?.type !== 'shape') return false;
+  const left = -object.width / 2;
+  const top = -object.height / 2;
+  context.save();
+  context.lineWidth = object.strokeWidth;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.strokeStyle = object.color;
+  context.fillStyle = object.fillColor && object.fillColor !== 'none' ? object.fillColor : object.color;
+  context.beginPath();
+  if (object.shapeKind === 'rectangle') {
+    context.rect(left, top, object.width, object.height);
+    if (object.fillColor !== 'none') context.fill();
+    context.stroke();
+  } else if (object.shapeKind === 'ellipse') {
+    context.ellipse(0, 0, object.width / 2, object.height / 2, 0, 0, Math.PI * 2);
+    if (object.fillColor !== 'none') context.fill();
+    context.stroke();
+  } else {
+    const start = object.start ?? { x: left, y: top };
+    const end = object.end ?? { x: -start.x, y: -start.y };
+    context.moveTo(start.x, start.y);
+    context.lineTo(end.x, end.y);
+    context.stroke();
+    if (object.shapeKind === 'arrow' && object.arrowHead !== 'none') {
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      const length = Math.min(Math.hypot(end.x - start.x, end.y - start.y) * 0.35,
+        Math.max(10, object.strokeWidth * 4));
+      const drawHead = (tip, direction) => {
+        const baseX = tip.x - Math.cos(direction) * length;
+        const baseY = tip.y - Math.sin(direction) * length;
+        const wing = length * 0.48;
+        context.beginPath();
+        context.moveTo(tip.x, tip.y);
+        context.lineTo(baseX - Math.sin(direction) * wing, baseY + Math.cos(direction) * wing);
+        context.lineTo(baseX + Math.sin(direction) * wing, baseY - Math.cos(direction) * wing);
+        context.closePath();
+        context.fillStyle = object.color;
+        context.fill();
+      };
+      if (object.arrowHead === 'end' || object.arrowHead === 'both') drawHead(end, angle);
+      if (object.arrowHead === 'start' || object.arrowHead === 'both') drawHead(start, angle + Math.PI);
+    }
+  }
+  context.restore();
+  return true;
+}
+
+/** Move one line/arrow endpoint while preserving the other in world space. */
+export function moveShapeEndpoint(object, endpoint, pointer) {
+  if (object?.type !== 'shape' || !['line', 'arrow'].includes(object.shapeKind)
+    || !['start', 'end'].includes(endpoint)) return object;
+  const nextPoint = worldToObjectLocal(object, pointer);
+  const points = { start: { ...object.start }, end: { ...object.end } };
+  points[endpoint] = nextPoint;
+  const minX = Math.min(points.start.x, points.end.x);
+  const maxX = Math.max(points.start.x, points.end.x);
+  const minY = Math.min(points.start.y, points.end.y);
+  const maxY = Math.max(points.start.y, points.end.y);
+  const width = Math.max(1, maxX - minX);
+  const height = Math.max(1, maxY - minY);
+  const localCenter = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  const worldCenter = objectLocalToWorld(object, localCenter);
+  return {
+    ...object,
+    x: worldCenter.x - width / 2,
+    y: worldCenter.y - height / 2,
+    width,
+    height,
+    start: { x: points.start.x - localCenter.x, y: points.start.y - localCenter.y },
+    end: { x: points.end.x - localCenter.x, y: points.end.y - localCenter.y },
   };
 }
 
@@ -148,6 +397,7 @@ export function createBitmapSceneObject({
   color = 'original',
   flipX = false,
   zIndex = 0,
+  isSketchStroke = false,
 }) {
   if (typeof bitmap !== 'string' || !bitmap.startsWith('data:image/png')) {
     throw new TypeError('A bitmap object requires a PNG data URL.');
@@ -175,6 +425,7 @@ export function createBitmapSceneObject({
     color: normalizedColor,
     flipX: Boolean(flipX),
     zIndex,
+    isSketchStroke: Boolean(isSketchStroke),
   };
 }
 
@@ -236,7 +487,9 @@ export function updateSceneObject(objects, id, update) {
     if (Object.prototype.hasOwnProperty.call(patch, 'color')) {
       const keepsOriginalArtworkColors = patch.color === 'original' && object.type === 'artwork'
         && object.artwork?.origin === 'icon' && object.artwork.source !== 'mdi';
-      const normalizedColor = keepsOriginalArtworkColors ? 'original' : normalizeHexColor(patch.color);
+      const keepsOriginalBitmapColors = patch.color === 'original' && object.type === 'bitmap';
+      const normalizedColor = keepsOriginalArtworkColors || keepsOriginalBitmapColors
+        ? 'original' : normalizeHexColor(patch.color);
       if (!normalizedColor) return object;
       safePatch = { ...patch, color: normalizedColor };
     }
@@ -369,8 +622,36 @@ export function localVectorToWorld(object, x, y) {
 
 export function hitTestObject(object, point, padding = 0) {
   const local = worldToObjectLocal(object, point);
-  return Math.abs(local.x) <= object.width / 2 + padding
-    && Math.abs(local.y) <= object.height / 2 + padding;
+  const halfWidth = object.width / 2;
+  const halfHeight = object.height / 2;
+  if (object.type !== 'shape') {
+    return Math.abs(local.x) <= halfWidth + padding && Math.abs(local.y) <= halfHeight + padding;
+  }
+  const effectiveStrokeWidth = object.strokeWidth + (object.thicknessDelta ?? 0);
+  const tolerance = Math.max(padding, effectiveStrokeWidth / 2 + 3);
+  if (Math.abs(local.x) > halfWidth + tolerance || Math.abs(local.y) > halfHeight + tolerance) return false;
+  if (object.shapeKind === 'rectangle') {
+    if (object.fillColor && object.fillColor !== 'none'
+      && Math.abs(local.x) <= halfWidth && Math.abs(local.y) <= halfHeight) return true;
+    return Math.abs(Math.abs(local.x) - halfWidth) <= tolerance
+      || Math.abs(Math.abs(local.y) - halfHeight) <= tolerance;
+  }
+  if (object.shapeKind === 'ellipse') {
+    const rx = Math.max(0.5, halfWidth);
+    const ry = Math.max(0.5, halfHeight);
+    const normalized = (local.x / rx) ** 2 + (local.y / ry) ** 2;
+    if (object.fillColor && object.fillColor !== 'none' && normalized <= 1) return true;
+    const averageRadius = (rx + ry) / 2;
+    return Math.abs(Math.sqrt(Math.max(0, normalized)) - 1) * averageRadius <= tolerance;
+  }
+  const start = object.start ?? { x: -halfWidth, y: -halfHeight };
+  const end = object.end ?? { x: halfWidth, y: halfHeight };
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared ? Math.max(0, Math.min(1,
+    ((local.x - start.x) * dx + (local.y - start.y) * dy) / lengthSquared)) : 0;
+  return Math.hypot(local.x - (start.x + t * dx), local.y - (start.y + t * dy)) <= tolerance;
 }
 
 /** Topmost-first object hit testing, using transformed local-space bounds. */
@@ -491,6 +772,12 @@ export function resizeSceneObject(object, handle, pointer, {
     ...(object.type === 'text' ? {
       fontSize: clamp(object.fontSize * scale, MIN_TEXT_FONT_SIZE, MAX_TEXT_FONT_SIZE),
     } : {}),
+    ...(object.type === 'shape' && object.start && object.end ? {
+      start: { x: object.start.x * scale, y: object.start.y * scale },
+      end: { x: object.end.x * scale, y: object.end.y * scale },
+      strokeWidth: object.strokeWidth * scale,
+      thicknessDelta: (object.thicknessDelta ?? 0) * scale,
+    } : {}),
   };
 }
 
@@ -563,6 +850,12 @@ export function resizeSceneObjectsGroup(objects, startObjects, bounds, handle, p
       ...(start.type === 'text' ? {
         fontSize: clamp(start.fontSize * scale, MIN_TEXT_FONT_SIZE, MAX_TEXT_FONT_SIZE),
       } : {}),
+      ...(start.type === 'shape' && start.start && start.end ? {
+        start: { x: start.start.x * scale, y: start.start.y * scale },
+        end: { x: start.end.x * scale, y: start.end.y * scale },
+        strokeWidth: start.strokeWidth * scale,
+        thicknessDelta: (start.thicknessDelta ?? 0) * scale,
+      } : {}),
     };
   });
   return changed ? next : objects;
@@ -614,12 +907,13 @@ export function flipSceneObjects(objects, ids) {
 }
 
 export function recolorSceneObjects(objects, ids, color) {
-  const normalizedColor = normalizeHexColor(color);
+  const normalizedColor = color === 'original' ? 'original' : normalizeHexColor(color);
   if (!normalizedColor) return objects;
   const selected = new Set(ids);
   let changed = false;
   const next = objects.map((object) => {
-    if (!selected.has(object.id) || !['artwork', 'text', 'bitmap'].includes(object.type) || object.color === normalizedColor) return object;
+    if (!selected.has(object.id) || !['artwork', 'text', 'bitmap', 'shape'].includes(object.type)
+      || (normalizedColor === 'original' && object.type !== 'bitmap') || object.color === normalizedColor) return object;
     changed = true;
     return { ...object, color: normalizedColor };
   });
@@ -789,7 +1083,12 @@ export function renderScene(objects, canvas, imageCache) {
     context.translate(center.x, center.y);
     context.rotate(degreesToRadians(object.rotation));
     context.scale(object.flipX ? -1 : 1, 1);
-    if (object.type === 'text') {
+    if (object.type === 'shape') {
+      drawShapeObject(context, {
+        ...object,
+        strokeWidth: clamp(object.strokeWidth + (object.thicknessDelta ?? 0), 1, 100),
+      });
+    } else if (object.type === 'text') {
       context.fillStyle = object.color;
       context.font = `${object.fontWeight === 'bold' ? 'bold' : 'normal'} ${object.fontSize}px ${object.fontFamily}`;
       context.textAlign = object.textAlign;
@@ -802,12 +1101,23 @@ export function renderScene(objects, canvas, imageCache) {
       const image = imageCache instanceof Map
         ? imageCache.get(bitmapImageKey(object.bitmapId))
         : imageCache?.getBitmap?.(object.bitmapId);
-      if (image) context.drawImage(image, -object.width / 2, -object.height / 2, object.width, object.height);
+      if (image) {
+        const renderedImage = bitmapForRender(image, object.color);
+        const thicknessImage = object.isSketchStroke
+          ? adjustRasterThickness(renderedImage, object.width, object.height, object.thicknessDelta ?? 0)
+          : renderedImage;
+        context.drawImage(thicknessImage, -object.width / 2, -object.height / 2, object.width, object.height);
+      }
     } else {
       const image = imageCache instanceof Map
         ? imageCache.get(artworkImageKey(object.artworkId, object.color))
         : imageCache?.get(object.artworkId, object.color);
-      if (image) context.drawImage(image, -object.width / 2, -object.height / 2, object.width, object.height);
+      if (image) {
+        const thicknessImage = artworkUsesOutline(object)
+          ? adjustRasterThickness(image, object.width, object.height, object.thicknessDelta ?? 0)
+          : image;
+        context.drawImage(thicknessImage, -object.width / 2, -object.height / 2, object.width, object.height);
+      }
     }
     context.restore();
   }
