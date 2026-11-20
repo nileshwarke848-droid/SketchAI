@@ -22,8 +22,8 @@
   "limitations": [
     "The supplied output class-index map has 333 unique contiguous indices and all 40 tested labels are present, but alignment with the model learned output neurons is not independently verified.",
     "Model archive does not provide training-data provenance; overlap with the held-out evaluation drawings is unknown.",
-    "ModelX expects 96x96x3, whereas existing 333 profile in the app was designed around a 96x96x1 model. This evaluation adapted grayscale to RGB by channel replication; train-time color/channel semantics are undocumented.",
-    "Same 400 images and labels as existing model comparison, but model-specific input preprocessing differs and ModelX required a provisional channel adaptation."
+    "The user-confirmed input contract resolves polarity, RGB input shape and float32 0\u20131 range, but exact training-time resize, crop and rasterization details are still not known.",
+    "The same 400 images and labels were used throughout. Direct 96x96 tests upsample the source 28x28 bitmaps and therefore cannot restore missing source detail; their resize variants are exploratory."
   ],
   "summary": {
     "rates": {
@@ -8670,10 +8670,10 @@
       },
       "total": 400
     },
-    "interpretation": "Color polarity is undocumented and materially changes predictions. The primary metric remains the stated white-ink-on-black app-style pipeline; neither convention is authenticated as training-time preprocessing."
+    "interpretation": "The user later confirmed the model training convention is black strokes on white background, float32 0\u20131 RGB. The primary app-style metric is therefore a polarity-mismatched diagnostic; the direct 96x96 black-on-white experiment is closer to the intended convention."
   },
   "direct_96x96_resize_experiment": {
-    "status": "exploratory only; same 400 manifest records; not part of primary app-style result",
+    "status": "exploratory, closer-to-training-contract experiment; same 400 manifest records; exact training resize filter not supplied",
     "source_pixels": "original Quick, Draw! 28x28 bitmap values scaled directly to 96x96; source contains no additional resolution detail",
     "channels": "grayscale replicated to RGB to match ModelX input signature",
     "normalization": "float 0..1",
@@ -8703,6 +8703,27 @@
         "10": 57
       }
     },
-    "interpretation": "Observed accuracy changes materially with polarity and resize filter. Since variants were compared on this fixed test set and training preprocessing is unknown, do not select the production pipeline from the best observed variant."
-  }
+    "interpretation": "These inputs match the user-reported polarity, 96x96x3 RGB, float32 0\u20131 range and batched inference contract. Observed accuracy changes with resize filter; variants were compared on the same test set, so do not select production preprocessing from the highest score."
+  },
+  "modelx_training_input_spec_reported_by_user": {
+    "background": "white (~1.0)",
+    "strokes": "black (~0.0)",
+    "shape_per_example": [
+      96,
+      96,
+      3
+    ],
+    "dtype": "float32",
+    "value_range": [
+      0.0,
+      1.0
+    ],
+    "inference_batch_shape": [
+      1,
+      96,
+      96,
+      3
+    ]
+  },
+  "summary_context": "The summary rates and paired bootstrap under summary are from the initial app-style white-ink-on-black run, which conflicts with the subsequently user-confirmed ModelX polarity. The direct_96x96_resize_experiment matches the confirmed polarity, RGB shape and float32 range; its exact resize filter remains unspecified."
 }

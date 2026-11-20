@@ -8,23 +8,29 @@ preprocessing code.
 
 | Metric | Supplied 333-class model | Existing 345-class model | Difference (333 − 345) |
 | --- | ---: | ---: | ---: |
-| Top-1 | 82/400 — **20.5%** (95% Wilson CI 16.8–24.7%) | 152/400 — **38.0%** (33.4–42.8%) | −17.5 percentage points |
-| Top-3 | 135/400 — **33.8%** (29.3–38.5%) | 222/400 — **55.5%** (50.6–60.3%) | −21.8 pp |
-| Top-5 | 162/400 — **40.5%** (35.8–45.4%) | 248/400 — **62.0%** (57.2–66.6%) | −21.5 pp |
-| Top-10 | 210/400 — **52.5%** (47.6–57.3%) | 280/400 — **70.0%** (65.3–74.3%) | −17.5 pp |
+| Top-1 | 82/400 — **20.5%** (95% Wilson CI 16.8–24.7%) | 158/400 — **39.5%** (34.8–44.4%) | −19.0 percentage points |
+| Top-3 | 135/400 — **33.8%** (29.3–38.5%) | 233/400 — **58.2%** (53.4–63.0%) | −24.5 pp |
+| Top-5 | 162/400 — **40.5%** (35.8–45.4%) | 257/400 — **64.2%** (59.4–68.8%) | −23.8 pp |
+| Top-10 | 210/400 — **52.5%** (47.6–57.3%) | 282/400 — **70.5%** (65.9–74.8%) | −18.0 pp |
+
+> **2026-11-20 re-measurement.** The 345-class column was re-run after the model
+> was refined on CPU (see
+> [`model-345-refinement-2026-11-20.md`](model-345-refinement-2026-11-20.md)). The
+> earlier weights scored 152 / 222 / 248 / 280; the 333-class column is unchanged
+> because that model did not change.
 
 A paired bootstrap over the 40 class clusters (10,000 resamples) gives these
 95% intervals for the top-k accuracy difference, 333 minus 345:
 
 | Metric | Class-cluster bootstrap 95% CI |
 | --- | ---: |
-| Top-1 | −25.5 to −9.5 pp |
-| Top-3 | −31.0 to −12.8 pp |
-| Top-5 | −29.8 to −13.3 pp |
-| Top-10 | −26.3 to −9.0 pp |
+| Top-1 | −27.0 to −11.0 pp |
+| Top-3 | −34.0 to −15.0 pp |
+| Top-5 | −32.0 to −15.5 pp |
+| Top-10 | −26.8 to −9.5 pp |
 
 All intervals favor the 345-class model for this sample. The 345-class result
-(38.0% top-1) is also close to its documented full held-out score of 37.7%,
+(39.5% top-1) is also close to its documented full held-out score of 40.1%,
 which is a useful check that the test sampling/split is behaving as expected.
 
 ## Test design

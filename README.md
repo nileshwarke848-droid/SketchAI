@@ -91,7 +91,7 @@ To opt in for evaluation, build with `VITE_ENABLE_UNVERIFIED_333_MODEL=true`.
 | Input / output | `[1, 96, 96, 1]` grayscale input / 333 softmax outputs |
 | Label ordering | `classes.txt` is sorted by the attached map's indices (0–332); its alignment with the trained output neurons remains unverified |
 | Training provenance | Dataset, normalization details and held-out evaluation metrics were not included in the source artifact |
-| Paired 400-drawing test | 333-class: 20.5% top-1, 33.8% top-3, 40.5% top-5, 52.5% top-10; 345-class: 38.0%, 55.5%, 62.0%, 70.0%. Full protocol and uncertainty limits: [evaluation report](training/evaluation-400-results.md). |
+| Paired 400-drawing test | 333-class: 20.5% top-1, 33.8% top-3, 40.5% top-5, 52.5% top-10; 345-class: 39.5%, 58.2%, 64.2%, 70.5%. Full protocol and uncertainty limits: [evaluation report](training/evaluation-400-results.md). |
 
 The conversion was checked on a random input against the joined Keras model
 (maximum absolute output difference below 8e-8). This verifies conversion
@@ -102,11 +102,12 @@ fidelity, not label semantics or predictive quality. See
 
 This is **SketchAI's classifier trained on the Google Quick Draw dataset**. It is
 *not* Google's model, not AutoDraw and not a third-party checkpoint: every weight
-was produced by `training/train_345.py` in this repository.
+was produced inside this repository — by `training/train_345.py`, then refined by
+`training/refine_model_345.py`.
 
 | | |
 | --- | --- |
-| Files | `public/model-345/model.json` + `public/model-345/group1-shard1of1.bin` (0.83 MB, one shard) |
+| Files | `public/model-345/model.json` + `public/model-345/group1-shard1of1.bin` (0.88 MB, one shard) |
 | Dataset | [Google Quick, Draw!](https://github.com/googlecreativelab/quickdraw-dataset) — CC BY 4.0, © Google, Inc. |
 | Data access path | `quickdraw.js@1.0.6` npm package (MIT wrapper redistributing the official dataset). The canonical Google Cloud Storage bucket and Hugging Face were both unreachable from the training environment, so this mirror was used instead; its own licence file carries the CC BY 4.0 attribution to Google. |
 | Examples per class | **100** — the maximum that mirror provides (34,500 drawings total, not the full 50 M) |
@@ -114,8 +115,8 @@ was produced by `training/train_345.py` in this repository.
 | Input | `[1, 28, 28, 1]` float32, white ink on black, values 0–1 |
 | Output | 345 softmax probabilities |
 | Parameters | 214,649 |
-| Test accuracy | **top-1 37.7% · top-3 58.1% · top-10 76.1%** (held-out split; random baseline 0.29%) |
-| Hand-drawn doodles | top-1 7/16 · top-3 9/16 · top-10 12/16 on 16 hand-drawn test doodles |
+| Test accuracy | **top-1 40.1% · top-3 59.3% · top-10 77.6%** (3,450 held-out drawings; random baseline 0.29%) |
+| Hand-drawn doodles | top-1 6/16 · top-3 9/16 · top-10 14/16 on 16 hand-drawn doodles (the previous weights scored 7/16 · 9/16 · 12/16 — 16 samples cannot separate the two) |
 
 Architecture (unchanged from the design target):
 
@@ -142,6 +143,15 @@ grid, while a browser pen on SketchAI's 1200×720 canvas is only ~0.3–0.6 px, 
 each training image was randomly thickened, thinned or gamma-shifted. Without
 that, the model scored 41.9% top-1 on the clean test split but only 9/16 top-10
 on real hand-drawn doodles; with it the doodle score rose to 12/16.
+
+Those 60 epochs produced 37.7% top-1. The shipped weights were then refined
+further on CPU — 24 epochs on the train rows with a zoom augmentation and label
+smoothing, then 26 epochs on train+validation rows with EMA weights — reaching
+**40.1% top-1** (+2.4 pp, cluster-bootstrap 95% CI +1.4…+3.4 pp, McNemar
+p = 4 × 10⁻⁷, 169 drawings fixed vs 87 broken, test rows never trained on). The
+architecture, input contract and class order are unchanged. Method, negative
+results and reproduction steps:
+[`training/model-345-refinement-2026-11-20.md`](training/model-345-refinement-2026-11-20.md).
 
 See [Training our own 345-class model](#training-our-own-345-class-model) for how
 to reproduce it, and `training/export/model-345/ATTRIBUTION.txt` for the
@@ -275,6 +285,8 @@ training/train_345.py                  the training pipeline (start here)
 training/quickdraw_ndjson.py           loads + normalises the real drawings
 training/fetch_quickdraw_data.py       downloads the dataset mirror
 training/manual_test.py                sixteen hand-drawn doodles -> top 10
+training/refine_model_345.py           continue-train an existing checkpoint (CPU)
+training/export_model_345.py           Keras -> TF.js export + parity check
 scripts/install-model-345.mjs          validate + install a trained model
 scripts/audit-app.mjs                  end-to-end app checks (no browser needed)
 scripts/test-pencil-objects.mjs        editable pencil-stroke scene-object checks
