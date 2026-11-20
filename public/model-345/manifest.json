@@ -55,18 +55,18 @@
   ],
   "parameters": 214649,
   "metrics": {
-    "test_accuracy": 0.37710145115852356,
-    "test_top3_accuracy": 0.5811594128608704,
-    "test_top10_accuracy": 0.7611594200134277,
-    "test_loss": 2.824235677719116,
+    "test_accuracy": 0.40090000000000003,
+    "test_top3_accuracy": 0.5925,
+    "test_top10_accuracy": 0.7762,
+    "test_loss": 2.6964,
     "test_samples": 3450
   },
   "weights_bytes": 867004,
-  "trained_at": "2026-10-30T09:14:51+00:00",
+  "trained_at": "2026-11-20T14:30:00+00:00",
   "config": {
     "samples_per_class": 100,
     "batch_size": 128,
-    "epochs": 60,
+    "epochs": 110,
     "seed": 42,
     "train_fraction": 0.8,
     "val_fraction": 0.1,
@@ -90,10 +90,43 @@
     "learning_rate": 0.001,
     "dropout": 0.4,
     "dense_units": 256,
-    "drive_checkpoint_dir": null
+    "drive_checkpoint_dir": null,
+    "refined_at": "2026-11-20"
   },
   "license": {
     "dataset": "CC BY 4.0 (Google, Inc.)",
     "model": "trained for this project; no third-party weights included"
+  },
+  "metrics_400_bench": {
+    "top1": 0.4025,
+    "top3": 0.5575,
+    "top10": 0.73,
+    "samples": 400
+  },
+  "refinement": {
+    "base_run": {
+      "trained_at": "2026-10-30T09:14:51+00:00",
+      "metrics": {
+        "test_accuracy": 0.37710145115852356,
+        "test_top3_accuracy": 0.5811594128608704,
+        "test_top10_accuracy": 0.7611594200134277,
+        "test_loss": 2.824235677719116,
+        "test_samples": 3450
+      },
+      "bench_400_top1": 0.38
+    },
+    "method": "continued training from the shipped checkpoint: 24 epochs on train rows (cosine 2e-4, zoom+thickness augmentation, label smoothing 0.05, val-selected), then 26 epochs on train+val rows with EMA weights (cosine 1e-4)",
+    "delta_test_top1_pp": 2.38,
+    "delta_test_top1_ci95_pp": [
+      1.42,
+      3.36
+    ],
+    "mcnemar": {
+      "refined_only": 169,
+      "shipped_only": 87,
+      "chi2": 25.6,
+      "p_two_sided": 4.14e-07
+    },
+    "test_rows_untouched_during_training": true
   }
 }

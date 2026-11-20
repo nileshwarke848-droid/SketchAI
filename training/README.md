@@ -44,8 +44,8 @@ existing 345-class and 100-class models as fallbacks.
 The supplied archive did not include the training script, dataset description,
 sample counts, or held-out metrics. Thus this repository does not assert that
 this model used all 50 million drawings or that it is more accurate. The larger
-paired 400-drawing evaluation favored the 345-class model (38.0% vs 20.5% top-1,
-70.0% vs 52.5% top-10). See [`evaluation-400-results.md`](evaluation-400-results.md)
+paired 400-drawing evaluation favored the 345-class model (39.5% vs 20.5% top-1,
+70.5% vs 52.5% top-10). See [`evaluation-400-results.md`](evaluation-400-results.md)
 for the sampling protocol, intervals, per-drawing outputs and limitations; in
 particular, the 333-class result depends on an unverified label map, unknown
 training overlap, and provisional normalization. The verified 345-class model
@@ -55,8 +55,11 @@ remains the default; the original 100-class model remains as fallback.
 
 ## Why the current score is about 38% — and how to improve it
 
-The checked-in model's recorded held-out score is **37.71% top-1**, **58.12%
-top-3**, and **76.12% top-10** across 345 classes. It was trained from only
+The checked-in model's recorded held-out score is **40.09% top-1**, **59.25%
+top-3**, and **77.62% top-10** across 345 classes (37.71 / 58.12 / 76.12 before the
+2026-11-20 CPU refinement described in
+[`model-345-refinement-2026-11-20.md`](model-345-refinement-2026-11-20.md), which
+is also the cheapest remaining win available: +2.4 pp for ~16 CPU-minutes). It was trained from only
 **100 drawings per category** in the current npm mirror (80 training examples per
 class after the split). The `--samples-per-class 5000` setting cannot change that
 source limit; use a full Quick, Draw! source and matching rasterization loader
