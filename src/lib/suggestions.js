@@ -2,7 +2,7 @@
 //
 // Kept pure and free of React so the ordering rules can be tested on their own.
 //
-// The product goal is NOT "was top-1 correct" — a 37.7% top-1 model is only
+// The product goal is NOT "was top-1 correct" — a 40.1% top-1 model is only
 // useful if the user can find what they meant somewhere on the bar. So we spend
 // our 12 cards across the top few classes rather than showing twelve near-identical
 // options for one guess, and we never show the same picture twice.
@@ -11,8 +11,8 @@ import { displayName, getArtworkVariants, normaliseLabel } from '../data/artwork
 
 // How many predicted classes are allowed to contribute cards.
 //
-// Set to 10 to match the model's real strength: top-1 accuracy is only 37.71%
-// but top-10 recall is 76.12%. Measured on the 16 hand-drawn doodles in
+// Set to 10 to match the model's real strength: top-1 accuracy is only 40.09%
+// but top-10 recall is 77.62%. Measured on the 16 hand-drawn doodles in
 // training/doodles.json, drawing from 10 classes puts the intended object on the
 // bar 14/16 times, versus 10/16 when drawing from only 5.
 export const CLASSES_USED = 10;
