@@ -17,6 +17,12 @@ model ranking.
 
 | Metric | ModelX initial app-style diagnostic (polarity mismatch) | Project 345-class reference | Difference |
 | --- | ---: | ---: | ---: |
+> **345 reference updated 2026-11-20.** The CPU refinement described in
+> [`model-345-refinement-2026-11-20.md`](model-345-refinement-2026-11-20.md) moved the
+> same-model figures to 158 / 233 / 257 / 282 (39.5% / 58.2% / 64.2% / 70.5%). The
+> 345 column below still shows the pre-refinement weights, so the gaps shown are
+> conservative for the shipped model.
+
 | Top-1 | 3/400 — **0.8%** (95% Wilson CI 0.3–2.2%) | 152/400 — **38.0%** (33.4–42.8%) | −37.3 pp |
 | Top-3 | 9/400 — **2.3%** (1.2–4.2%) | 222/400 — **55.5%** (50.6–60.3%) | −53.3 pp |
 | Top-5 | 10/400 — **2.5%** (1.4–4.5%) | 248/400 — **62.0%** (57.2–66.6%) | −59.5 pp |

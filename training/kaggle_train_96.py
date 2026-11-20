@@ -432,7 +432,9 @@ def _augment(images):
             tf.keras.layers.RandomTranslation(0.05, 0.05, fill_mode="constant", fill_value=1.0),
             tf.keras.layers.RandomZoom(0.06, fill_mode="constant", fill_value=1.0),
         ])
-    images = _AUGMENT(images, training=True)
+    # Keras augmentation layers follow mixed_float16; the contrast step needs a
+    # fixed dtype, so bring the batch back to float32.
+    images = tf.cast(_AUGMENT(images, training=True), tf.float32)
     ink = 1.0 - images  # a little contrast jitter so pale pens are not a new domain
     return 1.0 - ink * tf.random.uniform([], 0.85, 1.0)
 

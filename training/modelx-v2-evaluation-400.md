@@ -138,6 +138,12 @@ same pipeline from 17 to 77 correct drawings.
 
 | Metric | ModelX, best proxy (bilinear, stroke −3 px) | ModelX, app pipeline + thin | Project 345-class |
 | --- | ---: | ---: | ---: |
+> **345 reference updated 2026-11-20.** The CPU refinement described in
+> [`model-345-refinement-2026-11-20.md`](model-345-refinement-2026-11-20.md) moved the
+> same-model figures to 158 / 233 / 257 / 282 (39.5% / 58.2% / 64.2% / 70.5%). The
+> 345 column below still shows the pre-refinement weights, so the gaps shown are
+> conservative for the shipped model.
+
 | Top-1 | 58 (14.5%) | 77 (19.3%) | 152 (38.0%) |
 | Top-3 | 93 (23.3%) | 135 (33.8%) | 222 (55.5%) |
 | Top-5 | 122 (30.5%) | 166 (41.5%) | 248 (62.0%) |
