@@ -1,24 +1,30 @@
 # ModelX evaluation on the frozen 400-drawing set
 
+> **Superseded for the updated archive.** A newer `modelX (2).zip` was supplied on
+> 2026-11-20 and measured end-to-end with the confirmed input contract; see
+> [`modelx-v2-evaluation-400.md`](modelx-v2-evaluation-400.md). This file records
+> the earlier archive and the first exploratory probes, kept for provenance.
+
 ## Result
 
-ModelX's observed score under the app-style input pipeline was very low and
-substantially below the project 345-class model on the exact same 400 drawings.
-This result is **provisional, not a definitive model ranking**, because the
-ModelX archive does not document its training preprocessing and its input
-signature is incompatible with the app's existing 333-class profile.
+The first app-style ModelX run scored very low on the same 400 drawings, but
+that pipeline used white ink on black and is now known not to match the training
+polarity. The user has since confirmed ModelX's input contract: black strokes on
+a white background, float32 values in 0–1, and 96×96×3 RGB. The direct-resize
+experiments below match those confirmed input properties; their exact resize
+filter remains unknown, so they are still exploratory rather than a definitive
+model ranking.
 
-| Metric | ModelX (provisional app-style input) | Project 345-class reference | ModelX − 345 |
+| Metric | ModelX initial app-style diagnostic (polarity mismatch) | Project 345-class reference | Difference |
 | --- | ---: | ---: | ---: |
 | Top-1 | 3/400 — **0.8%** (95% Wilson CI 0.3–2.2%) | 152/400 — **38.0%** (33.4–42.8%) | −37.3 pp |
 | Top-3 | 9/400 — **2.3%** (1.2–4.2%) | 222/400 — **55.5%** (50.6–60.3%) | −53.3 pp |
 | Top-5 | 10/400 — **2.5%** (1.4–4.5%) | 248/400 — **62.0%** (57.2–66.6%) | −59.5 pp |
 | Top-10 | 10/400 — **2.5%** (1.4–4.5%) | 280/400 — **70.0%** (65.3–74.3%) | −67.5 pp |
 
-A paired class-cluster bootstrap (10,000 resamples of the 40 categories) for
-ModelX minus the 345-class reference gives 95% intervals of −45.8 to −29.0 pp
-(top-1), −62.5 to −42.8 pp (top-3), −68.3 to −50.0 pp (top-5), and −75.0 to
-−59.0 pp (top-10). The reference figures are from
+These paired cluster-bootstrap intervals describe the initial polarity-mismatch
+run only; they should not be used as the comparison for the now-confirmed
+input convention. The 345-class reference figures are from
 [`evaluation-400-results.md`](evaluation-400-results.md).
 
 ## Compatibility and protocol
@@ -29,27 +35,26 @@ and output shape **333**. This is not the existing app's 96×96×1, supplied
 - `class_indices (1).json` contains exactly 333 unique, contiguous indices
 (0–332), and all 40 test labels occur in its keys. This verifies map shape and
 coverage, **not** that the mapping matches the learned neuron order.
-- The evaluation reused the frozen manifest and identical canvas images from
-the earlier comparison (400 drawings, 40 classes, 10 per class). ModelX input
-was passed through SketchAI's 96×96 crop/area-average/contrast pipeline as
-white ink on black, then that grayscale plane was replicated to RGB and kept
-in 0–1. This is a reasonable compatibility adapter, but it is not known to be
-the model's training-time input convention.
-- Preprocessing sensitivity is material: an exploratory **inverted-polarity**
-black-ink-on-white 0–1 input scored 12/400 top-1, 31/400 top-3, 44/400 top-5,
-and 74/400 top-10. That diagnostic is not substituted for the stated main
-protocol; neither polarity is authenticated as the training convention.
-- Training-data provenance, normalization, color/polarity, resizing method,
-and output-label alignment were not supplied. Possible overlap with the
-Quick, Draw! test records is also unknown.
+- The user confirmed ModelX was trained for **white background, black strokes,
+96×96×3 RGB, float32 normalized to 0–1**, with a batch dimension at inference.
+The direct-resize experiments below match these polarity, shape, and value-range
+requirements, replicating the grayscale drawing across RGB channels.
+- The initial app-style run instead used white ink on black with the app's
+96×96 crop/area-average/contrast normalization. It is retained as a diagnostic,
+not as a score using the confirmed training convention.
+- The precise training resize/crop/rendering procedure and output-label alignment
+are still unverified. The supplied map has 333 unique contiguous indices and all
+40 tested labels, but that does not prove neuron-order alignment. Training-data
+provenance is also missing, so overlap with the test examples is unknown.
 
 ## Additional 96×96 direct-resize experiment
 
-At the user's request, I also resized each original 28×28 test bitmap directly
-to 96×96, replicated the grayscale image across RGB, and tested common resize
-filters with both ink polarities, keeping values in 0–1. The best top-1 result
-among these exploratory variants used area resizing with black ink on white;
-nearest-neighbor resizing had the best top-10 result:
+To match the confirmed input contract, I resized each original 28×28 test
+bitmap directly to 96×96, inverted it to black strokes on a white background,
+replicated it across RGB, and passed float32 values in 0–1 with a batch dimension.
+Because the exact training resize filter was not supplied, common filters were
+tested; area resizing had the best observed top-1 and nearest-neighbor the best
+top-10:
 
 | Direct 96×96 input | Top-1 | Top-3 | Top-5 | Top-10 |
 | --- | ---: | ---: | ---: | ---: |
@@ -59,23 +64,21 @@ nearest-neighbor resizing had the best top-10 result:
 | Bilinear resize, black ink on white, 0–1 | 3/400 (0.8%) | 14/400 (3.5%) | 30/400 (7.5%) | 57/400 (14.3%) |
 
 This improves on the first app-style ModelX run (3/400 top-1), but remains
-below the 345 model's 152/400 top-1 and is still only a sensitivity experiment:
-we do not know which polarity or resize filter ModelX was trained with. Since
-multiple preprocessing variants were compared on this same test set, do not
-select a production pipeline based on whichever variant scores best here. Also,
-the source Quick, Draw! images are already 28×28; enlarging them to 96×96 adds
-no original detail.
+below the 345 model's 152/400 top-1. The reported polarity is now known; the
+resize filter remains unknown. Since multiple preprocessing variants were
+compared on this same test set, do not select a production pipeline based on the
+best observed score. Also, the source Quick, Draw! images are already 28×28;
+enlarging them to 96×96 adds no original detail.
 
 ## Conclusion
 
-The tested 96×96 variants improved ModelX's observed scores somewhat, but none
-establishes that ModelX outperforms the 345-class model or how it performs with
-its intended training-time inputs. The RGB adaptation and training
-preprocessing remain unverified. For a fair comparison, obtain the exact
-training/serving preprocessing (including input range, color polarity,
-resize/crop, and channel handling) and confirm the class index ordering against
-the trained output layer. Do not replace the current model on the basis of
-these exploratory runs.
+The direct 96×96 runs now match the reported polarity, RGB shape, float32 range,
+and batch input convention, but their scores remain below the 345-class
+reference. The exact resize/crop/rendering procedure and output-label alignment
+are still unknown, so these results do not settle ModelX's true capability. Get
+the precise training transform and verify class-index ordering against the
+trained output layer before making a production comparison. Do not replace the
+current model on the basis of these exploratory runs.
 
 Full per-drawing ranks, top-10 predictions, per-class results, protocol details,
 and paired bootstrap intervals are in
