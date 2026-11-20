@@ -245,7 +245,7 @@ def main() -> None:
     cover_rows = [
         ["What this is", "A complete answer sheet for the school presentation: how the app "
                          "works, how the AI works, what every tool does inside, the numbers to "
-                         "quote, and 56 questions you can be asked with answers."],
+                         "quote, and 57 questions you can be asked with answers."],
         ["Who it is for", "Class 10 CBSE capstone project (Artificial Intelligence 417 / "
                           "Computer Applications / school project work)."],
         ["The app", "Draw a rough object, the network suggests clean illustrations, click one "
@@ -278,11 +278,13 @@ def main() -> None:
         ["3", "How the AI works", "preprocessing, every layer, training, why each choice, the improvement experiment"],
         ["4", "How each tool works", "all eleven tools, the selection system, layers, undo, the AI switch"],
         ["5", "The live demo, minute by minute", "what to draw, what to say, what will fail"],
-        ["6", "56 questions and answers", "grouped by what the examiner is really testing"],
+        ["6", "57 questions and answers", "grouped by what the examiner is really testing"],
         ["7", "If something goes wrong", "a line to say for every likely failure"],
         ["8", "The numbers card", "one table to memorise"],
         ["9", "Glossary", "the twenty words that must not trip you up"],
         ["10", "Proof and file map", "commands that regenerate every number"],
+        ["11", "Technologies, data and tools", "every framework, dataset and service - and the reason it was chosen over the alternative"],
+        ["12", "Sources, links and AI assistance", "where each piece came from, and the declaration about help received"],
     ]
     flow += [table(["§", "Section", "What it covers"], toc, widths=[0.5, 3.2, 6.3]), Spacer(1, 6 * mm)]
 
@@ -730,7 +732,7 @@ def main() -> None:
                "hardest possible input, and the preprocessing will stretch it unpredictably.")]
 
     # ------------------------------------------------------------- section 6
-    flow += [PageBreak(), H1("6. Fifty-six questions you can be asked"),
+    flow += [PageBreak(), H1("6. Fifty-seven questions you can be asked"),
              P("Grouped by what the examiner is really testing. Read every answer once, out loud, "
                "then close the page and say it in your own words. Two sentences is enough; a memorised "
                "paragraph sounds worse than an honest short one.")]
@@ -772,6 +774,13 @@ def main() -> None:
         ("What does your network take as input?",
          "A 28x28 grid of brightness values, one channel, 0 to 1, with the drawing as white ink on a "
          "black background. Nothing else - no colour, no stroke order, no canvas size."),
+        ("Is the input 28x28 or 96x96? I heard it changed.",
+         "The shipped model has always been 28x28 - you can read [null, 28, 28, 1] in "
+         "public/model-345/model.json. The 96x96 items are separate: the 333-class archive supplied to "
+         "me is 96x96 and ships disabled because its label order is unverified (it only loads with an "
+         "environment flag), and training/kaggle_train_96.py is a script for training a future 96x96 "
+         "model on Kaggle. Neither is in the app's working path, and I do not claim any accuracy from "
+         "them."),
         ("What comes out?",
          "345 numbers between 0 and 1 that add up to 1 - one probability per category. The app takes "
          "the ten largest and turns them into suggestion cards."),
@@ -1079,8 +1088,173 @@ def main() -> None:
                     ["training/model-345-refinement-2026-11-20.md", "the improvement experiment, in full"],
                     ["training/evaluation-400-results.md", "the 400-drawing comparison, in full"],
                     ["docs/submission/project-report.md", "the written report for submission"],
+                    ["docs/submission/build-handbook.py", "generates this PDF from the repository's own numbers"],
                     ["training/backup/*.zip", "the model archives, with checksums"]],
                    widths=[3.6, 5.4])]
+
+    # ------------------------------------------------------------ section 11
+    flow += [PageBreak(), H1("11. Technologies, data and tools - and why each was chosen"),
+             P("Every row below was a choice between at least two options. The third column is the "
+               "reason, in the form you can repeat out loud: what it does, and what the alternative "
+               "would have cost.")]
+
+    flow += [table(["Technology", "What it does here", "Why this one, and not the alternative"],
+                   [["<b>React 18</b> + <b>Vite 6</b>",
+                     "Builds the editor UI: tool rail, selection toolbar, suggestion strip, panels; "
+                     "bundles the app into static files",
+                     "The editor has a dozen interacting modes (tool, selection, marquee, text editing, "
+                     "mask) and React's component state keeps them in one place; Vite gives instant reload "
+                     "while developing and a static build with no server. Plain JavaScript would have "
+                     "turned into hundreds of manual DOM updates; webpack/CRA would only be slower."],
+                    ["<b>HTML Canvas 2D</b>",
+                     "All drawing: ink strokes, shapes, text, fills, erase masks, object rendering",
+                     "The AI needs pixel access (getImageData to find ink), and the eraser and bucket fill "
+                     "work on pixel masks. SVG would mean thousands of DOM nodes and no pixel operations; "
+                     "a WebGL scene graph would be far more code for no benefit at this scale."],
+                    ["<b>TensorFlow.js 4.22</b>",
+                     "Loads the model in the browser and runs each prediction",
+                     "It is the only mature way to run a Keras CNN fully client-side, on WebGL or CPU, with "
+                     "no backend. The alternatives all lose the requirement: server inference needs a "
+                     "backend and sends the drawing away; a native mobile app is not a browser project."],
+                    ["<b>Python + TensorFlow 2.20 / Keras 3</b>",
+                     "Builds and trains the 345-class network; augmentation layers",
+                     "The standard CNN training stack, with RandomZoom/RandomTranslation built in and an "
+                     "official converter to TensorFlow.js. PyTorch would train equally well but its export "
+                     "path to a TF.js layers model is less direct; scikit-learn cannot train a CNN."],
+                    ["<b>CPU-only training</b>",
+                     "30 minutes total for 60 + 24 + 26 epochs",
+                     "34,500 drawings is small enough that a GPU adds nothing but setup risk, and no GPU "
+                     "was available. Staying on CPU means the whole experiment is reproducible on any "
+                     "school laptop - a copy-paste claim, not a boast."],
+                    ["<b>NumPy memory-mapped cache</b>",
+                     "Stores the 34,500 drawings as one .npy file per class, read on demand",
+                     "Keeps RAM flat and loading instant, so the training loop is not waiting on 34,500 "
+                     "small file reads. Loading everything into Python lists would have been simpler and "
+                     "much slower."],
+                    ["<b>tensorflowjs_converter</b>",
+                     "Keras model to the browser asset (model.json + weight shard)",
+                     "The official, only supported conversion path from Keras to a TF.js layers model. It "
+                     "needed two documented fixes (batch_shape, weight-name prefix) which is why the "
+                     "export is a script and not a one-off command."],
+                    ["<b>Google Quick, Draw!</b> dataset",
+                     "34,500 drawings, 345 official categories, 100 per category",
+                     "Openly licensed (CC BY 4.0), matching the task exactly, and it is the same data "
+                     "AutoDraw's idea is built on. The full 50-million-drawing release was unreachable "
+                     "from the training machine; the quickdraw.js npm mirror is a verbatim copy but stops "
+                     "at 100 drawings per class - which is the project's biggest limitation."],
+                    ["<b>Icon sets</b> (Game-icons, Lucide, MDI, Tabler, Font Awesome, Iconoir)",
+                     "The clean illustrations offered on the suggestion cards",
+                     "345 hand-drawn illustrations were impossible in the time available, and these sets "
+                     "are openly licensed and consistent in style. Every one is credited in the shipped "
+                     "attribution files."],
+                    ["<b>DM Sans / DM Serif Display</b> via @fontsource",
+                     "Typography of the app UI",
+                     "Self-hosted, so the page makes no third-party font request and works offline - which "
+                     "is the whole point of a browser tool that must run in a school lab without internet."],
+                    ["<b>Node.js + @napi-rs/canvas + jsdom + resvg</b>",
+                     "The 274 automated checks and the 400-drawing benchmark",
+                     "They run the app's real functions (preprocess.js reads a canvas getImageData) outside "
+                     "a browser, so the tests exercise the code the user runs, not a reimplementation. "
+                     "Headless Chrome would be heavier and slower for the same evidence."],
+                    ["<b>Git + GitHub</b>",
+                     "Version history, experiments, pull requests, model versions",
+                     "Every experiment is reversible: if a training change made the model worse, the "
+                     "previous weights are one checkout away. The model itself is committed on purpose, "
+                     "because regenerating it takes 30 minutes and a trained model has been lost before."],
+                    ["<b>Google Drive</b>",
+                     "The 333-class and 96x96 model archives supplied for evaluation",
+                     "It was where the archives actually were, so the evaluation pipeline was pointed at "
+                     "them. They were measured, compared and rejected with reasons - the comparison is in "
+                     "the report rather than an opinion."],
+                    ["<b>reportlab</b> (Python)",
+                     "Generates this handbook PDF",
+                     "The document is built from the repository's own numbers (layer shapes are read from "
+                     "model.json), so it cannot drift out of date the way a hand-typed Word file does. Pure "
+                     "Python, no system libraries, one command to rebuild."],
+                    ["<b>Arena.ai Agent Mode</b> (AI assistant)",
+                     "Pair-programming partner: implementation, training runs, evaluation, documentation",
+                     "Declared in full in section 12.2. Recorded here because it was used exactly like the "
+                     "tools above - to produce this project - and saying so plainly is part of submitting "
+                     "it honestly."]],
+                   widths=[2.3, 2.7, 5.0])]
+
+    flow += [H2("11.1 Why not the obvious alternatives"),
+             *bullets([
+                 "<b>Why not use Google's AutoDraw or Quick, Draw! model?</b> It is not published - there is "
+                 "no API and no weights to download. Using someone else's model would also mean the "
+                 "accuracy is not mine to report.",
+                 "<b>Why not send the drawing to a server?</b> It would need a backend, an API key and an "
+                 "internet connection, and the drawing would leave the device. The requirement was a tool "
+                 "that works in a school lab with no server.",
+                 "<b>Why not a deeper or wider network?</b> With 100 drawings per class a bigger network "
+                 "memorises instead of learning. That is a measured risk, not a guess: the 400-drawing "
+                 "benchmark is exactly the instrument that would show it.",
+                 "<b>Why not switch to 96x96 now?</b> Tried and documented: the 96x96 archive available to "
+                 "me has an unverified label order, so it is disabled; a 96x96 model trained properly is "
+                 "the plan in section 10 of the report, and it makes the asset several times bigger and "
+                 "each live prediction slower.",
+                 "<b>Why not train in JavaScript, in the browser?</b> Training in TensorFlow.js is CPU-bound "
+                 "and would take hours on the same data, with no augmentation pipeline and no reproducible "
+                 "seeds. Python trains it in 30 minutes and the result is a 0.88 MB file.",
+                 "<b>Why not an SVG-only editor?</b> Because the AI needs pixels. Ink masks, the flood fill "
+                 "and the eraser's connected-blob splitting all operate on raster data.",
+             ])]
+
+    # ------------------------------------------------------------ section 12
+    flow += [PageBreak(), H1("12. Sources, links and AI assistance")]
+
+    flow += [H2("12.1 Where each piece came from"),
+             table(["Source", "Used for"],
+                   [["https://github.com/googlecreativelab/quickdraw-dataset",
+                     "the dataset, its licence (CC BY 4.0) and the 28x28 bitmap format"],
+                    ["https://github.com/googlecreativelab/quickdraw-dataset/issues/19",
+                     "the exact cairo settings Google used to render the bitmaps (pen width, padding) - "
+                     "the reason the 1.186 crop padding and ink lift exist"],
+                    ["https://www.npmjs.com/package/quickdraw.js",
+                     "the npm mirror the drawings were actually downloaded from (100 per class)"],
+                    ["https://www.tensorflow.org/ and https://keras.io/",
+                     "training API, augmentation layers, optimisers, EMA"],
+                    ["https://www.tensorflow.org/js",
+                     "running the model in the browser, loadLayersModel, the converter"],
+                    ["https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API",
+                     "canvas drawing, getImageData, transforms, text metrics"],
+                    ["https://react.dev/ and https://vite.dev/",
+                     "UI components and the static build"],
+                    ["https://www.autodraw.com/", "the idea being copied - not the code"],
+                    ["game-icons.net, lucide.dev, materialdesignicons.com, tabler.io, fontawesome.com, iconoir.com",
+                     "the suggestion artwork, all credited in the app's attribution files"],
+                    ["https://fontsource.org/", "self-hosted DM Sans and DM Serif Display"],
+                    ["https://github.com/nileshwarke848-droid/SketchAI",
+                     "this repository: code, experiments, model archives and the reports"]],
+                   widths=[4.2, 4.8])]
+
+    flow += [H2("12.2 Statement of AI assistance"),
+             callout("This project was developed with an AI coding assistant (Arena.ai Agent Mode) working "
+                     "as a pair-programming partner under my direction. The assistant wrote a large part of "
+                     "the implementation code and documentation, and carried out the training and "
+                     "evaluation runs. I defined the project and its requirements, chose what to build and "
+                     "what to keep, tested the application, reviewed the results, and made the decisions "
+                     "recorded in this report.<br/><br/>Everything I claim here is something I can explain "
+                     "and demonstrate: the dataset and its split, the preprocessing pipeline, the network's "
+                     "architecture, why each augmentation exists, how the accuracy was measured, and why "
+                     "the +2.4-point improvement is statistically real. Every figure can be regenerated from "
+                     "the project's scripts. No weights came from Google, AutoDraw or any third-party "
+                     "checkpoint - the model was trained inside this project on Google's open Quick, Draw! "
+                     "data.",
+                     title="Declaration included in the submitted report")]
+
+    flow += [P("Why declare it at all: the school's own guidance asks it to satisfy itself that the "
+               "project is the learner's work, and a declaration that turns out to be false is far worse "
+               "than 'I had help with the code, and here is what I understood and verified'. Two rules "
+               "make the declaration safe:"),
+             *bullets([
+                 "<b>Be exact about the split of work.</b> Say which parts were generated and which parts "
+                 "you personally checked, changed or measured - vagueness in either direction is what "
+                 "examiners probe.",
+                 "<b>Never claim something you cannot explain.</b> If a sentence in the report describes "
+                 "code you cannot walk through, either learn it from the file or delete the sentence. That "
+                 "is question E3 of section 6, and it is the one that actually decides the viva.",
+             ])]
 
     flow += [Spacer(1, 6 * mm),
              callout("If you remember nothing else: 40 % first guess, 78 % somewhere in the strip, "

@@ -47,15 +47,32 @@ a web browser.
    connection needed while drawing.
 5. Measure the accuracy honestly on drawings the model has never seen.
 
-## 3. Tools and technology used
+## 3. Technologies used, and why
 
-| Layer | What I used |
-| --- | --- |
-| App | JavaScript, React, Vite, HTML Canvas |
-| AI runtime | TensorFlow.js 4.22 (runs the model in the browser) |
-| Model training | Python, TensorFlow 2.20 CPU, NumPy |
-| Dataset | Google Quick, Draw! — 345 categories, 100 drawings each |
-| Evaluation | Node.js scripts, bootstrap confidence intervals, McNemar test |
+| Layer | What I used | Why this, and not the alternative |
+| --- | --- | --- |
+| App | JavaScript, React 18, Vite 6 | The editor has a dozen interacting modes (tool, selection, marquee, text editing, mask); React keeps that state in one place and Vite builds static files with no server. Plain JavaScript would mean hundreds of manual DOM updates. |
+| Drawing surface | HTML Canvas 2D | The AI needs pixel access (`getImageData`) and the eraser and bucket fill work on pixel masks. SVG would mean thousands of DOM nodes and no pixel operations. |
+| AI runtime | TensorFlow.js 4.22 | The only mature way to run a Keras CNN fully in the browser, with no backend and no API key. Server inference would need a backend and would send the drawing away. |
+| Model training | Python 3.11, TensorFlow 2.20 + Keras 3, NumPy, SciPy | Standard CNN training stack, with random-zoom/translation layers built in and an official converter to TensorFlow.js. PyTorch exports to a TF.js layers model far less directly; scikit-learn cannot train a CNN. |
+| Training hardware | CPU only | 34,500 drawings is small enough that a GPU adds nothing but setup risk, so the whole result is reproducible on any school laptop — 30 minutes end to end. |
+| Model export | `tensorflowjs_converter` | The only supported Keras-to-browser path. It needed two documented fixes (`batch_shape`, weight-name prefixes), which is why exporting is a script in the project. |
+| Dataset | Google Quick, Draw! (CC BY 4.0), via the `quickdraw.js@1.0.6` npm mirror | Openly licensed and exactly the task. The official 50-million-drawing release was unreachable from my machine; the mirror is a verbatim copy but stops at 100 drawings per class — the project's biggest limitation. |
+| Illustrations | Icon sets: Game-icons, Lucide, Material Design Icons, Tabler, Font Awesome, Iconoir | 345 hand-drawn illustrations were impossible in the time available; these are openly licensed, consistent in style, and credited in the app's attribution files. |
+| Fonts | DM Sans, DM Serif Display via `@fontsource` | Self-hosted, so the page makes no third-party font request and works offline. |
+| Evaluation and testing | Node.js 22, `@napi-rs/canvas`, `jsdom`, `@resvg/resvg-js` | They run the app's real functions (the preprocessing reads a canvas) outside a browser, so the 274 checks and the 400-drawing benchmark measure the code the user actually runs, not a reimplementation. |
+| Version control | Git, GitHub | Every experiment is reversible; if a training change made the model worse, the previous weights are one checkout away. |
+| Referenced archives | Google Drive | Where the supplied 333-class and 96×96 archives were; they were evaluated, compared and rejected with reasons. |
+| Document generation | reportlab (Python) | The handbook PDF is generated from the repository's own numbers, so it cannot drift out of date the way a hand-typed document does. |
+| AI assistance | Arena.ai Agent Mode | See the statement of AI assistance in section 14. |
+
+### 3.1 Why not the obvious alternatives
+
+- **Why not use Google's AutoDraw or Quick, Draw! model?** It is not published — there is no API and no weights — and using someone else's model would make the accuracy not mine to report.
+- **Why not send the drawing to a server?** It would need a backend, an API key and an internet connection, and the drawing would leave the device. The app had to work in a school lab with no server.
+- **Why not a bigger network?** With 100 drawings per class a larger network memorises instead of learning; the 400-drawing benchmark is the instrument that shows it.
+- **Why not switch the input to 96×96?** The 96×96 archive available to me has an unverified label order, so it is shipped disabled; a properly trained 96×96 model is future work (section 10), and it makes the asset several times bigger and each prediction slower.
+- **Why not train in the browser with TensorFlow.js?** Training there is CPU-bound and would take hours on the same data, with no augmentation pipeline and no reproducible seeds.
 
 ## 4. The dataset
 
@@ -271,5 +288,22 @@ I declare that this project, including the training of the model and the
 measurement of its accuracy, was carried out by me, and that the dataset and any
 third-party libraries used are credited above and in the `ATTRIBUTION.txt` files
 included with the project.
+
+### Statement of AI assistance
+
+This project was developed with an AI coding assistant (Arena.ai Agent Mode)
+working as a pair-programming partner under my direction. The assistant wrote a
+large part of the implementation code and documentation, and carried out the
+training and evaluation runs. I defined the project and its requirements, chose
+what to build and what to keep, tested the application, reviewed the results, and
+made the decisions recorded in this report.
+
+Everything I claim here is something I can explain and demonstrate: the dataset
+and its split, the preprocessing pipeline, the network's architecture, why each
+augmentation exists, how the accuracy was measured, and why the +2.4-point
+improvement is statistically real. Every figure can be regenerated from the
+project's scripts. No weights came from Google, AutoDraw or any third-party
+checkpoint — the model was trained inside this project on Google's open Quick,
+Draw! data.
 
 Signature: ____________________  Date: ____________
