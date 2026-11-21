@@ -160,7 +160,7 @@ const QUESTIONS = [
   },
   {
     q: 'Who built this, and why?',
-    a: 'A Class 10 CBSE student, for the Artificial Intelligence (417) project — the model, the training scripts, the app and these notes. The AI assistant that helped with code and documentation is declared honestly in the report.',
+    a: 'Punit Nilesh Warke, a Class 10 CBSE student, built it for the Artificial Intelligence (417) project: the dataset pipeline, the model and its training scripts, the app, the tests and these notes. The AI assistant that helped with code and documentation is declared honestly in the report.',
   },
 ];
 
@@ -302,6 +302,16 @@ export default function FaqPage({ onClose }) {
               </details>
             ))}
           </div>
+        </section>
+
+        <section className="faq-made" aria-label="Made by">
+          <span className="faq-made-tape" aria-hidden="true" />
+          <span className="faq-made-label">Made by</span>
+          <strong className="faq-made-name">Punit Nilesh Warke</strong>
+          <span className="faq-made-note">
+            Class 10 · CBSE Artificial Intelligence (417). The model, the training scripts,
+            the app, its tests and these notes were all built for this project.
+          </span>
         </section>
 
         <footer className="faq-footer">

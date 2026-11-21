@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Student | _your full name_ |
+| Student | **Punit Nilesh Warke** |
 | Class / Section | X - _section_ |
 | Roll number | _roll no._ |
 | Subject | Artificial Intelligence (417) / Computer Applications — _as applicable_ |
