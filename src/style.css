@@ -197,7 +197,8 @@
 
 /* Samsung-style Select Doodle: blue dotted loop or brush stroke, no erasing. */
 .canvas-wrap.tool-selectDoodle{cursor:crosshair}
-.selection-doodle-path{fill:none;stroke-dasharray:.1 7;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 1px #fff)}
+.selection-doodle-path{fill:none;stroke-dasharray:.1 7;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 1px #fff);transition:opacity 120ms linear}
+.selection-doodle-path[data-settling="true"]{opacity:0}
 .selection-doodle-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .selection-doodle-color{display:flex;align-items:center;gap:7px}
 .selection-doodle-color input{width:29px;height:27px;padding:2px;border:1px solid #e5e8e0;border-radius:6px;background:#fff;cursor:pointer}

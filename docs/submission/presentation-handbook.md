@@ -197,7 +197,7 @@ For every tool: what a user sees, what the code actually does, and the sentence 
 
 **What it does.** Draw a loop to select everything inside or crossed by it; or scribble across several objects to select them. It never erases, and the dotted outline colour is yours to choose.
 
-**How it works inside.** The stroke is tested to decide whether it is closed: it counts as a loop when its end returns near its start — within 16 screen pixels, or within 15 % of the loop's own bounding-box diagonal (capped at 120 document pixels), because nobody lands exactly on their starting point with a mouse. A closed loop then selects every object whose centre or corners lie inside it, whose outline it crosses, or that contains the loop — plus anything the stroke brushed past. An open stroke is treated as a scribble and selects only the objects it touches (12 px tolerance). Shift keeps the existing selection and adds to it. The outline is drawn as a dashed path over the canvas, not into the drawing.
+**How it works inside.** The stroke is tested to decide whether it is closed: it counts as a loop when its end returns near its start — within 16 screen pixels, or within 15 % of the loop's own bounding-box diagonal (capped at 120 document pixels), because nobody lands exactly on their starting point with a mouse. A closed loop then selects every object whose centre or corners lie inside it, whose outline it crosses, or that contains the loop — plus anything the stroke brushed past. An open stroke is treated as a scribble and selects only the objects it touches (12 px tolerance). Shift keeps the existing selection and adds to it. The outline is drawn as a dashed path over the canvas, not into the drawing, and only while you drag: on pointer-up it fades out over 120 ms and the selection is applied when the fade ends, so a finished selection never sits under a leftover dotted line. A second lasso started inside those 120 ms cancels the first, and a cancelled pointer gesture commits nothing.
 
 **Say this if asked.** *"This is the one tool AutoDraw does not have, and it exists because clicking objects one by one is slow when you have drawn a scene."*
 
@@ -292,7 +292,7 @@ Practise this four times. Before you start: open the app, draw one small stroke,
 | 1:05 | draw a cat: head, ears, whiskers, tail | "When it is unsure it says so: cat 47 %, pig 35 %, bear 5 %. That honesty is deliberate." |
 | 1:35 | draw a tree, let it miss | "This is where it fails — trees come out as hot-air balloons. My measured accuracy is 40 % for the first guess and 78 % for the right answer being anywhere in the cards, so I expect misses. I have a 400-drawing test that tells me exactly how often." |
 | 2:05 | show the numbers page (section 8) | "On 3,450 drawings it never saw: 40 % top-1, 59 % top-3, 78 % top-10. I then improved it by 2.4 points with one specific change — teaching it about scale — and proved the gain with a statistical test, p = 4 × 10⁻⁷. Against a pretrained doodle model on the same 400 drawings mine scored 39.5 % and that one 20.5 %." |
-| 2:45 | close | "It runs fully in the browser: no server, no API key, 0.88 MB model. There are 274 automated checks on the app, and every accuracy number can be regenerated with the scripts in the project." |
+| 2:45 | close | "It runs fully in the browser: no server, no API key, 0.88 MB model. There are 277 automated checks on the app, and every accuracy number can be regenerated with the scripts in the project." |
 
 ### 5.1 What to draw, and what not to
 
@@ -449,8 +449,8 @@ About 30 minutes in total on a normal CPU without a GPU: 15 minutes for the firs
 **Q45. How big is the model, and why does that matter?**
 214,649 parameters, 0.88 MB in the browser format. That is small enough to load in about a second on a school laptop, which is why the app can run fully offline.
 
-**Q46. What are the 274 automated checks?**
-A node script that drives the app's real logic: drawing, selection, erasing, fills, zoom and pan, shape geometry, layer order, undo. All 274 pass, and they are what let me change the model and the tools without breaking behaviour.
+**Q46. What are the 277 automated checks?**
+A node script that drives the app's real logic: drawing, selection, erasing, fills, zoom and pan, shape geometry, layer order, undo. All 277 pass — run them all with `npm test` — and they are what let me change the model and the tools without breaking behaviour.
 
 **Q47. When you changed the model, how did you know the app still worked?**
 The browser asset is verified against the Keras model before it is installed: the two must agree to better than 1e-4 in every output (mine agree to 2.7 × 10⁻⁷). Then the 400-drawing benchmark is re-run through the app's own code path, and the 16 hand-drawn doodles are re-checked.
@@ -519,7 +519,7 @@ Print this page and keep it on the table. These are the only numbers you need to
 | App benchmark | 158/400 | 39.5 % top-1 through the app's own pipeline |
 | Pretrained baseline | 82/400 | 20.5 % — my model is about twice as accurate |
 | Hand-drawn doodles | 6/16, 9/16, 14/16 | sixteen doodles I drew; tiny sample |
-| Automated checks | 274 | app behaviour tests, all passing |
+| Automated checks | 277 | app behaviour tests, all passing (`npm test`) |
 | Recognition cadence | 220 ms | live predictions while drawing |
 
 ## 9. Glossary
@@ -554,7 +554,8 @@ If an examiner wants to check a claim, these are the commands. Node scripts need
 
 | Command | What it proves |
 | --- | --- |
-| `node scripts/audit-app.mjs` | 274 automated checks of the real app logic |
+| `npm test` | every suite at once: the 16 test files plus the app audit, one pass/fail exit code |
+| `node scripts/audit-app.mjs` | 277 automated checks of the real app logic |
 | `node scripts/manual-test-345.mjs` | the 16 hand-drawn doodles through the real browser code path |
 | `node scripts/evaluate-quickdraw-400.mjs --data-dir <drawings> --manifest training/evaluation-400-manifest.json` | the 400-drawing comparison against the pretrained model |
 | `python training/refine_model_345.py --checkpoint <weights> --out <dir>` | the refinement experiment: two stages, then the paired test |
@@ -575,6 +576,7 @@ If an examiner wants to check a claim, these are the commands. Node scripts need
 | `src/lib/selection-doodle.js` | closed-loop and scribble selection |
 | `training/model-345-refinement-2026-11-20.md` | the improvement experiment, in full |
 | `training/evaluation-400-results.md` | the 400-drawing comparison, in full |
+| `scripts/run-tests.mjs` | the `npm test` runner: every `scripts/test-*.mjs` suite plus the app audit, one exit code |
 | `docs/submission/presentation-handbook.md` | this handbook as editable Markdown (the source) |
 | `docs/submission/build-handbook.py` | the layout script that renders this handbook to PDF |
 | `docs/submission/project-report.md` | the written report for submission |
@@ -596,7 +598,7 @@ Every row below was a choice between at least two options. The third column is t
 | **Google Quick, Draw! dataset** | 34,500 drawings, 345 official categories, 100 per category | openly licensed (CC BY 4.0), matching the task exactly, and the same data AutoDraw's idea is built on. The full 50-million-drawing release was unreachable from the training machine; the quickdraw.js npm mirror is a verbatim copy but stops at 100 drawings per class — the project's biggest limitation |
 | **Icon sets** (Game-icons, Lucide, MDI, Tabler, Font Awesome, Iconoir) | the clean illustrations offered on the suggestion cards | 345 hand-drawn illustrations were impossible in the time available, and these sets are openly licensed and consistent in style. Every one is credited in the shipped attribution files |
 | **DM Sans / DM Serif Display** via `@fontsource` | typography of the app UI | self-hosted, so the page makes no third-party font request and works offline — which is the whole point of a tool that must run in a school lab without internet |
-| **Node.js + @napi-rs/canvas + jsdom + resvg** | the 274 automated checks and the 400-drawing benchmark | they run the app's real functions (`preprocess.js` reads a canvas `getImageData`) outside a browser, so the tests exercise the code the user runs, not a reimplementation. Headless Chrome would be heavier and slower for the same evidence |
+| **Node.js + @napi-rs/canvas + jsdom + resvg** | the 277 automated checks and the 400-drawing benchmark | they run the app's real functions (`preprocess.js` reads a canvas `getImageData`) outside a browser, so the tests exercise the code the user runs, not a reimplementation. Headless Chrome would be heavier and slower for the same evidence |
 | **Git + GitHub** | version history, experiments, pull requests, model versions | every experiment is reversible: if a training change made the model worse, the previous weights are one checkout away. The model itself is committed on purpose, because regenerating it takes 30 minutes and a trained model has been lost before |
 | **Google Drive** | the 333-class and 96×96 model archives supplied for evaluation | it was where the archives actually were, so the evaluation pipeline was pointed at them. They were measured, compared and rejected with reasons — the comparison is in the report rather than an opinion |
 | **reportlab** (Python) | generates the PDF version of this handbook | the document is built from the repository's own numbers (layer shapes are read from `model.json`), so it cannot drift out of date the way a hand-typed Word file does. Pure Python, no system libraries, one command to rebuild |

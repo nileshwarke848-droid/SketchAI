@@ -88,6 +88,10 @@ import DebugPanel from './dev/DebugPanel';
 
 const W = 1200, H = 720;
 const LIVE_PREDICTION_INTERVAL_MS = 220;
+// After a lasso is released the dotted outline fades out over this long, and the
+// selection is committed when the fade ends. Both are the same 120 ms so the
+// outline never lingers over a finished selection.
+const SELECT_DOODLE_SETTLE_MS = 120;
 const FINAL_PREDICTION_DELAY_MS = 260;
 const zoomSteps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
@@ -121,6 +125,16 @@ function readGuessingPreference() {
     return true;
   }
 }
+// Cancel a pending lasso settle (the 120 ms fade + commit after pointer-up). A
+// module-level helper because both the tool-switch effect and the pointer
+// handlers need it, and it only touches a ref.
+function cancelSelectionDoodleSettle(ref) {
+  if (ref.current !== null) {
+    window.clearTimeout(ref.current);
+    ref.current = null;
+  }
+}
+
 // A probability under half a percent is real but not meaningful to show as "0%".
 const formatScore = (score) => (score < 0.005 ? '<1%' : `${Math.round(score * 100)}%`);
 
@@ -161,6 +175,8 @@ function App() {
   guessingEnabledRef.current = guessingEnabled;
   const [selectionDoodleColor, setSelectionDoodleColor] = useState('#4B8BF4');
   const [selectionDoodlePath, setSelectionDoodlePath] = useState(null);
+  const [selectionDoodleSettling, setSelectionDoodleSettling] = useState(false);
+  const selectDoodleTimerRef = useRef(null);
   const [shapePreview, setShapePreview] = useState(null);
   const [activeColor, setActiveColor] = useState(DEFAULT_ACTIVE_COLOR);
   const [backgroundColor, setBackgroundColor] = useState(DEFAULT_BACKGROUND_COLOR);
@@ -189,7 +205,11 @@ function App() {
   const [fallbackReason, setFallbackReason] = useState(null);
 
   useEffect(() => {
-    if (tool !== 'selectDoodle') setSelectionDoodlePath(null);
+    if (tool !== 'selectDoodle') {
+      cancelSelectionDoodleSettle(selectDoodleTimerRef);
+      setSelectionDoodlePath(null);
+      setSelectionDoodleSettling(false);
+    }
   }, [tool]);
 
   const syncScene = (next) => {
@@ -319,6 +339,8 @@ function App() {
     }
     if (!next) clearPredictionTimer(timerRef);
   };
+
+  useEffect(() => () => cancelSelectionDoodleSettle(selectDoodleTimerRef), []);
 
   useEffect(() => {
     const sketch = sketchRef.current;
@@ -1106,6 +1128,8 @@ function App() {
       }
     } else if (tool === 'selectDoodle') {
       setMessage('');
+      cancelSelectionDoodleSettle(selectDoodleTimerRef);
+      setSelectionDoodleSettling(false);
       const points = [p];
       pointerRef.current = {
         id: pointerId,
@@ -1260,6 +1284,13 @@ function App() {
       } else if (!gesture.additive) chooseObjects([]);
       setMarquee(null);
     } else if (gesture.kind === 'selectDoodle') {
+      if (event.type === 'pointercancel') {
+        // A cancelled gesture is not a selection: drop the outline, commit nothing.
+        cancelSelectionDoodleSettle(selectDoodleTimerRef);
+        setSelectionDoodlePath(null);
+        setSelectionDoodleSettling(false);
+        return;
+      }
       const finalPoint = point(event);
       const last = gesture.points[gesture.points.length - 1];
       if (!last || Math.hypot(finalPoint.x - last.x, finalPoint.y - last.y) >= 1.5) gesture.points.push(finalPoint);
@@ -1281,11 +1312,22 @@ function App() {
             selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, touchTolerance, selectedObjectIdsRef.current, { additive: gesture.additive }),
           )
         : selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, touchTolerance, selectedObjectIdsRef.current, { additive: gesture.additive });
-      chooseObjects(ids);
+      // Letting go starts the fade immediately; the selection lands when the
+      // fade finishes, so the dotted outline never sits on top of a finished
+      // selection and a fast second lasso supersedes this one cleanly.
+      cancelSelectionDoodleSettle(selectDoodleTimerRef);
       setSelectionDoodlePath(outline);
-      setMessage(ids.length
-        ? `${ids.length} object${ids.length === 1 ? '' : 's'} selected. Use Delete or Backspace to remove them.`
-        : 'No objects selected. Draw a loop around objects or scribble across them.');
+      setSelectionDoodleSettling(true);
+      const selectedCount = ids.length;
+      selectDoodleTimerRef.current = window.setTimeout(() => {
+        selectDoodleTimerRef.current = null;
+        chooseObjects(ids);
+        setSelectionDoodlePath(null);
+        setSelectionDoodleSettling(false);
+        setMessage(selectedCount
+          ? `${selectedCount} object${selectedCount === 1 ? '' : 's'} selected. Use Delete or Backspace to remove them.`
+          : 'No objects selected. Draw a loop around objects or scribble across them.');
+      }, SELECT_DOODLE_SETTLE_MS);
     } else if (gesture.kind === 'doodle') {
       const stroke = doodleStrokeRef.current;
       if (stroke) {
@@ -1642,6 +1684,7 @@ function App() {
                   data-object-stroke-width={selectedObject?.type === 'shape' ? selectedObject.strokeWidth : ''}>
                   {tool === 'selectDoodle' && selectionDoodlePath?.length > 1 && <polyline
                     className="selection-doodle-path"
+                    data-settling={selectionDoodleSettling ? 'true' : 'false'}
                     points={selectionDoodlePath.map(({ x, y }) => `${x},${y}`).join(' ')}
                     stroke={selectionDoodleColor}
                     strokeWidth={2.5}

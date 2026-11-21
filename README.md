@@ -288,6 +288,7 @@ training/manual_test.py                sixteen hand-drawn doodles -> top 10
 training/refine_model_345.py           continue-train an existing checkpoint (CPU)
 training/export_model_345.py           Keras -> TF.js export + parity check
 scripts/install-model-345.mjs          validate + install a trained model
+scripts/run-tests.mjs                  runs every test-*.mjs suite + the audit (npm test)
 scripts/audit-app.mjs                  end-to-end app checks (no browser needed)
 scripts/test-pencil-objects.mjs        editable pencil-stroke scene-object checks
 scripts/test-shapes.mjs                parametric shape geometry and rendering checks
@@ -409,6 +410,16 @@ and its assets must be served over HTTP, rather than opened directly as a file.
 npm run build
 npm run preview
 ```
+
+## Tests
+
+```bash
+npm test
+```
+
+Runs every `scripts/test-*.mjs` suite and then `scripts/audit-app.mjs` (277
+end-to-end checks of the real app logic), and exits non-zero if any of them
+fail. Pass a fragment to run one suite: `npm test -- selection-doodle`.
 
 The static output is in `dist/`. Deploy that folder to Vercel, or publish it to
 GitHub Pages (for example using a Pages workflow). Vite uses relative asset paths,

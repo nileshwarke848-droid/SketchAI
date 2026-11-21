@@ -626,17 +626,31 @@ async function main() {
   const outlineColor = document.querySelector('input[aria-label="Selection doodle outline color"]');
   setControlValue(window, outlineColor, '#1E90FF');
   const doodleY = geometryAfterInsert.y + geometryAfterInsert.height / 2;
+  const selectionBeforeDoodle = Number(
+    document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0,
+  );
   drawPolyline(window, canvas, [
     { x: geometryAfterInsert.x - 35, y: doodleY },
     { x: geometryAfterInsert.x + geometryAfterInsert.width + 35, y: doodleY },
   ]);
-  await sleep(50);
+  await sleep(40);
+  const fadingPolyline = document.querySelector('.selection-overlay .selection-doodle-path');
+  check('releasing a lasso starts its dotted outline fading instead of leaving it on screen',
+    fadingPolyline?.dataset.settling === 'true');
+  const selectionDuringFade = Number(
+    document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0,
+  );
+  check('the selection itself only lands after the 120 ms settle',
+    selectionDuringFade === selectionBeforeDoodle,
+    `selection ${selectionDuringFade} at 40 ms, was ${selectionBeforeDoodle}`);
+  check('custom selection-doodle color is exposed and applied to its outline',
+    outlineColor?.value?.toUpperCase() === '#1E90FF' && fadingPolyline?.getAttribute('stroke') === '#1E90FF');
+  await sleep(170);
   const doodleOverlay = document.querySelector('.selection-overlay');
   check('an open dotted stroke selects touched objects and leaves pixels intact', countObjects(canvas) === 2
-    && Number(doodleOverlay?.dataset.selectionCount ?? 0) === 2
-    && doodleOverlay?.querySelector('.selection-doodle-path')?.getAttribute('stroke') === '#1E90FF');
-  check('custom selection-doodle color is exposed and applied to its outline', outlineColor?.value?.toUpperCase() === '#1E90FF'
-    && doodleOverlay?.querySelector('.selection-doodle-path')?.getAttribute('stroke') === '#1E90FF');
+    && Number(doodleOverlay?.dataset.selectionCount ?? 0) === 2);
+  check('the dotted outline is gone once the selection lands 120 ms after release',
+    !doodleOverlay?.querySelector('.selection-doodle-path'));
   click(window, 'button[aria-label="Select tool"]');
   await sleep(30);
   check('leaving Select Doodle keeps the selected objects but clears its temporary dotted path',

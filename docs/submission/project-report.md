@@ -60,7 +60,7 @@ a web browser.
 | Dataset | Google Quick, Draw! (CC BY 4.0), via the `quickdraw.js@1.0.6` npm mirror | Openly licensed and exactly the task. The official 50-million-drawing release was unreachable from my machine; the mirror is a verbatim copy but stops at 100 drawings per class — the project's biggest limitation. |
 | Illustrations | Icon sets: Game-icons, Lucide, Material Design Icons, Tabler, Font Awesome, Iconoir | 345 hand-drawn illustrations were impossible in the time available; these are openly licensed, consistent in style, and credited in the app's attribution files. |
 | Fonts | DM Sans, DM Serif Display via `@fontsource` | Self-hosted, so the page makes no third-party font request and works offline. |
-| Evaluation and testing | Node.js 22, `@napi-rs/canvas`, `jsdom`, `@resvg/resvg-js` | They run the app's real functions (the preprocessing reads a canvas) outside a browser, so the 274 checks and the 400-drawing benchmark measure the code the user actually runs, not a reimplementation. |
+| Evaluation and testing | Node.js 22, `@napi-rs/canvas`, `jsdom`, `@resvg/resvg-js` | They run the app's real functions (the preprocessing reads a canvas) outside a browser, so the 277 checks and the 400-drawing benchmark measure the code the user actually runs, not a reimplementation. |
 | Version control | Git, GitHub | Every experiment is reversible; if a training change made the model worse, the previous weights are one checkout away. |
 | Referenced archives | Google Drive | Where the supplied 333-class and 96×96 archives were; they were evaluated, compared and rejected with reasons. |
 | Document generation | reportlab (Python) | The handbook PDF is generated from the repository's own numbers, so it cannot drift out of date the way a hand-typed document does. |
@@ -259,7 +259,8 @@ Every number above can be reproduced, and the checks are automated:
 
 ```bash
 npm install                       # once
-node scripts/audit-app.mjs        # 274 automatic checks of the app itself
+npm test                          # 16 suites + 277 automatic checks of the app itself
+node scripts/audit-app.mjs        # just the 277 end-to-end checks
 node scripts/manual-test-345.mjs  # the 16 hand-drawn doodles through the real code
 node scripts/evaluate-quickdraw-400.mjs \
   --data-dir <quickdraw drawings> \
