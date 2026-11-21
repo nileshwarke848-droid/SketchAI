@@ -197,7 +197,7 @@ For every tool: what a user sees, what the code actually does, and the sentence 
 
 **What it does.** Draw a loop to select everything inside or crossed by it; or scribble across several objects to select them. It never erases, and the dotted outline colour is yours to choose.
 
-**How it works inside.** The stroke is tested to decide whether it is closed: if its end comes back within 24 px of its start, it is treated as a loop and selects every object whose bounding box lies inside or intersects the loop. If it is open, it selects only objects the scribble actually touches (12 px tolerance). Shift keeps the existing selection and adds to it. The outline is drawn as a dashed path over the canvas, not into the drawing.
+**How it works inside.** The stroke is tested to decide whether it is closed: it counts as a loop when its end returns near its start — within 16 screen pixels, or within 15 % of the loop's own bounding-box diagonal (capped at 120 document pixels), because nobody lands exactly on their starting point with a mouse. A closed loop then selects every object whose centre or corners lie inside it, whose outline it crosses, or that contains the loop — plus anything the stroke brushed past. An open stroke is treated as a scribble and selects only the objects it touches (12 px tolerance). Shift keeps the existing selection and adds to it. The outline is drawn as a dashed path over the canvas, not into the drawing.
 
 **Say this if asked.** *"This is the one tool AutoDraw does not have, and it exists because clicking objects one by one is slow when you have drawn a scene."*
 

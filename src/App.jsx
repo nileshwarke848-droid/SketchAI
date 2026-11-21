@@ -23,7 +23,12 @@ import { drawCanvasStrokeSegment } from './lib/canvas-drawing';
 import { DEFAULT_ACTIVE_COLOR, DEFAULT_BACKGROUND_COLOR, normalizeHexColor } from './lib/color-utils';
 import { beginTextCreation, beginTextEditing, cancelTextDraft, confirmTextDraft, updateTextDraftValue } from './lib/text-editor';
 import { EditorHistory } from './lib/editor-history';
-import { isClosedSelectionDoodle, selectObjectsInDoodleLoop, selectObjectsTouchedByDoodle } from './lib/selection-doodle';
+import {
+  combineSelectionIds,
+  isClosedSelectionDoodle,
+  selectObjectsInDoodleLoop,
+  selectObjectsTouchedByDoodle,
+} from './lib/selection-doodle';
 import {
   addSceneObject,
   createArtworkImageCache,
@@ -1266,9 +1271,16 @@ function App() {
       if (closes && Math.hypot(outline[0].x - outlineEnd.x, outline[0].y - outlineEnd.y) > 0.5) {
         outline.push(outline[0]);
       }
+      // A closed loop selects what it encloses *and* what it crossed; an open
+      // stroke only selects what it touched.
+      const touchTolerance = 10 / displayScale;
       const ids = closes
-        ? selectObjectsInDoodleLoop(sceneObjectsRef.current, outline, selectedObjectIdsRef.current, { additive: gesture.additive })
-        : selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, 10 / displayScale, selectedObjectIdsRef.current, { additive: gesture.additive });
+        ? combineSelectionIds(
+            sceneObjectsRef.current,
+            selectObjectsInDoodleLoop(sceneObjectsRef.current, outline, selectedObjectIdsRef.current, { additive: gesture.additive }),
+            selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, touchTolerance, selectedObjectIdsRef.current, { additive: gesture.additive }),
+          )
+        : selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, touchTolerance, selectedObjectIdsRef.current, { additive: gesture.additive });
       chooseObjects(ids);
       setSelectionDoodlePath(outline);
       setMessage(ids.length
