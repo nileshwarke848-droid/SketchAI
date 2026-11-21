@@ -1909,6 +1909,30 @@ async function main() {
   }
   check('dragging a line or arrow endpoint edits its parametric geometry', Boolean(arrowEndpoint)
     && Number(document.querySelector('.selection-overlay')?.dataset.objectWidth) !== beforeEndpointWidth);
+  section('FAQ page: the plain-language tour of how SketchAI works');
+  const faqTrigger = click(window, 'button[aria-label="Open FAQ"]');
+  await sleep(40);
+  const faqScreen = document.querySelector('.faq-screen');
+  check('the header offers a FAQ page and it opens', Boolean(faqTrigger) && Boolean(faqScreen)
+    && dom.window.location.hash === '#faq');
+  check('the FAQ page opens with its own headline', faqScreen?.querySelector('#faq-title')?.textContent.includes('actually works'));
+  check('the FAQ page explains the steps, the technologies and the build in order',
+    faqScreen?.querySelectorAll('.faq-step').length === 4
+      && faqScreen?.querySelectorAll('.faq-grid-3 .faq-card').length === 6
+      && faqScreen?.querySelectorAll('.faq-moment').length === 6);
+  const faqItems = [...(faqScreen?.querySelectorAll('.faq-item') ?? [])];
+  check('the FAQ page answers twelve questions in collapsible items', faqItems.length === 12
+    && faqItems.filter((item) => item.open).length === 1);
+  check('the FAQ page repeats no invented accuracy figure', Boolean(faqScreen?.textContent.includes('40 %'))
+    && Boolean(faqScreen?.textContent.includes('59 %')));
+  const objectsBeforeFaqClose = countObjects(canvas);
+  const escapeKey = new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+  dom.window.dispatchEvent(escapeKey);
+  await sleep(40);
+  check('Escape closes the FAQ page and restores the canvas',
+    !document.querySelector('.faq-screen') && dom.window.location.hash === '');
+  check('closing the FAQ page leaves the drawing untouched', countObjects(canvas) === objectsBeforeFaqClose);
+
   dom.window.close();
   console.log('\n' + '='.repeat(60));
   console.log(`${passed} passed, ${failed} failed`);

@@ -49,6 +49,7 @@ The challenge was to build something that behaves like Google AutoDraw. AutoDraw
 | Offer clean drawings | Up to 12 illustrated suggestion cards from the top 10 predicted classes | `src/lib/suggestions.js`, `src/data/artwork.js` |
 | Let you keep and edit the result | Accepted artwork becomes a scene object: move, resize, rotate, flip, recolour, reorder, delete, edit thickness | `src/lib/scene.js` |
 | *(not offered by AutoDraw)* | Closed-loop and scribble selection, two eraser modes with ink splitting, parametric shapes with editable endpoints, 24-step undo, offline use | `src/lib/selection-doodle.js`, `src/lib/doodle-eraser.js` |
+| *(not offered by AutoDraw)* | A built-in FAQ page (`#faq`, or **FAQ** in the header): the tour, the technologies and twelve plain-language answers, without leaving the app | `src/components/FaqPage.jsx`, `src/faq.css` |
 
 ### 1.3 The numbers, and what each one means
 
@@ -574,6 +575,8 @@ If an examiner wants to check a claim, these are the commands. Node scripts need
 | `src/lib/doodle-eraser.js` | the pixel eraser and ink splitting |
 | `src/lib/raster-fill.js` | the flood fill |
 | `src/lib/selection-doodle.js` | closed-loop and scribble selection |
+| `src/components/FaqPage.jsx` | the in-app FAQ page: how it works, the technologies, the build story, twelve questions |
+| `src/faq.css` | the FAQ page's own stylesheet (paper, highlighter, cards) |
 | `training/model-345-refinement-2026-11-20.md` | the improvement experiment, in full |
 | `training/evaluation-400-results.md` | the 400-drawing comparison, in full |
 | `scripts/run-tests.mjs` | the `npm test` runner: every `scripts/test-*.mjs` suite plus the app audit, one exit code |

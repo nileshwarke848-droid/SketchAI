@@ -166,8 +166,9 @@
 @media(max-width:700px){.active-color-control{flex-basis:100%}.active-color-control legend{flex-basis:100%}.active-color-editors{gap:4px}.quick-color-swatches{gap:6px}.brush-control{border:0;padding:0;flex-basis:100%}.object-color-apply{padding:0 2px}.fill-controls{align-items:flex-start}.fill-active-color,.background-current{flex-wrap:wrap}}
 
 /* Compact source shortlist shown while additional licensed artwork is curated. */
-.artwork-refresh-state{gap:9px;padding:14px 4px}
-.artwork-refresh-state span{max-width:235px}
+.artwork-refresh-state{display:grid;gap:7px;padding:16px 2px 4px}
+.artwork-refresh-state strong{font-size:9px;letter-spacing:1.1px;text-transform:uppercase;color:#a2a79e}
+.artwork-refresh-state span{font-size:10.5px;line-height:1.6;color:#8b9187}
 .artwork-source-list{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin:0;padding:0;list-style:none}
 .artwork-source-list a{display:inline-flex;padding:5px 8px;border:1px solid #e9ebe5;border-radius:999px;color:#65735f;background:#fafbf8;font-size:9px;text-decoration:none}
 .artwork-source-list a:hover{border-color:#d8977e;color:#9b604a}
