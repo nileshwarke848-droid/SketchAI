@@ -55,11 +55,15 @@ remains the default; the original 100-class model remains as fallback.
 
 ## Why the current score is about 38% — and how to improve it
 
-The checked-in model's recorded held-out score is **40.09% top-1**, **59.25%
-top-3**, and **77.62% top-10** across 345 classes (37.71 / 58.12 / 76.12 before the
-2026-11-20 CPU refinement described in
-[`model-345-refinement-2026-11-20.md`](model-345-refinement-2026-11-20.md), which
-is also the cheapest remaining win available: +2.4 pp for ~16 CPU-minutes). It was trained from only
+The checked-in model's recorded held-out score is **40.72% top-1**, **59.51%
+top-3**, and **77.77% top-10** across 345 classes. The path there was three
+stages: 37.71 / 58.12 / 76.12 for the first version, then +2.38 pp from the
+2026-11-20 CPU refinement
+([`model-345-refinement-2026-11-20.md`](model-345-refinement-2026-11-20.md)),
+then +0.64 pp from the 2026-11-22 continuation that started from the shipped
+TensorFlow.js weights
+([`model-345-continuation-2026-11-22.md`](model-345-continuation-2026-11-22.md)).
+Both gains are small because the ceiling here is data, not training time. It was trained from only
 **100 drawings per category** in the current npm mirror (80 training examples per
 class after the split). The `--samples-per-class 5000` setting cannot change that
 source limit; use a full Quick, Draw! source and matching rasterization loader
@@ -87,7 +91,7 @@ Suggested order of work:
 4. Add opt-in, consented real-user doodles to a separate evaluation/training set.
 
 The app's suggestion bar uses top-10 candidates, so top-1 is not the whole user
-experience: the model's 76.12% top-10 score is also relevant, and should be
+experience: the model's 77.77% top-10 score is also relevant, and should be
 measured on the same held-out data after every retrain.
 
 ## Requirements

@@ -1937,8 +1937,9 @@ async function main() {
     && faqItems.filter((item) => item.open).length === 1);
   check('the FAQ names who built it', faqScreen?.querySelector('.faq-made-name')?.textContent.trim() === 'Punit Nilesh Warke'
     && faqScreen?.textContent.includes('Punit Nilesh Warke, a Class 10 CBSE student'));
-  check('the FAQ page repeats no invented accuracy figure', Boolean(faqScreen?.textContent.includes('40 %'))
-    && Boolean(faqScreen?.textContent.includes('59 %')));
+  check('the FAQ page repeats no invented accuracy figure', Boolean(faqScreen?.textContent.includes('40.7 %'))
+    && Boolean(faqScreen?.textContent.includes('59.5 %'))
+    && Boolean(faqScreen?.textContent.includes('77.8 %')));
   const objectsBeforeFaqClose = countObjects(canvas);
   const escapeKey = new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
   dom.window.dispatchEvent(escapeKey);

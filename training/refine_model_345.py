@@ -175,9 +175,12 @@ def stage_a(model, bundle, cfg, args, out: Path, num_classes: int, rng_seed: int
         train_ds, validation_data=val_ds, steps_per_epoch=steps, validation_steps=val_steps,
         epochs=args.warmup_epochs, verbose=2,
         callbacks=[
-            tf.keras.callbacks.ModelCheckpoint(out / "stage-a.keras", monitor="val_acc",
+            # Paths must be strings: tf_keras 2.20 calls .endswith() on the filepath.
+            # tf_keras 2.20 needs string paths (.endswith on the filepath), and the
+            # monitored metric is named "acc" in stage A, so the key is val_acc.
+            tf.keras.callbacks.ModelCheckpoint(str(out / "stage-a.keras"), monitor="val_acc",
                                                mode="max", save_best_only=True, verbose=1),
-            tf.keras.callbacks.CSVLogger(out / "stage-a.csv"),
+            tf.keras.callbacks.CSVLogger(str(out / "stage-a.csv")),
         ],
     )
     minutes = (time.time() - started) / 60
@@ -224,7 +227,7 @@ def stage_b(model, bundle, cfg, args, out: Path, num_classes: int, rng_seed: int
 
     started = time.time()
     model.fit(dataset, steps_per_epoch=steps, epochs=args.finish_epochs, verbose=2,
-              callbacks=[tf.keras.callbacks.CSVLogger(out / "stage-b.csv")])
+              callbacks=[tf.keras.callbacks.CSVLogger(str(out / "stage-b.csv"))])
     minutes = (time.time() - started) / 60
     print(f"stage B: {args.finish_epochs} epochs in {minutes:.1f} min", flush=True)
 

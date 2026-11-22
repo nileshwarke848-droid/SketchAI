@@ -60,7 +60,7 @@ a web browser.
 | Dataset | Google Quick, Draw! (CC BY 4.0), via the `quickdraw.js@1.0.6` npm mirror | Openly licensed and exactly the task. The official 50-million-drawing release was unreachable from my machine; the mirror is a verbatim copy but stops at 100 drawings per class — the project's biggest limitation. |
 | Illustrations | Icon sets: Game-icons, Lucide, Material Design Icons, Tabler, Font Awesome, Iconoir | 345 hand-drawn illustrations were impossible in the time available; these are openly licensed, consistent in style, and credited in the app's attribution files. |
 | Fonts | DM Sans, DM Serif Display via `@fontsource` | Self-hosted, so the page makes no third-party font request and works offline. |
-| Evaluation and testing | Node.js 22, `@napi-rs/canvas`, `jsdom`, `@resvg/resvg-js` | They run the app's real functions (the preprocessing reads a canvas) outside a browser, so the 277 checks and the 400-drawing benchmark measure the code the user actually runs, not a reimplementation. |
+| Evaluation and testing | Node.js 22, `@napi-rs/canvas`, `jsdom`, `@resvg/resvg-js` | They run the app's real functions (the preprocessing reads a canvas) outside a browser, so the 285 checks and the 400-drawing benchmark measure the code the user actually runs, not a reimplementation. |
 | Version control | Git, GitHub | Every experiment is reversible; if a training change made the model worse, the previous weights are one checkout away. |
 | Referenced archives | Google Drive | Where the supplied 333-class and 96×96 archives were; they were evaluated, compared and rejected with reasons. |
 | Document generation | reportlab (Python) | The handbook PDF is generated from the repository's own numbers, so it cannot drift out of date the way a hand-typed document does. |
@@ -148,7 +148,28 @@ Instead of starting again, I continued training the first model, in two stages:
 | --- | --- | --- |
 | start | first version | 37.71 % |
 | A | 24 more epochs on the training drawings, added random **zoom** (scale) augmentation, label smoothing, learning rate decaying from 0.0002 to 5 % | 38.38 % |
-| B | 26 more epochs using training **and** validation drawings (31,050 drawings) with **EMA** weights (an average of the weights over the last epochs, which is more stable for small datasets) | **40.09 %** |
+| B | 26 more epochs using training **and** validation drawings (31,050 drawings) with **EMA** weights (an average of the weights over the last epochs, which is more stable for small datasets) | 40.09 % |
+| C | 20 more epochs from those shipped weights, imported back out of the TensorFlow.js file (see 7.2a), again on training + validation drawings with EMA 0.995, learning rate 0.0001 and zoom 0.08 | **40.72 %** |
+
+### 7.2a Third version — continuing from the shipped weights
+
+The shipped model existed only as a TensorFlow.js file, so `training/import_tfjs_345.py`
+loads it back into Keras by name (`conv2d/kernel`, `predictions/bias`, …) and proves the
+conversion by re-scoring it: it reproduces the published 40.09 / 59.25 / 77.62 exactly.
+Only then does `training/continue_from_shipped.py` train it further.
+
+Stage C fixed **43** drawings and broke **21** (95 % confidence interval **+0.20 to
++1.10** points, McNemar **p = 0.0087**). That is a genuine but small gain, and the two
+independent checks agree with that reading: the 400-drawing app benchmark stayed at
+158/400 top-1, and the sixteen hand-drawn doodles stayed at 6/9/14.
+
+Two things were tried and **rejected**, and both are in the repository:
+
+- a third stage (20 more epochs at learning rate 0.00005) scored 40.61 %, so it was
+  discarded rather than shipped because it was newer;
+- test-time augmentation (averaging seven shifted/zoomed views) lifted top-3 to
+  60.3 % and top-10 to 78.7 % but left top-1 at 40.8 %, which is not worth seven
+  forward passes per keystroke in the browser.
 
 Why zoom: the network already tolerated small shifts, rotations and pen widths,
 but not the same object drawn bigger or smaller. Scale is exactly the thing that
@@ -164,10 +185,12 @@ training and reported the result on the **test** set only.
 | Version | Top-1 | Top-3 | Top-10 |
 | --- | --- | --- | --- |
 | first version | 37.71 % | 58.12 % | 76.12 % |
-| **final version (shipped)** | **40.09 %** | **59.25 %** | **77.62 %** |
+| second version | 40.09 % | 59.25 % | 77.62 % |
+| **final version (shipped)** | **40.72 %** | **59.51 %** | **77.77 %** |
 
-Improvement: **+2.38 percentage points** top-1. To check that this was a real
-improvement and not luck, I compared the two models drawing-by-drawing:
+Improvement over the first version: **+3.01 percentage points** top-1
+(+2.38 from the refinement, +0.64 from the continuation). To check that this was a
+real improvement and not luck, I compared the models drawing-by-drawing:
 
 - a bootstrap over the 345 categories gives a 95 % confidence interval of
   **+1.42 to +3.36** percentage points (the interval does not include zero);
@@ -184,7 +207,7 @@ preprocessing code and the exported model on a frozen set of 400 drawings
 
 | | Top-1 | Top-3 | Top-5 | Top-10 |
 | --- | --- | --- | --- | --- |
-| the model I trained | **158/400** = 39.5 % | 233/400 = 58.2 % | 257/400 = 64.2 % | 282/400 = 70.5 % |
+| the model I trained | **158/400** = 39.5 % | 232/400 = 58.0 % | 257/400 = 64.3 % | 285/400 = 71.3 % |
 | a pretrained doodle model I compared against | 82/400 = 20.5 % | 135/400 = 33.8 % | 162/400 = 40.5 % | 210/400 = 52.5 % |
 
 The second row is a 333-category model trained by someone else that I downloaded
@@ -259,8 +282,8 @@ Every number above can be reproduced, and the checks are automated:
 
 ```bash
 npm install                       # once
-npm test                          # 16 suites + 277 automatic checks of the app itself
-node scripts/audit-app.mjs        # just the 277 end-to-end checks
+npm test                          # 16 suites + 285 automatic checks of the app itself
+node scripts/audit-app.mjs        # just the 285 end-to-end checks
 node scripts/manual-test-345.mjs  # the 16 hand-drawn doodles through the real code
 node scripts/evaluate-quickdraw-400.mjs \
   --data-dir <quickdraw drawings> \

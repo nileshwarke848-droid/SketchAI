@@ -65,6 +65,29 @@ def convert(keras_file: Path, out_dir: Path) -> None:
     while the app calls `tf.loadLayersModel` on public/model-345/model.json.
     """
     args = ["--input_format=keras", str(keras_file), str(out_dir)]
+
+    # tensorflowjs imports tensorflow_decision_forests on import, even for a plain
+    # Keras CNN, and that package in turn needs yggdrasil_decision_forests, which
+    # needs a JVM-adjacent install. None of it is used here, so register an empty
+    # placeholder and convert in-process. The CLI fallback below has no such hook.
+    import types
+
+    try:
+        import tensorflow_decision_forests  # noqa: F401
+    except Exception:  # pragma: no cover - depends on the environment
+        stub = types.ModuleType("tensorflow_decision_forests")
+        stub.__version__ = "0.0.0-sketchai-stub"
+        sys.modules["tensorflow_decision_forests"] = stub
+
+    try:
+        from tensorflowjs.converters.converter import convert as convert_in_process
+
+        print("  converting with the tensorflowjs Python API …")
+        convert_in_process(args)
+        return
+    except Exception as error:  # pragma: no cover - depends on the install
+        print(f"  in-process conversion unavailable ({error}); trying the CLI …")
+
     sibling = Path(sys.executable).with_name("tensorflowjs_converter")
     if sibling.exists():
         command = [str(sibling), *args]          # same venv as this interpreter
