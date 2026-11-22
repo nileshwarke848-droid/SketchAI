@@ -95,7 +95,7 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-      chunkSizeWarningLimit: 1700, // tfjs is one 1.6 MB vendor chunk by nature
+      chunkSizeWarningLimit: 2000, // tfjs alone is a 1.8 MB vendor chunk by nature
     },
     server: { host: '0.0.0.0', allowedHosts: true },
     preview: { host: '0.0.0.0', allowedHosts: true },

@@ -43,6 +43,17 @@ function section(title) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// The FAQ page is a lazily imported chunk, so its first appearance is a microtask
+// (and, in a browser, a network hop) away. Poll instead of guessing a delay.
+async function waitFor(predicate, timeout = 3000, step = 20) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    if (predicate()) return true;
+    await sleep(step);
+  }
+  return Boolean(predicate());
+}
+
 async function bundleApp() {
   fs.mkdirSync(path.dirname(BUNDLE), { recursive: true });
   await build({
@@ -626,17 +637,31 @@ async function main() {
   const outlineColor = document.querySelector('input[aria-label="Selection doodle outline color"]');
   setControlValue(window, outlineColor, '#1E90FF');
   const doodleY = geometryAfterInsert.y + geometryAfterInsert.height / 2;
+  const selectionBeforeDoodle = Number(
+    document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0,
+  );
   drawPolyline(window, canvas, [
     { x: geometryAfterInsert.x - 35, y: doodleY },
     { x: geometryAfterInsert.x + geometryAfterInsert.width + 35, y: doodleY },
   ]);
-  await sleep(50);
+  await sleep(40);
+  const fadingPolyline = document.querySelector('.selection-overlay .selection-doodle-path');
+  check('releasing a lasso starts its dotted outline fading instead of leaving it on screen',
+    fadingPolyline?.dataset.settling === 'true');
+  const selectionDuringFade = Number(
+    document.querySelector('.selection-overlay')?.dataset.selectionCount ?? 0,
+  );
+  check('the selection itself only lands after the 120 ms settle',
+    selectionDuringFade === selectionBeforeDoodle,
+    `selection ${selectionDuringFade} at 40 ms, was ${selectionBeforeDoodle}`);
+  check('custom selection-doodle color is exposed and applied to its outline',
+    outlineColor?.value?.toUpperCase() === '#1E90FF' && fadingPolyline?.getAttribute('stroke') === '#1E90FF');
+  await sleep(170);
   const doodleOverlay = document.querySelector('.selection-overlay');
   check('an open dotted stroke selects touched objects and leaves pixels intact', countObjects(canvas) === 2
-    && Number(doodleOverlay?.dataset.selectionCount ?? 0) === 2
-    && doodleOverlay?.querySelector('.selection-doodle-path')?.getAttribute('stroke') === '#1E90FF');
-  check('custom selection-doodle color is exposed and applied to its outline', outlineColor?.value?.toUpperCase() === '#1E90FF'
-    && doodleOverlay?.querySelector('.selection-doodle-path')?.getAttribute('stroke') === '#1E90FF');
+    && Number(doodleOverlay?.dataset.selectionCount ?? 0) === 2);
+  check('the dotted outline is gone once the selection lands 120 ms after release',
+    !doodleOverlay?.querySelector('.selection-doodle-path'));
   click(window, 'button[aria-label="Select tool"]');
   await sleep(30);
   check('leaving Select Doodle keeps the selected objects but clears its temporary dotted path',
@@ -1895,6 +1920,34 @@ async function main() {
   }
   check('dragging a line or arrow endpoint edits its parametric geometry', Boolean(arrowEndpoint)
     && Number(document.querySelector('.selection-overlay')?.dataset.objectWidth) !== beforeEndpointWidth);
+  section('FAQ page: the plain-language tour of how SketchAI works');
+  const faqTrigger = click(window, 'button[aria-label="Open FAQ"]');
+  await waitFor(() => Boolean(document.querySelector('.faq-screen')));
+  await sleep(20);
+  const faqScreen = document.querySelector('.faq-screen');
+  check('the header offers a FAQ page and it opens', Boolean(faqTrigger) && Boolean(faqScreen)
+    && dom.window.location.hash === '#faq');
+  check('the FAQ page opens with its own headline', faqScreen?.querySelector('#faq-title')?.textContent.includes('actually works'));
+  check('the FAQ page explains the steps, the technologies and the build in order',
+    faqScreen?.querySelectorAll('.faq-step').length === 4
+      && faqScreen?.querySelectorAll('.faq-grid-3 .faq-card').length === 6
+      && faqScreen?.querySelectorAll('.faq-moment').length === 6);
+  const faqItems = [...(faqScreen?.querySelectorAll('.faq-item') ?? [])];
+  check('the FAQ page answers twelve questions in collapsible items', faqItems.length === 12
+    && faqItems.filter((item) => item.open).length === 1);
+  check('the FAQ names who built it', faqScreen?.querySelector('.faq-made-name')?.textContent.trim() === 'Punit Nilesh Warke'
+    && faqScreen?.textContent.includes('Punit Nilesh Warke, a Class 10 CBSE student'));
+  check('the FAQ page repeats no invented accuracy figure', Boolean(faqScreen?.textContent.includes('40 %'))
+    && Boolean(faqScreen?.textContent.includes('59 %')));
+  const objectsBeforeFaqClose = countObjects(canvas);
+  const escapeKey = new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+  dom.window.dispatchEvent(escapeKey);
+  await waitFor(() => !document.querySelector('.faq-screen'));
+  await sleep(20);
+  check('Escape closes the FAQ page and restores the canvas',
+    !document.querySelector('.faq-screen') && dom.window.location.hash === '');
+  check('closing the FAQ page leaves the drawing untouched', countObjects(canvas) === objectsBeforeFaqClose);
+
   dom.window.close();
   console.log('\n' + '='.repeat(60));
   console.log(`${passed} passed, ${failed} failed`);

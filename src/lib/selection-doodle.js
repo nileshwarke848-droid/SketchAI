@@ -2,14 +2,55 @@ import { getObjectCenter, getTransformedCorners } from './scene.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-export function isClosedSelectionDoodle(points, tolerance = 24) {
-  if (!Array.isArray(points) || points.length < 3) return false;
+// A lasso that stops a little short of its starting point is still a lasso: with a
+// mouse nobody lands exactly where they began. The allowance scales with the size
+// of the loop itself (15 % of its bounding-box diagonal) and is capped so a large
+// scribble is still treated as a scribble.
+export const LOOP_GAP_RATIO = 0.15;
+export const MAX_LOOP_GAP = 120;
+
+function pathLength(points) {
   let length = 0;
   for (let index = 1; index < points.length; index += 1) {
     length += distance(points[index - 1], points[index]);
   }
-  return length >= Math.max(24, tolerance * 1.5)
-    && distance(points[0], points[points.length - 1]) <= tolerance;
+  return length;
+}
+
+function boundingDiagonal(points) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of points) {
+    if (point.x < minX) minX = point.x;
+    if (point.x > maxX) maxX = point.x;
+    if (point.y < minY) minY = point.y;
+    if (point.y > maxY) maxY = point.y;
+  }
+  return Math.hypot(maxX - minX, maxY - minY);
+}
+
+/** Distance between the first and last point of a selection stroke. */
+export function selectionDoodleGap(points) {
+  if (!Array.isArray(points) || points.length < 2) return Infinity;
+  return distance(points[0], points[points.length - 1]);
+}
+
+export function isClosedSelectionDoodle(points, tolerance = 24) {
+  if (!Array.isArray(points) || points.length < 3) return false;
+  const length = pathLength(points);
+  if (length < Math.max(24, tolerance * 1.5)) return false;
+
+  const gap = selectionDoodleGap(points);
+  if (gap <= tolerance) return true;
+
+  const diagonal = boundingDiagonal(points);
+  if (!(diagonal > 0)) return false;
+  const allowance = Math.min(MAX_LOOP_GAP, Math.max(tolerance, diagonal * LOOP_GAP_RATIO));
+  // It must also have gone somewhere: a short stab that happens to end near where
+  // it started is not a loop around anything.
+  return gap <= allowance && length >= diagonal * 1.5;
 }
 
 function pointInPolygon(point, polygon) {
@@ -130,4 +171,19 @@ export function selectObjectsTouchedByDoodle(objects, points, tolerance = 12, ex
     }
   }
   return objects.filter((object) => selected.has(object.id)).map((object) => object.id);
+}
+
+/**
+ * Merge several selection results into one id list in scene order.
+ *
+ * A closed lasso runs the loop test *and* the touched test: the loop test alone
+ * misses an object the stroke merely brushed past, and the union can only ever
+ * select more than the old behaviour, never less.
+ */
+export function combineSelectionIds(objects, ...lists) {
+  const ids = new Set();
+  for (const list of lists) {
+    for (const id of list ?? []) ids.add(id);
+  }
+  return objects.filter((object) => ids.has(object.id)).map((object) => object.id);
 }

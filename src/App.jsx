@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Bold, Check, Circle, CircleHelp, Copy, Eraser, FlipHorizontal2, Hand, Info, Lasso, LockKeyhole, Maximize2, Minus, MousePointer2, PaintBucket, Pencil, RotateCcw, Sparkles, Square, Trash2, Type, X, ZoomIn, ZoomOut } from 'lucide-react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Bold, BookOpen, Check, Circle, CircleHelp, Copy, Eraser, FlipHorizontal2, Hand, Info, Lasso, LockKeyhole, Maximize2, Minus, MousePointer2, PaintBucket, Pencil, RotateCcw, Sparkles, Square, Trash2, Type, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { loadModel, predict } from './ai/model';
 import { getSketchBounds } from './ai/preprocess';
 import SuggestionBar from './components/SuggestionBar';
@@ -23,7 +23,12 @@ import { drawCanvasStrokeSegment } from './lib/canvas-drawing';
 import { DEFAULT_ACTIVE_COLOR, DEFAULT_BACKGROUND_COLOR, normalizeHexColor } from './lib/color-utils';
 import { beginTextCreation, beginTextEditing, cancelTextDraft, confirmTextDraft, updateTextDraftValue } from './lib/text-editor';
 import { EditorHistory } from './lib/editor-history';
-import { isClosedSelectionDoodle, selectObjectsInDoodleLoop, selectObjectsTouchedByDoodle } from './lib/selection-doodle';
+import {
+  combineSelectionIds,
+  isClosedSelectionDoodle,
+  selectObjectsInDoodleLoop,
+  selectObjectsTouchedByDoodle,
+} from './lib/selection-doodle';
 import {
   addSceneObject,
   createArtworkImageCache,
@@ -80,9 +85,17 @@ import {
   splitInkBlobs,
 } from './lib/doodle-eraser';
 import DebugPanel from './dev/DebugPanel';
+// The FAQ page is a separate screen, so it is loaded on demand: its JavaScript and
+// CSS stay out of the first paint the drawing studio needs.
+const FaqPage = lazy(() => import('./components/FaqPage'));
+const preloadFaqPage = () => import('./components/FaqPage');
 
 const W = 1200, H = 720;
 const LIVE_PREDICTION_INTERVAL_MS = 220;
+// After a lasso is released the dotted outline fades out over this long, and the
+// selection is committed when the fade ends. Both are the same 120 ms so the
+// outline never lingers over a finished selection.
+const SELECT_DOODLE_SETTLE_MS = 120;
 const FINAL_PREDICTION_DELAY_MS = 260;
 const zoomSteps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
@@ -116,6 +129,16 @@ function readGuessingPreference() {
     return true;
   }
 }
+// Cancel a pending lasso settle (the 120 ms fade + commit after pointer-up). A
+// module-level helper because both the tool-switch effect and the pointer
+// handlers need it, and it only touches a ref.
+function cancelSelectionDoodleSettle(ref) {
+  if (ref.current !== null) {
+    window.clearTimeout(ref.current);
+    ref.current = null;
+  }
+}
+
 // A probability under half a percent is real but not meaningful to show as "0%".
 const formatScore = (score) => (score < 0.005 ? '<1%' : `${Math.round(score * 100)}%`);
 
@@ -156,6 +179,8 @@ function App() {
   guessingEnabledRef.current = guessingEnabled;
   const [selectionDoodleColor, setSelectionDoodleColor] = useState('#4B8BF4');
   const [selectionDoodlePath, setSelectionDoodlePath] = useState(null);
+  const [selectionDoodleSettling, setSelectionDoodleSettling] = useState(false);
+  const selectDoodleTimerRef = useRef(null);
   const [shapePreview, setShapePreview] = useState(null);
   const [activeColor, setActiveColor] = useState(DEFAULT_ACTIVE_COLOR);
   const [backgroundColor, setBackgroundColor] = useState(DEFAULT_BACKGROUND_COLOR);
@@ -176,6 +201,11 @@ function App() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  // The FAQ is a page, not a modal: it has its own #faq address and the editor
+  // underneath keeps its state, so closing it never loses a drawing.
+  const [showFaq, setShowFaq] = useState(() => (typeof window === 'undefined'
+    ? false
+    : window.location.hash.replace(/^#\/?/, '') === 'faq'));
   const [message, setMessage] = useState('');
   const [showDebug, setShowDebug] = useState(DEBUG_AI);
   const [backend, setBackend] = useState('');
@@ -184,7 +214,35 @@ function App() {
   const [fallbackReason, setFallbackReason] = useState(null);
 
   useEffect(() => {
-    if (tool !== 'selectDoodle') setSelectionDoodlePath(null);
+    const syncFromHash = () => setShowFaq(window.location.hash.replace(/^#\/?/, '') === 'faq');
+    window.addEventListener('hashchange', syncFromHash);
+    window.addEventListener('popstate', syncFromHash);
+    return () => {
+      window.removeEventListener('hashchange', syncFromHash);
+      window.removeEventListener('popstate', syncFromHash);
+    };
+  }, []);
+
+  // The address bar says #faq while the page is open, so it can be linked and
+  // reloaded, but the editor stays mounted underneath and keeps the drawing.
+  const openFaq = () => {
+    setShowFaq(true);
+    if (window.location.hash !== '#faq') window.history.replaceState(null, '', '#faq');
+  };
+
+  const closeFaq = () => {
+    setShowFaq(false);
+    if (window.location.hash === '#faq') {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    }
+  };
+
+  useEffect(() => {
+    if (tool !== 'selectDoodle') {
+      cancelSelectionDoodleSettle(selectDoodleTimerRef);
+      setSelectionDoodlePath(null);
+      setSelectionDoodleSettling(false);
+    }
   }, [tool]);
 
   const syncScene = (next) => {
@@ -314,6 +372,8 @@ function App() {
     }
     if (!next) clearPredictionTimer(timerRef);
   };
+
+  useEffect(() => () => cancelSelectionDoodleSettle(selectDoodleTimerRef), []);
 
   useEffect(() => {
     const sketch = sketchRef.current;
@@ -1101,6 +1161,8 @@ function App() {
       }
     } else if (tool === 'selectDoodle') {
       setMessage('');
+      cancelSelectionDoodleSettle(selectDoodleTimerRef);
+      setSelectionDoodleSettling(false);
       const points = [p];
       pointerRef.current = {
         id: pointerId,
@@ -1255,6 +1317,13 @@ function App() {
       } else if (!gesture.additive) chooseObjects([]);
       setMarquee(null);
     } else if (gesture.kind === 'selectDoodle') {
+      if (event.type === 'pointercancel') {
+        // A cancelled gesture is not a selection: drop the outline, commit nothing.
+        cancelSelectionDoodleSettle(selectDoodleTimerRef);
+        setSelectionDoodlePath(null);
+        setSelectionDoodleSettling(false);
+        return;
+      }
       const finalPoint = point(event);
       const last = gesture.points[gesture.points.length - 1];
       if (!last || Math.hypot(finalPoint.x - last.x, finalPoint.y - last.y) >= 1.5) gesture.points.push(finalPoint);
@@ -1266,14 +1335,32 @@ function App() {
       if (closes && Math.hypot(outline[0].x - outlineEnd.x, outline[0].y - outlineEnd.y) > 0.5) {
         outline.push(outline[0]);
       }
+      // A closed loop selects what it encloses *and* what it crossed; an open
+      // stroke only selects what it touched.
+      const touchTolerance = 10 / displayScale;
       const ids = closes
-        ? selectObjectsInDoodleLoop(sceneObjectsRef.current, outline, selectedObjectIdsRef.current, { additive: gesture.additive })
-        : selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, 10 / displayScale, selectedObjectIdsRef.current, { additive: gesture.additive });
-      chooseObjects(ids);
+        ? combineSelectionIds(
+            sceneObjectsRef.current,
+            selectObjectsInDoodleLoop(sceneObjectsRef.current, outline, selectedObjectIdsRef.current, { additive: gesture.additive }),
+            selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, touchTolerance, selectedObjectIdsRef.current, { additive: gesture.additive }),
+          )
+        : selectObjectsTouchedByDoodle(sceneObjectsRef.current, outline, touchTolerance, selectedObjectIdsRef.current, { additive: gesture.additive });
+      // Letting go starts the fade immediately; the selection lands when the
+      // fade finishes, so the dotted outline never sits on top of a finished
+      // selection and a fast second lasso supersedes this one cleanly.
+      cancelSelectionDoodleSettle(selectDoodleTimerRef);
       setSelectionDoodlePath(outline);
-      setMessage(ids.length
-        ? `${ids.length} object${ids.length === 1 ? '' : 's'} selected. Use Delete or Backspace to remove them.`
-        : 'No objects selected. Draw a loop around objects or scribble across them.');
+      setSelectionDoodleSettling(true);
+      const selectedCount = ids.length;
+      selectDoodleTimerRef.current = window.setTimeout(() => {
+        selectDoodleTimerRef.current = null;
+        chooseObjects(ids);
+        setSelectionDoodlePath(null);
+        setSelectionDoodleSettling(false);
+        setMessage(selectedCount
+          ? `${selectedCount} object${selectedCount === 1 ? '' : 's'} selected. Use Delete or Backspace to remove them.`
+          : 'No objects selected. Draw a loop around objects or scribble across them.');
+      }, SELECT_DOODLE_SETTLE_MS);
     } else if (gesture.kind === 'doodle') {
       const stroke = doodleStrokeRef.current;
       if (stroke) {
@@ -1559,7 +1646,7 @@ function App() {
   return <div className="app-shell">
     <header className="topbar">
       <a className="brand" href="#" aria-label="SketchAI home"><span className="brand-icon"><Sparkles size={18}/></span><span>Sketch<span className="brand-ai">AI</span><small>DRAWING STUDIO</small></span></a>
-      <div className="header-right"><span className={`model-status ${guessingEnabled ? status : 'off'}`}><i/> {guessingEnabled ? statusText : 'AI guessing off'}</span><button className="help-link" onClick={() => setShowHelp(true)}><CircleHelp size={17}/> How it works</button></div>
+      <div className="header-right"><span className={`model-status ${guessingEnabled ? status : 'off'}`}><i/> {guessingEnabled ? statusText : 'AI guessing off'}</span><button className="help-link" onClick={openFaq} onMouseEnter={preloadFaqPage} onFocus={preloadFaqPage} aria-label="Open FAQ"><BookOpen size={16}/> FAQ</button><button className="help-link" onClick={() => setShowHelp(true)}><CircleHelp size={17}/> How it works</button></div>
     </header>
     <main>
       <section className="intro"><div><div className="eyebrow"><span className="eyebrow-dot"/> YOUR CREATIVE SPACE <span className="eyebrow-line"/></div><h1>Big ideas start <em>small.</em></h1><p>Draw something, and let a little AI magic bring it to life.</p></div><div className="intro-note"><Sparkles size={16}/><span>MADE FOR<br/><strong>CURIOUS MINDS</strong></span></div></section>
@@ -1630,6 +1717,7 @@ function App() {
                   data-object-stroke-width={selectedObject?.type === 'shape' ? selectedObject.strokeWidth : ''}>
                   {tool === 'selectDoodle' && selectionDoodlePath?.length > 1 && <polyline
                     className="selection-doodle-path"
+                    data-settling={selectionDoodleSettling ? 'true' : 'false'}
                     points={selectionDoodlePath.map(({ x, y }) => `${x},${y}`).join(' ')}
                     stroke={selectionDoodleColor}
                     strokeWidth={2.5}
@@ -1794,8 +1882,9 @@ function App() {
         </aside>}
       </div>
       {message && <div className="notice" role="status">{message}</div>}
-      <div className="page-bottom"><span><span className="tiny-star">✳</span> Made for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
+      <div className="page-bottom"><span><span className="tiny-star">✳</span> Made by Punit Nilesh Warke — for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
+    {showFaq && <Suspense fallback={null}><FaqPage onClose={closeFaq} /></Suspense>}
     {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>Sketch with the pencil, add editable text with the Text tool, or use Fill on a connected region. Select Doodle draws a closed loop or an open stroke to select objects without erasing; hold Shift to add to a selection. Sketch ink, fills and objects stay on separate layers.</li><li>SketchAI crops, centers and normalizes the sketch for the active model: 96 × 96 for the supplied 333-class model, or 28 × 28 for the retained fallback models.</li><li>A neural network looks for patterns in the pixels.</li><li>The active drawing classifier looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Choose an illustration to add an editable object. Select artwork or text to move, resize, rotate, recolor, duplicate, reorder or delete it. Text can be edited inline and artwork can be flipped. Zoom with the controls or wheel, and pan with Space + drag or the Hand tool; view changes never alter document coordinates.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your rough sketch stays separate from clean objects.</div><button className="primary-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
   </div>;
 }
