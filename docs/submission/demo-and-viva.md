@@ -49,7 +49,7 @@ or the numbers table on your phone/printout.
 
 **2:45 — close (15 s).**
 > "It runs fully in the browser with no server and no API key — 0.88 MB model.
-> There are 277 automated checks on the app (`npm test`) and every accuracy number in the
+> There are 285 automated checks on the app (`npm test`) and every accuracy number in the
 > report can be regenerated with the scripts in the repository."
 
 **Objects that work well in a demo (practise these):** sun, car, cat, flower,

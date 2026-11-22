@@ -11,8 +11,8 @@ import { displayName, getArtworkVariants, normaliseLabel } from '../data/artwork
 
 // How many predicted classes are allowed to contribute cards.
 //
-// Set to 10 to match the model's real strength: top-1 accuracy is only 40.09%
-// but top-10 recall is 77.62%. Measured on the 16 hand-drawn doodles in
+// Set to 10 to match the model's real strength: top-1 accuracy is only 40.72%
+// but top-10 recall is 77.77%. Measured on the 16 hand-drawn doodles in
 // training/doodles.json, drawing from 10 classes puts the intended object on the
 // bar 14/16 times, versus 10/16 when drawing from only 5.
 export const CLASSES_USED = 10;

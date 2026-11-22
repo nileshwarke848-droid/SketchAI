@@ -55,14 +55,14 @@ The challenge was to build something that behaves like Google AutoDraw. AutoDraw
 
 | Number | Value | What it means in one line |
 | --- | --- | --- |
-| Held-out top-1 | 40.09 % | the first card is the object you meant, 2 times in 5 |
-| Held-out top-3 | 59.25 % | the object is in the first three cards, 3 times in 5 |
-| Held-out top-10 | 77.62 % | the object is somewhere in the 12-card strip, 4 times in 5 |
+| Held-out top-1 | 40.72 % | the first card is the object you meant, 2 times in 5 |
+| Held-out top-3 | 59.51 % | the object is in the first three cards, 3 times in 5 |
+| Held-out top-10 | 77.77 % | the object is somewhere in the 12-card strip, 4 times in 5 |
 | Chance | 0.29 % | 1 in 345 — what a blind guess gets, so this is about 140× better |
 | App-pipeline top-1 | 39.5 % (158/400) | the same idea measured through the app's own preprocessing |
 | Hand-drawn doodles | 6/16, 9/16, 14/16 | sixteen doodles I drew myself: honest, tiny sample |
 | Parameters | 214,649 | numbers the network learned — 0.88 MB in the browser |
-| Training time | ~30 min CPU | 15 min first version + 7 + 8 min refinement, no GPU |
+| Training time | ~40 min CPU | 15 min first version + 7 + 8 min refinement + 5 min continuation, no GPU |
 
 ### 1.4 Three honest sentences worth rehearsing
 
@@ -156,13 +156,14 @@ The exported model contains 214,649 learned numbers. These are the exact tensor 
 
 ### 3.5 The improvement experiment
 
-The first model reached 37.71 % top-1. Rather than starting again, I continued training it in two stages and tested whether each stage helped.
+The first model reached 37.71 % top-1. Rather than starting again, I continued training it in stages and tested whether each stage helped.
 
 | Stage | What changed | Top-1 on the 3,450 test drawings |
 | --- | --- | --- |
 | Start | first model, 60 epochs | 37.71 % |
 | Stage A | 24 more epochs on the training drawings, added random **zoom** (scale) augmentation, label smoothing, learning rate 0.0002 → 5 % | 38.38 % |
-| Stage B | 26 more epochs using training **and** validation drawings (31,050 drawings) with EMA weights | **40.09 %** |
+| Stage B | 26 more epochs using training **and** validation drawings (31,050 drawings) with EMA weights | 40.09 % |
+| Stage C | 20 more epochs from those shipped weights (imported back out of the TF.js asset), again on training + validation drawings, EMA 0.995, learning rate 0.0001, zoom 0.08 | **40.72 %** |
 
 **Why zoom?** The network already tolerated shifts, rotations and pen widths, but not the same object drawn bigger or smaller — which is exactly what changes between two people drawing the same thing.
 
@@ -172,12 +173,16 @@ The first model reached 37.71 % top-1. Rather than starting again, I continued t
 
 > **The sentence that earns the marks.** I did not just train harder; I changed one thing at a time and proved the change worked. That is the difference between a school project and an experiment.
 
+**Where the full write-up is.** `training/model-345-continuation-2026-11-22.md` has every setting, every rejected idea and the reproducibility commands for the last round of training.
+
+**The last round of training, and the one that did not work.** Stage C fixed **43** drawings and broke **21** (95 % CI **+0.20 to +1.10** points, McNemar **p = 0.0087**), which is a real but small gain — the 400-drawing app benchmark and the sixteen hand-drawn doodles both stayed where they were, exactly as a gain this size predicts. A further 20 epochs at a lower learning rate scored 40.61 %, i.e. no better, so it was thrown away rather than kept because it was newer. Test-time augmentation (averaging seven slightly shifted views of the same drawing) lifted top-3 to 60.3 % and top-10 to 78.7 % but left top-1 at 40.8 %, so it is written up as a measurement, not shipped: it would cost seven forward passes for a fraction of a point.
+
 ### 3.6 How the accuracy was measured
 
 | Measurement | Result | How it was done |
 | --- | --- | --- |
-| Held-out test, 3,450 drawings | top-1 40.09 %, top-3 59.25 %, top-10 77.62 % | Python, on the split the model never trained on |
-| App-pipeline benchmark, 400 drawings | 158 / 233 / 257 / 282 (39.5 / 58.2 / 64.2 / 70.5 %) | `scripts/evaluate-quickdraw-400.mjs` replays the app's preprocessing and the exported model |
+| Held-out test, 3,450 drawings | top-1 40.72 %, top-3 59.51 %, top-10 77.77 % | Python, on the split the model never trained on |
+| App-pipeline benchmark, 400 drawings | 158 / 232 / 257 / 285 (39.5 / 58.0 / 64.3 / 71.3 %) | `scripts/evaluate-quickdraw-400.mjs` replays the app's preprocessing and the exported model |
 | Pretrained model, same 400 | 82 / 135 / 162 / 210 (20.5 / 33.8 / 40.5 / 52.5 %) | same script, same drawings — my model is about twice as accurate |
 | Sixteen hand-drawn doodles | 6 / 16, 9 / 16, 14 / 16 | `scripts/manual-test-345.mjs`, drawing by hand through the app's code path |
 | Chance | 0.29 % | 1 / 345, the score of a blind guess |
@@ -293,7 +298,7 @@ Practise this four times. Before you start: open the app, draw one small stroke,
 | 1:05 | draw a cat: head, ears, whiskers, tail | "When it is unsure it says so: cat 47 %, pig 35 %, bear 5 %. That honesty is deliberate." |
 | 1:35 | draw a tree, let it miss | "This is where it fails — trees come out as hot-air balloons. My measured accuracy is 40 % for the first guess and 78 % for the right answer being anywhere in the cards, so I expect misses. I have a 400-drawing test that tells me exactly how often." |
 | 2:05 | show the numbers page (section 8) | "On 3,450 drawings it never saw: 40 % top-1, 59 % top-3, 78 % top-10. I then improved it by 2.4 points with one specific change — teaching it about scale — and proved the gain with a statistical test, p = 4 × 10⁻⁷. Against a pretrained doodle model on the same 400 drawings mine scored 39.5 % and that one 20.5 %." |
-| 2:45 | close | "It runs fully in the browser: no server, no API key, 0.88 MB model. There are 277 automated checks on the app, and every accuracy number can be regenerated with the scripts in the project." |
+| 2:45 | close | "It runs fully in the browser: no server, no API key, 0.88 MB model. There are 285 automated checks on the app, and every accuracy number can be regenerated with the scripts in the project." |
 
 ### 5.1 What to draw, and what not to
 
@@ -384,7 +389,7 @@ Quick, Draw! strokes are about 1.5 px wide on the 28×28 grid; a browser pen at 
 It is the softmax score, the model's own ranking strength, not a calibrated probability. It is reliable for ordering the cards, which is what the app uses it for, and the panel is worded as "might be drawing" for exactly that reason.
 
 **Q25. What is top-1, top-3 and top-10 accuracy?**
-The share of test drawings where the correct answer is in the first 1, 3 or 10 predictions. Mine are 40.09 %, 59.25 % and 77.62 % on 3,450 held-out drawings.
+The share of test drawings where the correct answer is in the first 1, 3 or 10 predictions. Mine are 40.72 %, 59.51 % and 77.77 % on 3,450 held-out drawings.
 
 **Q26. Why report all three instead of just one?**
 Because the app shows ten cards. Top-1 measures the model's sharpness; top-10 measures what the user can actually find on the bar. Quoting only the flattering one would be misleading.
@@ -450,8 +455,8 @@ About 30 minutes in total on a normal CPU without a GPU: 15 minutes for the firs
 **Q45. How big is the model, and why does that matter?**
 214,649 parameters, 0.88 MB in the browser format. That is small enough to load in about a second on a school laptop, which is why the app can run fully offline.
 
-**Q46. What are the 277 automated checks?**
-A node script that drives the app's real logic: drawing, selection, erasing, fills, zoom and pan, shape geometry, layer order, undo. All 277 pass — run them all with `npm test` — and they are what let me change the model and the tools without breaking behaviour.
+**Q46. What are the 285 automated checks?**
+A node script that drives the app's real logic: drawing, selection, erasing, fills, zoom and pan, shape geometry, layer order, undo. All 285 pass — run them all with `npm test` — and they are what let me change the model and the tools without breaking behaviour.
 
 **Q47. When you changed the model, how did you know the app still worked?**
 The browser asset is verified against the Keras model before it is installed: the two must agree to better than 1e-4 in every output (mine agree to 2.7 × 10⁻⁷). Then the 400-drawing benchmark is re-run through the app's own code path, and the 16 hand-drawn doodles are re-checked.
@@ -511,16 +516,16 @@ Print this page and keep it on the table. These are the only numbers you need to
 | Input | 28 × 28 × 1 | greyscale, white ink on black, 0 to 1 |
 | Parameters | 214,649 | learned numbers in the network |
 | Model size | 0.88 MB | browser asset, loads in about a second |
-| Training time | ~30 min | CPU only, no GPU: 15 + 7 + 8 |
-| Top-1 (held-out) | 40.09 % | first card correct, 3,450 unseen drawings |
-| Top-3 | 59.25 % | correct card in the first three |
-| Top-10 | 77.62 % | correct card anywhere in the strip |
+| Training time | ~40 min | CPU only, no GPU: 15 + 7 + 8 + 5 |
+| Top-1 (held-out) | 40.72 % | first card correct, 3,450 unseen drawings |
+| Top-3 | 59.51 % | correct card in the first three |
+| Top-10 | 77.77 % | correct card anywhere in the strip |
 | Chance | 0.29 % | 1 in 345 — so about 140× better than guessing |
-| Improvement | +2.38 points | from the refinement experiment, p = 4 × 10⁻⁷ |
-| App benchmark | 158/400 | 39.5 % top-1 through the app's own pipeline |
+| Improvement | +3.01 points | +2.38 from the refinement (p = 4 × 10⁻⁷), +0.64 from the continuation (p = 0.009) |
+| App benchmark | 158/400 | 39.5 % top-1 through the app's own pipeline (top-10 285/400) |
 | Pretrained baseline | 82/400 | 20.5 % — my model is about twice as accurate |
 | Hand-drawn doodles | 6/16, 9/16, 14/16 | sixteen doodles I drew; tiny sample |
-| Automated checks | 277 | app behaviour tests, all passing (`npm test`) |
+| Automated checks | 285 | app behaviour tests, all passing (`npm test`) |
 | Recognition cadence | 220 ms | live predictions while drawing |
 
 ## 9. Glossary
@@ -556,10 +561,13 @@ If an examiner wants to check a claim, these are the commands. Node scripts need
 | Command | What it proves |
 | --- | --- |
 | `npm test` | every suite at once: the 16 test files plus the app audit, one pass/fail exit code |
-| `node scripts/audit-app.mjs` | 277 automated checks of the real app logic |
+| `node scripts/audit-app.mjs` | 285 automated checks of the real app logic |
 | `node scripts/manual-test-345.mjs` | the 16 hand-drawn doodles through the real browser code path |
 | `node scripts/evaluate-quickdraw-400.mjs --data-dir <drawings> --manifest training/evaluation-400-manifest.json` | the 400-drawing comparison against the pretrained model |
 | `python training/refine_model_345.py --checkpoint <weights> --out <dir>` | the refinement experiment: two stages, then the paired test |
+| `python training/import_tfjs_345.py` | loads the shipped TensorFlow.js weights back into Keras, and proves it by reproducing 40.09 / 59.25 / 77.62 |
+| `python training/continue_from_shipped.py --epochs 20 --lr 1e-4` | the continuation experiment: +0.64 pp top-1 with its paired test |
+| `python training/tta_eval_345.py` | the seven-view test-time-augmentation measurement (top-3 +0.75 pp, top-1 flat, not shipped) |
 | `python training/export_model_345.py --weights <model>` | the Keras → TensorFlow.js export, including the parity check against Keras |
 | `python docs/submission/build-handbook.py` | rebuilds the PDF version of this handbook from the repository's numbers |
 
@@ -577,7 +585,11 @@ If an examiner wants to check a claim, these are the commands. Node scripts need
 | `src/lib/selection-doodle.js` | closed-loop and scribble selection |
 | `src/components/FaqPage.jsx` | the in-app FAQ page: how it works, the technologies, the build story, twelve questions |
 | `src/faq.css` | the FAQ page's own stylesheet (paper, highlighter, cards) |
-| `training/model-345-refinement-2026-11-20.md` | the improvement experiment, in full |
+| `training/model-345-refinement-2026-11-20.md` | the 2026-11-20 improvement experiment, in full |
+| `training/model-345-continuation-2026-11-22.md` | the 2026-11-22 continuation: what helped, what was rejected, and why |
+| `training/import_tfjs_345.py` | loads the shipped browser weights back into Keras (name-by-name, shape-checked) |
+| `training/continue_from_shipped.py` | one controlled continuation stage, scored against the starting model |
+| `training/tta_eval_345.py` | test-time augmentation, measured but deliberately not shipped |
 | `training/evaluation-400-results.md` | the 400-drawing comparison, in full |
 | `scripts/run-tests.mjs` | the `npm test` runner: every `scripts/test-*.mjs` suite plus the app audit, one exit code |
 | `docs/submission/presentation-handbook.md` | this handbook as editable Markdown (the source) |
@@ -601,7 +613,7 @@ Every row below was a choice between at least two options. The third column is t
 | **Google Quick, Draw! dataset** | 34,500 drawings, 345 official categories, 100 per category | openly licensed (CC BY 4.0), matching the task exactly, and the same data AutoDraw's idea is built on. The full 50-million-drawing release was unreachable from the training machine; the quickdraw.js npm mirror is a verbatim copy but stops at 100 drawings per class — the project's biggest limitation |
 | **Icon sets** (Game-icons, Lucide, MDI, Tabler, Font Awesome, Iconoir) | the clean illustrations offered on the suggestion cards | 345 hand-drawn illustrations were impossible in the time available, and these sets are openly licensed and consistent in style. Every one is credited in the shipped attribution files |
 | **DM Sans / DM Serif Display** via `@fontsource` | typography of the app UI | self-hosted, so the page makes no third-party font request and works offline — which is the whole point of a tool that must run in a school lab without internet |
-| **Node.js + @napi-rs/canvas + jsdom + resvg** | the 277 automated checks and the 400-drawing benchmark | they run the app's real functions (`preprocess.js` reads a canvas `getImageData`) outside a browser, so the tests exercise the code the user runs, not a reimplementation. Headless Chrome would be heavier and slower for the same evidence |
+| **Node.js + @napi-rs/canvas + jsdom + resvg** | the 285 automated checks and the 400-drawing benchmark | they run the app's real functions (`preprocess.js` reads a canvas `getImageData`) outside a browser, so the tests exercise the code the user runs, not a reimplementation. Headless Chrome would be heavier and slower for the same evidence |
 | **Git + GitHub** | version history, experiments, pull requests, model versions | every experiment is reversible: if a training change made the model worse, the previous weights are one checkout away. The model itself is committed on purpose, because regenerating it takes 30 minutes and a trained model has been lost before |
 | **Google Drive** | the 333-class and 96×96 model archives supplied for evaluation | it was where the archives actually were, so the evaluation pipeline was pointed at them. They were measured, compared and rejected with reasons — the comparison is in the report rather than an opinion |
 | **reportlab** (Python) | generates the PDF version of this handbook | the document is built from the repository's own numbers (layer shapes are read from `model.json`), so it cannot drift out of date the way a hand-typed Word file does. Pure Python, no system libraries, one command to rebuild |

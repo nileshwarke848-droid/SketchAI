@@ -98,7 +98,7 @@ const TIMELINE = [
   {
     label: '4 · Measure',
     title: '3,450 drawings it had never seen',
-    body: 'The first guess is right 40 % of the time, the answer is in the top three 59 %, and in the top ten 78 %.',
+    body: 'The first guess is right 40.7 % of the time, the answer is in the top three 59.5 %, and in the top ten 77.8 %.',
   },
   {
     label: '5 · Improve',
@@ -124,7 +124,7 @@ const QUESTIONS = [
   },
   {
     q: 'How accurate is it, really?',
-    a: 'On 3,450 drawings it had never seen, the first suggestion is correct 40 % of the time, the right answer is in the top three 59 % of the time and in the top ten 78 %. Those are the numbers I say out loud, in the viva as well as here.',
+    a: 'On 3,450 drawings it had never seen, the first suggestion is correct 40.7 % of the time, the right answer is in the top three 59.5 % of the time and in the top ten 77.8 %. Those are the numbers I say out loud, in the viva as well as here — and training it further only moved them by half a point, which is worth admitting.',
   },
   {
     q: 'Why is it not as good as Google AutoDraw?',
@@ -230,8 +230,8 @@ export default function FaqPage({ onClose }) {
 
           <div className="faq-stats">
             <div className="faq-stat"><strong>345</strong><span>doodle categories</span></div>
-            <div className="faq-stat"><strong>40 %</strong><span>first guess right</span></div>
-            <div className="faq-stat"><strong>59 %</strong><span>right answer in top three</span></div>
+            <div className="faq-stat"><strong>40.7 %</strong><span>first guess right</span></div>
+            <div className="faq-stat"><strong>59.5 %</strong><span>right answer in top three</span></div>
             <div className="faq-stat"><strong>277</strong><span>automated checks</span></div>
           </div>
         </section>

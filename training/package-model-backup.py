@@ -99,15 +99,15 @@ SketchAI repository.
 - Random baseline: 0.29%
 - Parameters: {manifest.get('parameters', 0):,}
 
-Human hand-drawn doodle test (16 objects): top-1 7/16, top-3 9/16, top-10 12/16.
+Human hand-drawn doodle test (16 objects): top-1 6/16, top-3 9/16, top-10 14/16.
 
 ## Training environment
 
 - CPU only, no GPU
-- TensorFlow 2.21.0, tf-keras 2.21.0, Python 3.11
-- Adam lr 1e-3, batch 128, 60 epochs (best restored), EarlyStopping +
-  ReduceLROnPlateau + ModelCheckpoint
-- ~12.5 minutes
+- TensorFlow 2.20.0, tf-keras 2.20.0, Python 3.11
+- Adam, batch 128: 60 epochs (lr 1e-3, EarlyStopping + ReduceLROnPlateau),
+  then 24 + 26 epochs of refinement and 20 epochs of continuation
+- about 40 minutes in total, no GPU
 
 ## Architecture (unchanged)
 
@@ -162,7 +162,11 @@ def main() -> int:
         add_many(archive, production, "production archive")
 
     # --- 2. training checkpoint --------------------------------------------
+    continuation_dir = HERE / "work" / "continue" / "v2"
     checkpoint: list[tuple[Path, str]] = [
+        (continuation_dir / "continued.keras", "refined/continued.keras"),
+        (continuation_dir / "continue.json", "refined/continue.json"),
+        (continuation_dir / "tta.json", "refined/tta.json"),
         (WORK / "best.h5", "best.h5"),
         (WORK / "best.keras", "best.keras"),
         (WORK / "history.json", "history.json"),
@@ -175,8 +179,24 @@ def main() -> int:
 
     print(f"\nBuilding {CHECKPOINT_ZIP}")
     checkpoint_path = OUT / CHECKPOINT_ZIP
-    with zipfile.ZipFile(checkpoint_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
-        add_many(archive, checkpoint, "checkpoint archive")
+    have_base = (WORK / "best.h5").exists() or (WORK / "best.keras").exists()
+    if not have_base and checkpoint_path.exists():
+        # training/work/ is gitignored: on a fresh clone only the archive survives.
+        # Rewriting it from an empty work dir would delete the first-version
+        # checkpoint, so append the new artifacts to the existing archive instead.
+        print("  training/work/run is gone; appending new artifacts to the existing archive")
+        appended = 0
+        with zipfile.ZipFile(checkpoint_path, "a", zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+            for source, arcname in checkpoint[:3]:
+                if not source.exists():
+                    continue
+                archive.writestr(arcname, source.read_bytes())
+                appended += 1
+                print(f"  + {arcname:<44} {source.stat().st_size / 1024:9.1f} KB")
+        print(f"  checkpoint archive: {appended} file(s) appended")
+    else:
+        with zipfile.ZipFile(checkpoint_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+            add_many(archive, checkpoint, "checkpoint archive")
 
     # --- 3. checksums -------------------------------------------------------
     print("\nChecksums")
