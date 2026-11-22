@@ -43,6 +43,17 @@ function section(title) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// The FAQ page is a lazily imported chunk, so its first appearance is a microtask
+// (and, in a browser, a network hop) away. Poll instead of guessing a delay.
+async function waitFor(predicate, timeout = 3000, step = 20) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    if (predicate()) return true;
+    await sleep(step);
+  }
+  return Boolean(predicate());
+}
+
 async function bundleApp() {
   fs.mkdirSync(path.dirname(BUNDLE), { recursive: true });
   await build({
@@ -1911,7 +1922,8 @@ async function main() {
     && Number(document.querySelector('.selection-overlay')?.dataset.objectWidth) !== beforeEndpointWidth);
   section('FAQ page: the plain-language tour of how SketchAI works');
   const faqTrigger = click(window, 'button[aria-label="Open FAQ"]');
-  await sleep(40);
+  await waitFor(() => Boolean(document.querySelector('.faq-screen')));
+  await sleep(20);
   const faqScreen = document.querySelector('.faq-screen');
   check('the header offers a FAQ page and it opens', Boolean(faqTrigger) && Boolean(faqScreen)
     && dom.window.location.hash === '#faq');
@@ -1930,7 +1942,8 @@ async function main() {
   const objectsBeforeFaqClose = countObjects(canvas);
   const escapeKey = new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
   dom.window.dispatchEvent(escapeKey);
-  await sleep(40);
+  await waitFor(() => !document.querySelector('.faq-screen'));
+  await sleep(20);
   check('Escape closes the FAQ page and restores the canvas',
     !document.querySelector('.faq-screen') && dom.window.location.hash === '');
   check('closing the FAQ page leaves the drawing untouched', countObjects(canvas) === objectsBeforeFaqClose);

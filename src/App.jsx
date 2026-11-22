@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Bold, BookOpen, Check, Circle, CircleHelp, Copy, Eraser, FlipHorizontal2, Hand, Info, Lasso, LockKeyhole, Maximize2, Minus, MousePointer2, PaintBucket, Pencil, RotateCcw, Sparkles, Square, Trash2, Type, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { loadModel, predict } from './ai/model';
 import { getSketchBounds } from './ai/preprocess';
@@ -85,7 +85,10 @@ import {
   splitInkBlobs,
 } from './lib/doodle-eraser';
 import DebugPanel from './dev/DebugPanel';
-import FaqPage from './components/FaqPage';
+// The FAQ page is a separate screen, so it is loaded on demand: its JavaScript and
+// CSS stay out of the first paint the drawing studio needs.
+const FaqPage = lazy(() => import('./components/FaqPage'));
+const preloadFaqPage = () => import('./components/FaqPage');
 
 const W = 1200, H = 720;
 const LIVE_PREDICTION_INTERVAL_MS = 220;
@@ -1643,7 +1646,7 @@ function App() {
   return <div className="app-shell">
     <header className="topbar">
       <a className="brand" href="#" aria-label="SketchAI home"><span className="brand-icon"><Sparkles size={18}/></span><span>Sketch<span className="brand-ai">AI</span><small>DRAWING STUDIO</small></span></a>
-      <div className="header-right"><span className={`model-status ${guessingEnabled ? status : 'off'}`}><i/> {guessingEnabled ? statusText : 'AI guessing off'}</span><button className="help-link" onClick={openFaq} aria-label="Open FAQ"><BookOpen size={16}/> FAQ</button><button className="help-link" onClick={() => setShowHelp(true)}><CircleHelp size={17}/> How it works</button></div>
+      <div className="header-right"><span className={`model-status ${guessingEnabled ? status : 'off'}`}><i/> {guessingEnabled ? statusText : 'AI guessing off'}</span><button className="help-link" onClick={openFaq} onMouseEnter={preloadFaqPage} onFocus={preloadFaqPage} aria-label="Open FAQ"><BookOpen size={16}/> FAQ</button><button className="help-link" onClick={() => setShowHelp(true)}><CircleHelp size={17}/> How it works</button></div>
     </header>
     <main>
       <section className="intro"><div><div className="eyebrow"><span className="eyebrow-dot"/> YOUR CREATIVE SPACE <span className="eyebrow-line"/></div><h1>Big ideas start <em>small.</em></h1><p>Draw something, and let a little AI magic bring it to life.</p></div><div className="intro-note"><Sparkles size={16}/><span>MADE FOR<br/><strong>CURIOUS MINDS</strong></span></div></section>
@@ -1881,7 +1884,7 @@ function App() {
       {message && <div className="notice" role="status">{message}</div>}
       <div className="page-bottom"><span><span className="tiny-star">✳</span> Made by Punit Nilesh Warke — for the joy of creating.</span><span>SKETCHAI — AI DRAWING RECOGNITION PROJECT</span></div>
     </main>
-    {showFaq && <FaqPage onClose={closeFaq} />}
+    {showFaq && <Suspense fallback={null}><FaqPage onClose={closeFaq} /></Suspense>}
     {showHelp && <div className="modal-backdrop" onMouseDown={() => setShowHelp(false)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setShowHelp(false)} aria-label="Close"><X size={20}/></button><div className="panel-title-icon"><Sparkles size={20}/></div><span className="section-number">THE LITTLE DETAILS</span><h2 id="help-title">How it works<span>.</span></h2><p>From a few lines to a little inspiration, in five simple steps.</p><ol><li>Sketch with the pencil, add editable text with the Text tool, or use Fill on a connected region. Select Doodle draws a closed loop or an open stroke to select objects without erasing; hold Shift to add to a selection. Sketch ink, fills and objects stay on separate layers.</li><li>SketchAI crops, centers and normalizes the sketch for the active model: 96 × 96 for the supplied 333-class model, or 28 × 28 for the retained fallback models.</li><li>A neural network looks for patterns in the pixels.</li><li>The active drawing classifier looks at the pixels and predicts the most likely objects with confidence scores. It knows {classCount || 345} categories, so unusual objects may be guessed as something similar.</li><li>Choose an illustration to add an editable object. Select artwork or text to move, resize, rotate, recolor, duplicate, reorder or delete it. Text can be edited inline and artwork can be flipped. Zoom with the controls or wheel, and pan with Space + drag or the Hand tool; view changes never alter document coordinates.</li></ol><div className="privacy-note"><LockKeyhole size={17}/> Recognition runs locally in your browser. Your rough sketch stays separate from clean objects.</div><button className="primary-button modal-done" onClick={() => setShowHelp(false)}>Got it <ArrowRight size={16}/></button></section></div>}
   </div>;
 }
