@@ -26,6 +26,10 @@ training metadata was not included with the model files.
 | `build_notebook.py` | Regenerates the notebook from source, so the notebook and the code cannot drift apart. |
 | `manual_test.py` | Runs sixteen hand-drawn doodles through a trained model and prints the top ten guesses. |
 | `doodles.json` | Those sixteen doodles, as stroke data shared with `scripts/manual-test-345.mjs`. |
+| `wider_345.py` | Capacity pilot: the same network built wider (`--width 1/2/3`) and measured at an equal epoch budget. Writes `model.keras` + `report.json` under `work/wider/`. |
+| `continue_from_shipped.py` | The continuation recipe that produced the shipped 40.72 % weights (starts from the TF.js export, EMA, 20 epochs). |
+| `import_tfjs_345.py` | Rebuilds a `.keras` file from the shipped `public/model-345/` asset, for further training or auditing. |
+| `wider-architecture-pilot-2026-11-22.md` | What the wider network actually scored, and why it was not shipped. |
 | `work/` | Scratch space (cached data, checkpoints, plots). Created on first run; not committed. |
 | `export/model-345/` | Where a finished 345-class model is written. Not committed. |
 
@@ -53,7 +57,7 @@ remains the default; the original 100-class model remains as fallback.
 
 ---
 
-## Why the current score is about 38% — and how to improve it
+## Why the current score is about 41% — and how to improve it
 
 The checked-in model's recorded held-out score is **40.72% top-1**, **59.51%
 top-3**, and **77.77% top-10** across 345 classes. The path there was three
@@ -87,7 +91,12 @@ Suggested order of work:
 2. Keep class-balanced, non-overlapping train/validation/test splits and track
    per-class confusion, not just aggregate accuracy.
 3. Tune the CNN capacity, regularization and augmentation only against validation
-   data; compare the final candidate once on the frozen test set.
+   data; compare the final candidate once on the frozen test set. Capacity was
+   already piloted: a 64/128/256 · 512 head (678,809 params) beat the shipped
+   32/64/128 · 256 shape by only +0.70 pp top-1 at an equal 20-epoch budget, for
+   2.8× the training time and a 2.72 MB download instead of 0.86 MB — see
+   [`wider-architecture-pilot-2026-11-22.md`](wider-architecture-pilot-2026-11-22.md).
+   It was not shipped; the shipped model is still 40.72 / 59.51 / 77.77.
 4. Add opt-in, consented real-user doodles to a separate evaluation/training set.
 
 The app's suggestion bar uses top-10 candidates, so top-1 is not the whole user
